@@ -3,6 +3,8 @@ import copy
 import hashlib
 import json
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -111,6 +113,68 @@ class S30ReleaseTests(unittest.TestCase):
             collect(self.run, self.out)
         self.assertEqual(list(self.out.iterdir()), [existing])
         self.assertEqual(existing.read_bytes(), b'other release')
+
+    def test_reviewed_notes_accept_native_s30_without_accepting_unsigned_phi_models(self):
+        import catalog
+        import user_notes as notes
+        collect(self.run, self.out)
+        original = (notes.DATA / 'sources' / ('v' + self.base + '.md')).read_text()
+        with patch.object(catalog, 'STEMS', {}):
+            release = catalog.make('v' + self.base, self.commit, self.out, original)
+        archive = Path(self.temp.name) / 'archive'
+        (archive / 'releases').mkdir(parents=True)
+        document = notes.read(notes.DATA / 'catalog.legacy-v0.9.json')
+        document['releases'].append(release)
+        data = Path(self.temp.name) / 'data'
+        shutil.copytree(notes.DATA, data)
+        order = notes.read(data / 'release-order.json')
+        next(r for r in order['releases'] if r['version'] == self.base)['previous'] = '0.9.27'
+        (data / 'release-order.json').write_bytes(notes.encoded(order))
+        lock = (ROOT / 'frontend.lock.json').read_bytes()
+        process = subprocess.CompletedProcess([], 0, stdout=lock)
+        with patch.object(notes.subprocess, 'run', return_value=process), patch.object(notes, 'verify_archive') as verify:
+            def compile_notes():
+                (archive / 'releases/index.json').write_bytes(notes.encoded(document))
+                return notes.compile_manifest(data, archive=archive, formal=True)[0]
+            manifest = compile_notes()
+            target = next(r for r in manifest['releases'] if r['version'] == self.base)['targets'][0]
+            self.assertEqual(target['kind'], 'rbl')
+            self.assertEqual(target['sha256'], release['models']['s30']['downloads']['rbl']['sha256'])
+            verify.assert_called_once()
+            native = release['models'].pop('s30')
+            release['models']['tc1'] = native
+            with self.assertRaisesRegex(ValueError, 'require signed firmware'):
+                compile_notes()
+            release['models'] = {'s30': dict(native, downloads={'raw': native['downloads']['rbl']})}
+            with self.assertRaisesRegex(ValueError, 'require signed firmware'):
+                compile_notes()
+
+    def test_reviewed_native_archive_checks_catalog_and_payload(self):
+        import catalog
+        import user_notes as notes
+        collect(self.run, self.out)
+        original = (notes.DATA / 'sources' / ('v' + self.base + '.md')).read_bytes()
+        with patch.object(catalog, 'STEMS', {}):
+            release = catalog.make('v' + self.base, self.commit, self.out, original.decode())
+        archive = Path(self.temp.name) / 'archive'
+        folder = archive / 'releases' / release['tag']
+        shutil.copytree(self.out, folder)
+        lock = (ROOT / 'frontend.lock.json').read_bytes()
+        identity = {'source_commit': self.commit, 'frontend': {
+            'kind': 'lock', 'sha256': notes.digest(lock), 'lock': json.loads(lock)}}
+        identities = {'releases': {release['tag']: {'targets': {'s30:full': identity}}}}
+        process = subprocess.CompletedProcess([], 0, stdout=lock)
+        with patch.object(notes.subprocess, 'run', return_value=process):
+            notes.verify_archive({'releases': [release]}, identities, archive)
+            asset = release['models']['s30']['downloads']['rbl']
+            old_digest = asset['sha256']
+            asset['sha256'] = '0' * 64
+            with self.assertRaisesRegex(ValueError, 'catalog differs from verified build'):
+                notes.verify_archive({'releases': [release]}, identities, archive)
+            asset['sha256'] = old_digest
+            (folder / Path(asset['path']).name).write_bytes(b'corrupt native image')
+            with self.assertRaisesRegex(ValueError, 'Native release checksum mismatch'):
+                notes.verify_archive({'releases': [release]}, identities, archive)
 
 
 if __name__ == '__main__':

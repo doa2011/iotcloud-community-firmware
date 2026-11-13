@@ -73,8 +73,9 @@ freezes the snapshot for one query. A mismatched mirror fails without mixing
 sources. The hash verifies snapshot consistency; HTTPS supplies transport trust.
 The public JSON shape is described in [manifest.schema.json](manifest.schema.json).
 
-Publication prepares the actual archive, verifies signatures/commit/variant/path/
-hash and historical frontend locks, compiles notes, generates both languages,
+Publication prepares the actual archive, verifies PHI signatures or S30 native
+build identity/layout/validation, commit/variant/path/hash and historical frontend
+locks, compiles notes, generates both languages,
 then checks the final output. Resources and the last-written index are published
 in one Git commit. Existing hashed manifests, original Markdown, firmware assets,
 legacy OTA fields and URLs are retained. The existing `releases/` mirror allowlist

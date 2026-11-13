@@ -11234,7 +11234,8 @@
       },
       "review_status": "approved",
       "lifecycle": {
-        "state": "withdrawn"
+        "state": "withdrawn",
+        "no_residual_impact": false
       },
       "title": {
         "zh-CN": "移除中枢内置 MQTT Broker",
