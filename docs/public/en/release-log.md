@@ -2,6 +2,318 @@
 
 Features, fixes and upgrade requirements for each release.
 
+## v1.0.0
+
+**v1.0.0 accumulates features and fixes since v0.9.27. Back up configuration and choose the matching model and variant. Components update separately; see each guide for matching versions. G1 compatibility remains unconfirmed.**
+
+### Internationalized device and setup pages
+
+Expand Chinese and English text coverage in device and setup pages while retaining the existing visual style. Slim images retain their setup pages; the independent frontend provides full device controls.
+
+### Internationalized platform, service messages and email
+
+The management platform, success and error messages, and email templates use Chinese and English text. Applications continue to use stable error codes. Platform services are deployed separately from device OTA updates.
+
+### Separate device language and MQTT names
+
+Persist the device language and republish MQTT and Home Assistant entity names in that language. Browser language is configured separately; entity identifiers, unique IDs and topics remain unchanged.
+
+### Expand Local connection on demand
+
+The independent device-management frontend, platform and Pages demos use a Local connection button that reveals collapsible IP and password inputs while retaining the existing style.
+
+### Limit new usernames and MQTT aliases
+
+New platform usernames and MQTT aliases contain 3–32 ASCII letters, digits, underscores, dots or hyphens. Existing long accounts retain login and may add a short MQTT alias. Email login is handled separately. This does not replace account rules for third-party brokers.
+
+### Show Wi-Fi and sensor MCU versions separately
+
+Show the original Wi-Fi module and sensor MCU versions separately, or unknown when unreadable. The open-source sensor MCU is recommended first for stock 11.x; migration from 17.1.2.3 or 17.x is not currently recommended. Wi-Fi OTA does not update the sensor MCU.
+
+### PM2.5 smoothing in the sensor MCU
+
+Requires a separate open-source sensor MCU update: a three-sample median and adaptive smoothing suppress PM2.5 spikes while following sustained increases quickly. Raw sensor frames remain available. This feature is not included in Wi-Fi OTA.
+
+### Optional formaldehyde and PM2.5 buzzer alarms
+
+Enable formaldehyde and PM2.5 threshold buzzer alarms separately; both are off by default. A capable open-source sensor MCU is required. Lamp colors, scheduled alarms and manual tones remain separate controls.
+
+### Double-press alarm stop and whole-display switching
+
+With the matching new open-source sensor MCU, a single press toggles the screen. When an alarm is ringing, a double press only stops it. Otherwise, when configured, it switches both formaldehyde and PM2.5 regions between original and user readings.
+
+### Separate long-press reprovisioning and factory reset
+
+With the matching new open-source sensor MCU, release after holding for at least 3 but under 10 seconds to clear Wi-Fi and the web password while keeping MQTT and other settings. Hold for 10 seconds to factory-reset network-module settings; independent sensor MCU music is retained. Both MCUs restart after settings are saved, including while offline.
+
+### User readings and independent expiry for both regions
+
+Configure local sensors, paired LAN devices, authorized MQTT devices or API data separately for the formaldehyde and PM2.5 regions, with independent colors and expiry. Double-press switches both regions together. Missing, expired, offline or invalid data restores only its region without changing acquisition or alarms. A capable separately updated sensor MCU is required.
+
+### Publish TC1 power and effective A1 fan output
+
+Provide M1 user readings with TC1 power and effective A1 primary-fan output carrying identity, freshness and validity. A1 reports the current 0–100% output, including the fresh-air variant, rather than RPM. Unavailable readings are not represented as zero.
+
+### Display modes and native legends for the physical screen
+
+The PM region supports three integer digits up to 999. The formaldehyde region offers integer, automatic kilo scaling, two decimals, one decimal with a trailing zero, or fixed division by 1000. Its decimal point is fixed after the first digit. Legends and native units have separate visibility controls; the units remain mg/m³ and µg/m³. Positive local or MQTT overflow is limited to the selected mode maximum.
+
+### Nine independent lamp segments per region
+
+Control the red, green and yellow segments independently at each of three positions in each region, including multiple colors at one position. Alternatively, apply two thresholds to the original physical value before display conversion.
+
+### Write raw digits and complete lamp segments through the API
+
+For a saved API-region configuration, display_value.set accepts an integer from 0 to 999, decimal point, legend and native-unit visibility, and all nine lamp segments. It does not scale, round, clamp or apply threshold colors. PM decimal points, fractional numbers and out-of-range digits are rejected. Writes must match the revision and expiry; TTL 0 clears only that region.
+
+### Display negotiation, revision checks and configuration migration
+
+New display configuration uses revision/CAS checks and accepts compact or colon-separated MAC addresses in either case. Probe the sensor MCU before enabling new interfaces and retain the frozen legacy API and UART behavior. Defined older configurations and backups migrate; unknown future layouts enter recovery.
+
+### Separate DAIKIN hub and shared web login
+
+The separate hub variant adds LAN discovery, pairing and management to sensor functions. It shares the device web password and session: an unset password permits direct access, while an existing password requires authentication. The hub username remains a topic namespace; cloud email registration and GitHub login are not included.
+
+### Hub device and service settings
+
+Open Hub management from the device page to configure LAN devices, upstream MQTT, Bemfa mappings and optional Apple Home. Control and hub pages share the device web session.
+
+### Remove the embedded hub MQTT broker
+
+The hub no longer provides a local TCP 1883 or WebSocket MQTT broker. Devices, Home Assistant and other MQTT clients use an external broker; the hub manages devices over paired UDP.
+
+### Upstream MQTT and Bemfa forwarding
+
+The hub acts as an upstream MQTT client, forwarding events by direction and topic mapping and supporting Bemfa device mappings. LAN devices use mDNS discovery and paired UDP instead of an embedded broker.
+
+### Optional HomeKit HAP bridge
+
+Experimental HAP bridging is off by default and supports six TC1 switches, S30 sockets, A1 purifiers and fresh-air variants, lights and valid M1 / DAIKIN G2 / G3 sensors. Purifiers use the standard AirPurifier service; Apple Home controls the primary icon when grouped with a light. HomeKit pairing is stored separately and excluded from ordinary configuration backups. Matter is not included.
+
+### Explicitly confirmed conversion from full to hub
+
+A new full image advertising this capability can switch to hub over local HTTP using the web password, a signed hub image that fits the installed OTA slot, and explicit confirmation. Network settings are retained. Ordinary updates remain variant-isolated; direct hub-to-full OTA is unsupported.
+
+### Complete configuration backup, validated restore and migration protection
+
+Download or restore complete configuration over local HTTP protected by the web password after validating the model, variant, configuration version and contents. Retain supported older-configuration migration paths. Unsupported layouts preserve storage and require confirmation before clearing it. M1 MCU music and HomeKit pairing are excluded from ordinary Wi-Fi configuration backups.
+
+### Check cross-version differences within the update page
+
+On TC1, A1 and M1, the browser fetches and verifies structured release data in the device update page and computes changes from the current to the target version. If data is unavailable, the page explains the reason and requires additional confirmation before proceeding. The existing website comparison link remains available.
+
+### 8 KiB allocation reserve for EMW3080 release images
+
+A1 and M1 release images lower the memory allocation reserve to 8 KiB. This does not apply to TC1’s EMW3031 or Daikin’s ESP32.
+
+### Open source, archives and cross-repository development rules
+
+Archive v0.9.x and organize CI, issue and PR templates, and contribution rules for interfaces, configuration migration and pinned dependencies. Maintained code uses GPL-3.0 while third-party notices are retained. Repository and development-material changes are separate from device OTA features.
+
+### Device-organized guides and shared developer protocols
+
+Organize installation, updates, daily use and recovery guides by M1, A1, TC1 and Daikin while retaining the Pages style. Centralized Chinese and English developer Pages document interfaces, protocols, configuration compatibility and examples.
+
+### Settings for two display regions, digits and nine lamp segments
+
+The full device page configures each formaldehyde or PM region’s source, expiry, display mode, legend and unit visibility, and nine lamp segments, plus whole-display switching on double press. It shows sensor MCU support and confirmation status and previews the fixed glass layout. Applying the new display requires a capable MCU.
+
+### Separate controls for both sensor buzzer alarms
+
+The page provides separate formaldehyde and PM2.5 threshold buzzer switches, both off by default, and checks saved configuration. Older unsupported sensor MCUs show the capability limitation.
+
+### Show the hub itself in the device list
+
+The hub automatically appears in its own device list, where its local sensors and device settings are accessible. The self entry does not consume any of the 12 external-device slots and cannot be removed or registered again as an external device.
+
+### Make the device web password optional for hub setup
+
+Hub management does not require setting a web password first. An unset password permits direct access; an existing password requires authentication. The hub shares device web login without a separate hub login password. UDP pairing and external-broker credentials remain separate.
+
+### Allow full-to-hub conversion without first setting a web password
+
+A new full image advertising conversion support can switch through its LAN web page using a matching signed hub image and explicit confirmation, without first setting a web password. An existing password still requires authentication. Model, signature and installed OTA-slot checks remain in force, network settings are retained, ordinary updates remain variant-isolated, and direct hub-to-full OTA is unsupported.
+
+### Refresh HomeKit status after settings changes
+
+After changing the HomeKit switch or resetting pairing, the page continues checking status while the hub restarts, shows the current state when the service returns, and prompts for sign-in if the session expires. It does not replay the change or reset request, or display stale pairing codes while waiting.
+
+### Publish generic numeric fields
+
+Devices use MessagePack schema 3 with retained metadata and non-retained state snapshots. Field IDs declare names, types and units; readings carry validity and age. TC1 power, effective A1 fan output and DAIKIN / M1 readings use number fields. A1 output is 0–100%, not RPM. Invalid values are not represented as zero.
+
+### Select M1 numeric sources by device and field
+
+M1 display-profile schema 4 selects a source by device and field, rather than adapting to its model. New numeric fields do not need another model mapping. M1 accepts only `number` fields matching the configured type and unit. Missing, invalid, `unknown` or other nonnumeric fields revoke the old reading; the protocol reserves future type extensions.
+
+### Reject network-only resets during M1 configuration recovery
+
+When an incompatible configuration requires confirmation, M1 rejects a network-only reset instead of reporting success or acknowledging success to the controller. Stored bytes remain intact until a full clear is explicitly confirmed in the page. Full clearing still checks the storage commit, allows retry after failure and blocks further writes when the commit result is uncertain. No automatic migration for unknown third-party layouts is added.
+
+### Restore the full maintenance page
+
+Fix missing content in the full Reboot and recovery page so its reboot, backup and full-clear controls are shown. The A1 Wi-Fi touch-key hold issue remains a separate investigation.
+
+### Refresh recovery state after clearing and resume setup
+
+The full and minimal setup pages refresh recovery state. After an explicitly confirmed clear, they wait for restart and reconnection before retiring the old migration warning and updating the form in the same tab. Duplicate submissions are blocked while waiting, failures can be retried, and a restart that still requires recovery is reported as an unconfirmed clear. Ordinary refreshes preserve unsaved input.
+
+### Add A1 recovery sequences for touch panels with short holds
+
+A1 reserves two Wi-Fi recovery sequences: tap twice, hold the third touch for 1–2 seconds and release to reset networking; tap three times, hold the fourth touch for 1–2 seconds and release to factory reset. Release each short tap, leave less than 0.3 seconds between touches and hold the final touch for at least 1 second and less than 5 seconds. Recovery runs only when the panel reports release, bypasses child lock and suppresses custom click and hold actions for this sequence. Existing 5 / 10 second recovery holds remain. Factory reset clears user settings. These alternative sequences remain experimental.
+
+### Use binary HTTP, device MQTT and UDP interfaces
+
+Device business APIs default to MessagePack with typed parameter views and direct output. Legacy JSON business interfaces are removed; Home Assistant keeps a separate compact JSON path. Use the matching frontend and a discovery-aware cloud platform; migrate custom JSON clients.
+
+### Cache complete business state and separate diagnostics
+
+The complete business snapshot remains available. Changes are coalesced before encoding and unchanged snapshots are reused. Read runtime, HTTP, panel and serial diagnostics on demand with diagnostics.get and shared numeric field IDs, skipping absent fields. Native MQTT and HA track delivery separately; command receipts remain independent.
+
+### Coordinate reads and retain content during tab changes
+
+The shared HTTP queue coalesces reads, prioritizes writes and bounds confirmation. It cancels stale reads and isolates late responses without cancelling issued writes. Automation pages retain existing content and unsaved forms and apply grouped updates atomically. Login layout and busy/503 handling are corrected. A1 animates locally; ordinary A1/M1 state reads run about every five seconds with brief faster confirmation after control.
+
+### Correct busy errors and MQTT memory fallback
+
+A1 distinguishes invalid parameters, revision conflicts and storage failures from resource contention. MQTT buffer-shrink failure handling preserves subscriptions and avoids replaying retained work. TC1 accepts embedded NUL bytes in binary MQTT messages. HTTP queues at most two waiting requests and returns bounded overload errors.
+
+### Discover with mDNS and communicate over paired UDP
+
+LAN business uses shared binary packets and bounded parsing. It supports administration-password pairing and existing MQTT-granted sensor sessions. Synchronous requests borrow input only during processing; asynchronous work owns its data. Shared mDNS/UDP logic reduces duplication while retaining discovery, pairing and rediscovery.
+
+### Replace the embedded hub broker with mDNS and UDP
+
+The hub discovers devices with mDNS, pairs and communicates over UDP, and provides shared web management. Upstream MQTT, Bemfa and experimental HomeKit bridging remain available. Local Home Assistant and MQTT clients must use an external broker. Pair storage, forwarding ownership/correlation, bounded queues and idle HTTP reclamation are corrected. The former embedded broker is no longer a LAN endpoint.
+
+### Optional web authentication and protected configuration migration
+
+An unset administration password permits direct web access without consuming login sessions. Configured passwords use token sessions while retaining admin Basic access. Password changes, logout and restart follow device authentication rules. Recognized 0.9.x configuration layouts preserve settings during migration; unknown layouts or unsafe writes enter recovery instead of being overwritten. Back up before upgrading and follow the model-specific migration and recovery guide.
+
+### Trim resources, pin compilers and use iotcloud hostnames
+
+The matching frontend is trimmed by device capability and unused resources and formatting dependencies are reduced. MXCHIP release builds use pinned GCC14 with the existing GCC5 runtime; S30 uses GCC5. DHCP hostnames include iotcloud, the actual model and a valid factory-MAC suffix. A1/M1/TC1 protocol identities use openiot.
+
+### Add the S30-V1B metering socket and stock network installation
+
+Add ORVIBO S30-V1B (BL2028N/BK7231N/HLW8032) using the shared web UI and binary HTTP/MQTT/UDP services. It provides outlet control, power, voltage, current, energy and persistent meter multipliers. Native RBL and STOCK_UA images use the stock partition layout; write STOCK_UA at 0x11000. First network installation from stock 2M.1220 was physically verified; configure Wi-Fi again on community first boot. The AP retains S30M_V1B_. See the operation guide for LEDs and release-triggered 5/10-second recovery. Web OTA accepts a URL only.
+
+### Shared device and hub authentication
+
+The DAIKIN hub uses the device WebUI administration password and session instead of a separate account password. With no password it opens directly. Refreshing or switching between the control and hub pages in the same tab reuses the session; sign-out and password changes clear it. Existing hub usernames, devices, pairing and forwarding settings are retained. The old hub password is retired, while the username remains the topic namespace. UDP pairing and external MQTT broker authentication remain separate.
+
+### Hub device state, power and HomeKit readings
+
+The hub reads paired-device state and sends controls over HTTP-to-UDP; the browser only needs to reach the hub. TC1 list cards no longer briefly hide power when a new reading arrives, and hide expired meter readings. M1 prioritizes the initial state and restores supported controls after a failed first capability read. HomeKit uses M1 sensor-validity flags for temperature, humidity and PM2.5. Requests are serialized and coalesced, with device identity and response-ID checks. Stale replies cannot replace another device, and issued writes are never automatically replayed. Remote pages expose supported controls and diagnostics. Use the target device’s local page for network settings, authentication, automation, upgrades and backups.
+
+### HTTP authorization and control receipts
+
+HTTP checks credentials again while queued, at execution and at reply delivery. Requests cannot retain old permissions after sign-out, expiry or a password change. Control receipts use bounded reservations, and TC1 prepares reply space before execution. Packet reception, local buttons and MQTT heartbeats keep their own scheduling. A1/M1 diagnostics report the actual requested TCP connection limit.
+
+### TC1 MQTT and S30 binary LAN fixes
+
+TC1 periodic telemetry runs on the MQTT owner thread to reduce contention. S30 uses the shared typed UDP v4 parser, password pairing, atomic authentication persistence and bounded receipts. A rejected optional SENSOR subscription no longer disconnects the main MQTT connection and retries with backoff. The cloud backend permits the exact S30 SENSOR command topic while rejecting cross-account and wildcard subscriptions.
+
+### Consistent hub pairing storage and routing
+
+The hub commits pairing credentials and the confirmed UDP route together. Failed storage does not activate a route, and temporary password writes are removed. Legacy configuration storage is reclaimed while retaining valid settings and pairing data.
+
+### Web state and UTC settings
+
+Fix stale snapshots after a state-generation change, and fetch the corresponding complete state after saving settings. A UTC offset of zero displays and saves correctly instead of becoming UTC+8.
+
+### Device names and HomeKit synchronization
+
+Devices provide name.set to change only the name. The hub synchronizes device names and TC1 / S30 socket names, notifies home controllers to refresh configuration and retains pairings and identities. A1 / M1 / DAIKIN support ConfiguredName writes with persistence and readback; socket names are read-only. Ordinary Apple Home renames are local aliases. Requires hub v1.0.0 and target devices running rc.6 or a newer compatible release.
+
+### Fix hub restarts while processing HomeKit data
+
+Fix hub restarts caused by excessive main-loop stack use when processing HomeKit data.
+
+### S30 power restoration, power rules and M1 readings
+
+S30 adds off, on and restore power-on modes and up to eight local power rules. Power strictly above or below a threshold for the specified number of seconds triggers switching; zero seconds means immediate triggering. Rules need neither MQTT nor a synced clock, and local buttons take priority. MessagePack schema 3 publishes voltage, current, power and energy metadata and readings for M1 devices on the same external broker and account without an open web page. Restore uses the last saved output; rule timers restart after reboot.
+
+### TC1 local power-condition automation
+
+TC1 adds up to eight total-power rules targeting one or all outlets, with above/below thresholds and immediate or sustained triggering. Each continuous matching condition triggers once and rearms after the condition clears. Invalid samples interrupt timing, and local buttons take priority. Existing timed tasks and binary backup layouts are retained.
+
+### S30 Wi-Fi scanning and settings migration
+
+Fix S30 scan-result bounds, allocation release and STA state handling, and defer reboot until settings are saved. The distinct PBL4 layout imports recognized PBL1/2/3 records while retaining networks, administration password, inbound and outbound pairing, names, meter multipliers and energy. MQTT cleanup retains authentication and ACL failure reasons for troubleshooting.
+
+### Web update availability and upgrade path
+
+Online updates show Install only after a successful check identifies an available version, and recheck availability on click. Up-to-date, failed or incomplete results cannot start installation. The change confirmation remains, with guidance to upgrade 0.9.x through 1.0.0 before later stable releases.
+
+### Daikin G3 screen and sensor support
+
+Adds ESP32 firmware and a separate screen MCU for BRY88BBA15G, with stock and capability-negotiated extended protocols, sensor readings, battery status, RTC synchronization, touch page navigation, module control and a startup maintenance window. New media and display policies require matching v1.0.0 screen MCU and WebUI.
+
+### Screen composition, weather and reminders
+
+Compose clocks, readings, text, line and stacked charts, weather and reminders with a preview at the real screen aspect ratio. Includes six themes, per-widget colors, wallpaper, language, brightness and weekly dimming. Font resource failures degrade display while communication and recovery services remain available. New layouts (rows × columns): weather 1×4 and 2×4, clock 1×4, and reading 1×2, with matching WebUI and MCU rendering.
+
+### Online updates for ESP32, screen and font
+
+ESP32 can check and install signed updates from GitHub, China and global mirrors; RC builds use a separate candidate channel. Screen applications and fonts can be checked, downloaded and verified from the LAN resource page; large screen uploads require direct LAN access. Wireless migration updates ESP32 first while preserving the stock screen, then optionally installs the community screen application directly while preserving the stock boot region. Get matching tools and firmware from the same release download page, or use a newer compatible release.
+
+### M1 clock recovery retries
+
+Retries transient MCU clock readback failures within a bound and schedules network time retries independently, reducing clock desynchronization after temporary communication failures.
+
+### S30 schedules, power automation and stock installation
+
+Aligns S30 socket schedules and power automation with TC1 and adds a stock OTA installer using HTTP port 80 with instructions. S30 continues to use native RBL/STOCK_UA images.
+
+### Shared WebUI and G3 demos
+
+Updates shared socket automation and power refresh, adds G3 layout, brightness, weather, reminder and online update settings, and provides screen design and device WebUI demos. Daikin downloads distinguish verified G2 from the G3 display model; G1 compatibility remains unconfirmed.
+
+### G3 NOR and wallpaper upload fixes
+
+Fixes wallpaper upload failures and the PM2.5/TVOC readings failing to resume afterward, which also blocked later OTA uploads. NOR defaults to hardware quad SFC.
+
+### G3 stock weather and Linux migration
+
+With the stock screen MCU, ESP32 converts real current weather into factory temperature, humidity and condition fields; outdoor PM2.5 remains missing. Adds Linux Bluetooth provisioning and documents the actual STA MAC, 2.4 GHz Wi-Fi and factory gateway responses for wireless migration. Fixes missing weather caused by TLS handshake timeouts with the ESP32 running at 80 MHz.
+
+### G3 startup and online update load
+
+ESP32 follows the stock 10–80 MHz dynamic frequency and automatic light-sleep policy, closing the recovery access point after Wi-Fi stabilizes. The MCU waits in shallow sleep while idle and coordinates ESP32 wake. The screen loads fonts before enabling sensors to reduce concurrent startup load. Fixes OTA preparation failures and interrupted uploads. Consecutive updates work while the screen runs normally, with sensors resuming afterward.
+
+### G3 charging and network icons
+
+The battery icon shows a lightning mark while powered by USB. A Wi-Fi icon replaces the network dot and shows a slash while offline. Corrects the external-power and battery screen-timeout selection and keeps the WebUI preview aligned with the display. Fixes the charging icon remaining on after USB is disconnected.
+
+### G3 long-press shutdown
+
+Fixes immediate restart after a long-press shutdown. Shutdown waits for key release; when USB keeps the MCU powered, a new press of about 2 seconds turns it on. Short-press paging and wake remain available. A sustained press from a sleeping display now shuts down instead of only waking it. Long-press shutdown and restart also work in minimal recovery with a black display; power-key shutdown is disabled during firmware transfer.
+
+### G3 direct screen installation from the WebUI
+
+Both first installation from stock screen firmware and later community updates support online installation or file upload. One confirmation starts verification, transfer and activation; success appears after the new MCU starts normally. Fixes intermittent black screens after first installation and invalid-parameter errors during online downloads. Update-message line breaks no longer appear as question marks.
+
+### G3 live cloud readings
+
+When LAN and MQTT are both connected, cloud cards and details use the newer sensor readings, preventing an older LAN snapshot from leaving G3 with no data. The G3 detail page is selected by hardware identity.
+
+### G3 sensor calibration
+
+Adds factory CO₂ 400 ppm and TVOC calibration controls. The WebUI explains warmup and reference conditions, reports sampling, command transmission and acknowledgement, and permits cancellation before transmission. Complete manufacturer conditions for TVOC calibration remain unpublished and are identified in the UI.
+
+### Hub request scheduling and HomeKit recovery
+
+Fix HTTP / UDP receipt matching, busy handling and device-state refresh with bounded temporary memory and waiting queues. Expired or other-device responses cannot replace current state, and issued controls are not automatically replayed. Complete capability and valid-sensor mapping for S30, A1 fresh-air variants and G3.
+
+### Hub metering and Apple Home display support
+
+Hub web pages show TC1 power and S30 voltage, current, power and energy, clearing invalid or expired readings. HAP exposes whole-device W / kWh through Eve custom characteristics. Apple Home does not display these custom readings; third-party clients supporting them can read the data.
+
+### G3 media, push and display policies
+
+Matching v1.0.0 ESP32 firmware, screen MCU and WebUI support JPEG / MJPEG media, URL sources and upload / push workflows, notification queues and expiry, and display policies. Check capabilities, capacity and digests before uploading or activating resources. Use pinned screen, recovery and font assets from the same release.
+
 ## v1.0.0-rc.6
 
 **RC6 is a release candidate. The stable channel remains v0.9.27. Back up configuration; update ESP32 and screen MCU separately.**

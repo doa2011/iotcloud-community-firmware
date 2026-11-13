@@ -60,7 +60,7 @@ GROUPS = [
         ('s30-features', 'S30M-V1B 特色功能', '来电策略、计量校准、灯语与本地按键', 'S30-V1B-特色功能'),
     ]),
     ('dev', '开发与维护', [
-        ('device-api', '设备接口与协议', 'RC6 / 0.9.27、HTTP、MQTT、UDP 与示例代码', '设备接口与协议'),
+        ('device-api', '设备接口与协议', 'v1.0.0 / 0.9.27、HTTP、MQTT、UDP 与示例代码', '设备接口与协议'),
         ('iotcloud-deploy', '自行部署 IoTCloud', '静态前端托管、独立后端与 MQTT 连接', 'IotCloud-部署'),
         ('build-deps', '构建依赖', '工具链、SDK 归档与本地构建', '构建依赖'),
         ('sources', '资源来源', '刷机图片与工具的来源与校验', '资源来源'),
@@ -156,7 +156,7 @@ EN_TITLES = {
  'daikin-g3-diagnostics': ('G3 startup, resource and display diagnostics', 'Recovery windows, fonts, memory, module control and page measurements'),
  'daikin-g3-development': ('G3 architecture, protocols and development resources', 'ESP32 / SWM34S roles, UART protocols and complete reference index'),
  'stock-backups': ('Stock backups and recovery', 'Programs, controllers, screen resources and checksums for all devices'),
- 'device-api': ('Device interfaces and protocols', 'RC6 / 0.9.27, HTTP, MQTT, UDP and code examples'),
+ 'device-api': ('Device interfaces and protocols', 'v1.0.0 / 0.9.27, HTTP, MQTT, UDP and code examples'),
  'm1-mcu-update': ('Update the M1 controller over the network', 'Minimum Wi-Fi version, Python flashing and runtime verification'),
  'm1-mcu-firmware': ('M1 open-source controller firmware', 'Added capabilities, controller releases and stock backup'),
  'daikin-stock-ota': ('Daikin stock OTA migration', 'BRY88AB151K button gesture, sender and verified first boot'),

@@ -10244,6 +10244,4124 @@
         "reviewed_utc": "2026-11-09T00:24:35.015191+00:00",
         "reviewed_content_sha256": "e1637bf707451a1c0f23becb26023aeea4bf1334e6eb17e514f713bce18ebeba"
       }
+    },
+    {
+      "change_id": "v1-bundled-i18n",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "tc1",
+          "a1",
+          "m1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "设备网页与配网文案国际化",
+        "en": "Internationalized device and setup pages"
+      },
+      "description": {
+        "zh-CN": "整理设备操作页面和配网页的中英文文案，保留原有界面风格。精简版保留自身配网页面，完整操作页由独立前端提供。",
+        "en": "Expand Chinese and English text coverage in device and setup pages while retaining the existing visual style. Slim images retain their setup pages; the independent frontend provides full device controls."
+      },
+      "ota_summary": {
+        "zh-CN": "整理设备操作页面和配网页的中英文文案，保留原有界面风格。精简版保留自身配网页面，完整操作页由独立前端提供。",
+        "en": "Expand Chinese and English text coverage in device and setup pages while retaining the existing visual style. Slim images retain their setup pages; the independent frontend provides full device controls."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "2e568d00b99f9d4a7fd927a4d4b49b21f95e0ea906254d0b94db65969f3493f4"
+      },
+      "source_refs": [
+        "v1.0.0:b003"
+      ]
+    },
+    {
+      "change_id": "v1-platform-i18n",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "service",
+      "scope": {
+        "models": [
+          "tc1",
+          "a1",
+          "m1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "平台界面、服务反馈与邮件国际化",
+        "en": "Internationalized platform, service messages and email"
+      },
+      "description": {
+        "zh-CN": "管理平台界面、服务成功或错误反馈及邮件模板使用中英文文案；程序继续使用稳定错误码。平台服务单独部署，不随设备 OTA 更新。",
+        "en": "The management platform, success and error messages, and email templates use Chinese and English text. Applications continue to use stable error codes. Platform services are deployed separately from device OTA updates."
+      },
+      "ota_summary": {
+        "zh-CN": "管理平台界面、服务成功或错误反馈及邮件模板使用中英文文案；程序继续使用稳定错误码。平台服务单独部署，不随设备 OTA 更新。",
+        "en": "The management platform, success and error messages, and email templates use Chinese and English text. Applications continue to use stable error codes. Platform services are deployed separately from device OTA updates."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "d1f540c34f2b8bcfd867f69a5e57f042d4a7c480f519c386875367504b5e0f59"
+      },
+      "source_refs": [
+        "v1.0.0:b004"
+      ]
+    },
+    {
+      "change_id": "v1-device-language",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "tc1",
+          "a1",
+          "m1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "独立设备语言与 MQTT 名称",
+        "en": "Separate device language and MQTT names"
+      },
+      "description": {
+        "zh-CN": "保存设备语言，按该语言重新发布 MQTT / Home Assistant 实体名称。浏览器语言单独设置，实体标识、唯一 ID 和主题保持不变。",
+        "en": "Persist the device language and republish MQTT and Home Assistant entity names in that language. Browser language is configured separately; entity identifiers, unique IDs and topics remain unchanged."
+      },
+      "ota_summary": {
+        "zh-CN": "保存设备语言，按该语言重新发布 MQTT / Home Assistant 实体名称。浏览器语言单独设置，实体标识、唯一 ID 和主题保持不变。",
+        "en": "Persist the device language and republish MQTT and Home Assistant entity names in that language. Browser language is configured separately; entity identifiers, unique IDs and topics remain unchanged."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "595daddce3844cd9decb7179cb0cc696246ed4c63bf0b3f1a6113388007ed364"
+      },
+      "source_refs": [
+        "v1.0.0:b005"
+      ]
+    },
+    {
+      "change_id": "v1-local-connection-fold",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "service",
+      "scope": {
+        "models": [
+          "tc1",
+          "a1",
+          "m1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "按需展开本地连接",
+        "en": "Expand Local connection on demand"
+      },
+      "description": {
+        "zh-CN": "独立设备管理前端、平台与 Pages 演示统一使用 Local connection 按钮，点击后显示 IP 与密码输入并可折叠，保持现有风格。",
+        "en": "The independent device-management frontend, platform and Pages demos use a Local connection button that reveals collapsible IP and password inputs while retaining the existing style."
+      },
+      "ota_summary": {
+        "zh-CN": "独立设备管理前端、平台与 Pages 演示统一使用 Local connection 按钮，点击后显示 IP 与密码输入并可折叠，保持现有风格。",
+        "en": "The independent device-management frontend, platform and Pages demos use a Local connection button that reveals collapsible IP and password inputs while retaining the existing style."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "655af94df5b5af7dc73a2bca2cf499fd34abe6b034b05f55c7ebea7d3195fbd3"
+      },
+      "source_refs": [
+        "v1.0.0:b006"
+      ]
+    },
+    {
+      "change_id": "v1-platform-short-usernames",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "service",
+      "scope": {
+        "models": [
+          "tc1",
+          "a1",
+          "m1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "限制新用户名与 MQTT 别名长度",
+        "en": "Limit new usernames and MQTT aliases"
+      },
+      "description": {
+        "zh-CN": "新平台用户名和 MQTT 别名为 3–32 个 ASCII 字母、数字、下划线、点或连字符。已有长账号保留登录，可添加短 MQTT 别名；邮箱登录独立处理。此约束不替代设备连接第三方 Broker 的账号规则。",
+        "en": "New platform usernames and MQTT aliases contain 3–32 ASCII letters, digits, underscores, dots or hyphens. Existing long accounts retain login and may add a short MQTT alias. Email login is handled separately. This does not replace account rules for third-party brokers."
+      },
+      "ota_summary": {
+        "zh-CN": "新平台用户名和 MQTT 别名为 3–32 个 ASCII 字母、数字、下划线、点或连字符。已有长账号保留登录，可添加短 MQTT 别名；邮箱登录独立处理。此约束不替代设备连接第三方 Broker 的账号规则。",
+        "en": "New platform usernames and MQTT aliases contain 3–32 ASCII letters, digits, underscores, dots or hyphens. Existing long accounts retain login and may add a short MQTT alias. Email login is handled separately. This does not replace account rules for third-party brokers."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "e6c6107c548958d8a9d9606bf5116833b1d495896087745617604afecea1f138"
+      },
+      "source_refs": [
+        "v1.0.0:b007"
+      ]
+    },
+    {
+      "change_id": "v1-m1-mcu-version-ui",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "分别显示 Wi-Fi 与传感器 MCU 版本",
+        "en": "Show Wi-Fi and sensor MCU versions separately"
+      },
+      "description": {
+        "zh-CN": "分别显示联网模块和传感器 MCU 的原始版本，无法读取时显示未知。原厂 11.x 优先推荐开源主控；17.1.2.3 / 17.x 暂不建议迁移。Wi-Fi OTA 不包含主控升级。",
+        "en": "Show the original Wi-Fi module and sensor MCU versions separately, or unknown when unreadable. The open-source sensor MCU is recommended first for stock 11.x; migration from 17.1.2.3 or 17.x is not currently recommended. Wi-Fi OTA does not update the sensor MCU."
+      },
+      "ota_summary": {
+        "zh-CN": "分别显示联网模块和传感器 MCU 的原始版本，无法读取时显示未知。原厂 11.x 优先推荐开源主控；17.1.2.3 / 17.x 暂不建议迁移。Wi-Fi OTA 不包含主控升级。",
+        "en": "Show the original Wi-Fi module and sensor MCU versions separately, or unknown when unreadable. The open-source sensor MCU is recommended first for stock 11.x; migration from 17.1.2.3 or 17.x is not currently recommended. Wi-Fi OTA does not update the sensor MCU."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "cd0d5596fe07dc2ba613f6d26c6463f3e1f4209af3ac49b02176b68c1bb03b09"
+      },
+      "source_refs": [
+        "v1.0.0:b008"
+      ]
+    },
+    {
+      "change_id": "v1-m1-sensor-pm-smoothing",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "sensor-mcu"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "传感器 MCU 的 PM2.5 平滑",
+        "en": "PM2.5 smoothing in the sensor MCU"
+      },
+      "description": {
+        "zh-CN": "需单独升级开源传感器 MCU：PM2.5 使用三点中值与自适应平滑抑制尖峰，持续升高时快速跟随；原始传感器帧仍可查询。本项不包含在 Wi-Fi OTA 中。",
+        "en": "Requires a separate open-source sensor MCU update: a three-sample median and adaptive smoothing suppress PM2.5 spikes while following sustained increases quickly. Raw sensor frames remain available. This feature is not included in Wi-Fi OTA."
+      },
+      "ota_summary": {
+        "zh-CN": "需单独升级开源传感器 MCU：PM2.5 使用三点中值与自适应平滑抑制尖峰，持续升高时快速跟随；原始传感器帧仍可查询。本项不包含在 Wi-Fi OTA 中。",
+        "en": "Requires a separate open-source sensor MCU update: a three-sample median and adaptive smoothing suppress PM2.5 spikes while following sustained increases quickly. Raw sensor frames remain available. This feature is not included in Wi-Fi OTA."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "1eeb483b692c748e3df673f448d4d85eaaf1285ef294617403a1fea31f944d77"
+      },
+      "source_refs": [
+        "v1.0.0:b009"
+      ]
+    },
+    {
+      "change_id": "v1-m1-optional-sensor-buzzer",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "可选的甲醛与 PM2.5 蜂鸣报警",
+        "en": "Optional formaldehyde and PM2.5 buzzer alarms"
+      },
+      "description": {
+        "zh-CN": "甲醛、PM2.5 超阈值蜂鸣报警分别开关，默认关闭。需支持该能力的开源传感器 MCU；色灯、闹钟和手动提示音分别控制。",
+        "en": "Enable formaldehyde and PM2.5 threshold buzzer alarms separately; both are off by default. A capable open-source sensor MCU is required. Lamp colors, scheduled alarms and manual tones remain separate controls."
+      },
+      "ota_summary": {
+        "zh-CN": "甲醛、PM2.5 超阈值蜂鸣报警分别开关，默认关闭。需支持该能力的开源传感器 MCU；色灯、闹钟和手动提示音分别控制。",
+        "en": "Enable formaldehyde and PM2.5 threshold buzzer alarms separately; both are off by default. A capable open-source sensor MCU is required. Lamp colors, scheduled alarms and manual tones remain separate controls."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "6fae0878904de13fc2597948724f5ef14967c08d63b579f0c0ea8bd7415ad6ec"
+      },
+      "source_refs": [
+        "v1.0.0:b010"
+      ]
+    },
+    {
+      "change_id": "v1-m1-button-actions",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "双击停止闹钟与整体切换读数",
+        "en": "Double-press alarm stop and whole-display switching"
+      },
+      "description": {
+        "zh-CN": "配套新版开源传感器 MCU 后，单击开关屏幕。闹钟响铃时，双击只停止闹钟；未响铃时，按配置同时切换甲醛和 PM2.5 区域的原始 / 用户读数。",
+        "en": "With the matching new open-source sensor MCU, a single press toggles the screen. When an alarm is ringing, a double press only stops it. Otherwise, when configured, it switches both formaldehyde and PM2.5 regions between original and user readings."
+      },
+      "ota_summary": {
+        "zh-CN": "配套新版开源传感器 MCU 后，单击开关屏幕。闹钟响铃时，双击只停止闹钟；未响铃时，按配置同时切换甲醛和 PM2.5 区域的原始 / 用户读数。",
+        "en": "With the matching new open-source sensor MCU, a single press toggles the screen. When an alarm is ringing, a double press only stops it. Otherwise, when configured, it switches both formaldehyde and PM2.5 regions between original and user readings."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "fabaf77f3d0fed8c5de24b38632a24b30bf6d6cef14b1c12611a726be3c2240c"
+      },
+      "source_refs": [
+        "v1.0.0:b011"
+      ]
+    },
+    {
+      "change_id": "v1-m1-segmented-reset",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "分段长按重新配网与恢复出厂",
+        "en": "Separate long-press reprovisioning and factory reset"
+      },
+      "description": {
+        "zh-CN": "配套新版开源传感器 MCU 后，按住 3 秒至未满 10 秒松手，清除 Wi-Fi 与网页密码并保留 MQTT 等设置；按满 10 秒恢复出厂，主控独立音乐保留。保存成功后两颗 MCU 一起重启，离线也可使用。",
+        "en": "With the matching new open-source sensor MCU, release after holding for at least 3 but under 10 seconds to clear Wi-Fi and the web password while keeping MQTT and other settings. Hold for 10 seconds to factory-reset network-module settings; independent sensor MCU music is retained. Both MCUs restart after settings are saved, including while offline."
+      },
+      "ota_summary": {
+        "zh-CN": "配套新版开源传感器 MCU 后，按住 3 秒至未满 10 秒松手，清除 Wi-Fi 与网页密码并保留 MQTT 等设置；按满 10 秒恢复出厂，主控独立音乐保留。保存成功后两颗 MCU 一起重启，离线也可使用。",
+        "en": "With the matching new open-source sensor MCU, release after holding for at least 3 but under 10 seconds to clear Wi-Fi and the web password while keeping MQTT and other settings. Hold for 10 seconds to factory-reset network-module settings; independent sensor MCU music is retained. Both MCUs restart after settings are saved, including while offline."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "fdcf633f630bebd824a941e8e408901e58577921c275327f4fd0b848f1ed3671"
+      },
+      "source_refs": [
+        "v1.0.0:b012"
+      ]
+    },
+    {
+      "change_id": "v1-m1-dual-display-sources",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "双区域用户读数与独立有效期",
+        "en": "User readings and independent expiry for both regions"
+      },
+      "description": {
+        "zh-CN": "甲醛 / PM2.5 两区域分别选择本机传感器、已配对局域网设备、已授权 MQTT 设备或 API，独立配置颜色和有效期，双击整体切换。缺失、过期、离线或无效时仅对应区域回退，不改变原始采集和报警。需配套支持此功能的独立传感器主控。",
+        "en": "Configure local sensors, paired LAN devices, authorized MQTT devices or API data separately for the formaldehyde and PM2.5 regions, with independent colors and expiry. Double-press switches both regions together. Missing, expired, offline or invalid data restores only its region without changing acquisition or alarms. A capable separately updated sensor MCU is required."
+      },
+      "ota_summary": {
+        "zh-CN": "甲醛 / PM2.5 两区域分别选择本机传感器、已配对局域网设备、已授权 MQTT 设备或 API，独立配置颜色和有效期，双击整体切换。缺失、过期、离线或无效时仅对应区域回退，不改变原始采集和报警。需配套支持此功能的独立传感器主控。",
+        "en": "Configure local sensors, paired LAN devices, authorized MQTT devices or API data separately for the formaldehyde and PM2.5 regions, with independent colors and expiry. Double-press switches both regions together. Missing, expired, offline or invalid data restores only its region without changing acquisition or alarms. A capable separately updated sensor MCU is required."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "4850ba374a791bd71e46d58dfae4afb8fde7a5d10f379f5e9dac0f89037b8ae8"
+      },
+      "source_refs": [
+        "v1.0.0:b013"
+      ]
+    },
+    {
+      "change_id": "v1-tc1-a1-typed-display-producers",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "tc1",
+          "a1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "发布 TC1 功率与 A1 生效输出数据",
+        "en": "Publish TC1 power and effective A1 fan output"
+      },
+      "description": {
+        "zh-CN": "为 M1 用户读数提供带身份、新鲜度与有效标记的 TC1 功率和 A1 主风机生效输出数据。A1 为 0–100% 的当前输出，新风变体相同，不表示 RPM；不可用读数不伪装成零。",
+        "en": "Provide M1 user readings with TC1 power and effective A1 primary-fan output carrying identity, freshness and validity. A1 reports the current 0–100% output, including the fresh-air variant, rather than RPM. Unavailable readings are not represented as zero."
+      },
+      "ota_summary": {
+        "zh-CN": "为 M1 用户读数提供带身份、新鲜度与有效标记的 TC1 功率和 A1 主风机生效输出数据。A1 为 0–100% 的当前输出，新风变体相同，不表示 RPM；不可用读数不伪装成零。",
+        "en": "Provide M1 user readings with TC1 power and effective A1 primary-fan output carrying identity, freshness and validity. A1 reports the current 0–100% output, including the fresh-air variant, rather than RPM. Unavailable readings are not represented as zero."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "5d165662926846050d13b05d6d3f900b1c1c1e778450dd3ecb4efebcb7bee331"
+      },
+      "source_refs": [
+        "v1.0.0:b014"
+      ]
+    },
+    {
+      "change_id": "v1-m1-display-modes-glyphs",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "按物理屏幕选择数字模式与原厂标识",
+        "en": "Display modes and native legends for the physical screen"
+      },
+      "description": {
+        "zh-CN": "PM 区域仅三位整数，最高 999；甲醛区域可选整数、千位自动缩放、两位小数、一位小数末位补零或固定除以 1000。小数点固定在第一位之后；字样与原生单位分别显隐，单位仍为 mg/m³ 和 µg/m³。本地 / MQTT 正数溢出按模式上限显示。",
+        "en": "The PM region supports three integer digits up to 999. The formaldehyde region offers integer, automatic kilo scaling, two decimals, one decimal with a trailing zero, or fixed division by 1000. Its decimal point is fixed after the first digit. Legends and native units have separate visibility controls; the units remain mg/m³ and µg/m³. Positive local or MQTT overflow is limited to the selected mode maximum."
+      },
+      "ota_summary": {
+        "zh-CN": "PM 区域仅三位整数，最高 999；甲醛区域可选整数、千位自动缩放、两位小数、一位小数末位补零或固定除以 1000。小数点固定在第一位之后；字样与原生单位分别显隐，单位仍为 mg/m³ 和 µg/m³。本地 / MQTT 正数溢出按模式上限显示。",
+        "en": "The PM region supports three integer digits up to 999. The formaldehyde region offers integer, automatic kilo scaling, two decimals, one decimal with a trailing zero, or fixed division by 1000. Its decimal point is fixed after the first digit. Legends and native units have separate visibility controls; the units remain mg/m³ and µg/m³. Positive local or MQTT overflow is limited to the selected mode maximum."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "6f2cf2c9c067f9fbbbe37bb92d9589eb0d39589c5d3adb9394667a2c2f4cda7c"
+      },
+      "source_refs": [
+        "v1.0.0:b015"
+      ]
+    },
+    {
+      "change_id": "v1-m1-independent-lamp-segments",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "每区域九段灯独立配置",
+        "en": "Nine independent lamp segments per region"
+      },
+      "description": {
+        "zh-CN": "每区域左中右三个灯位的红、绿、黄九段可独立开关，并可在同一位置同时开启多色；也可按显示转换前的原始物理值和两个阈值自动配色。",
+        "en": "Control the red, green and yellow segments independently at each of three positions in each region, including multiple colors at one position. Alternatively, apply two thresholds to the original physical value before display conversion."
+      },
+      "ota_summary": {
+        "zh-CN": "每区域左中右三个灯位的红、绿、黄九段可独立开关，并可在同一位置同时开启多色；也可按显示转换前的原始物理值和两个阈值自动配色。",
+        "en": "Control the red, green and yellow segments independently at each of three positions in each region, including multiple colors at one position. Alternatively, apply two thresholds to the original physical value before display conversion."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "5a6ebf1242f530a3405161059648e918b35bf3214fe1f4912aad0d8439c71036"
+      },
+      "source_refs": [
+        "v1.0.0:b016"
+      ]
+    },
+    {
+      "change_id": "v1-m1-raw-display-api",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "API 直接写入数字与完整灯段",
+        "en": "Write raw digits and complete lamp segments through the API"
+      },
+      "description": {
+        "zh-CN": "display_value.set 按已保存的 API 区域配置接收 0–999 整数、小数点、字样、原生单位显隐及九段灯，不缩放、舍入、钳位或套用阈值配色；PM 禁止小数点。小数或越界数字拒绝。写入需匹配修订号与有效期，TTL 0 单独清除该区域。",
+        "en": "For a saved API-region configuration, display_value.set accepts an integer from 0 to 999, decimal point, legend and native-unit visibility, and all nine lamp segments. It does not scale, round, clamp or apply threshold colors. PM decimal points, fractional numbers and out-of-range digits are rejected. Writes must match the revision and expiry; TTL 0 clears only that region."
+      },
+      "ota_summary": {
+        "zh-CN": "display_value.set 按已保存的 API 区域配置接收 0–999 整数、小数点、字样、原生单位显隐及九段灯，不缩放、舍入、钳位或套用阈值配色；PM 禁止小数点。小数或越界数字拒绝。写入需匹配修订号与有效期，TTL 0 单独清除该区域。",
+        "en": "For a saved API-region configuration, display_value.set accepts an integer from 0 to 999, decimal point, legend and native-unit visibility, and all nine lamp segments. It does not scale, round, clamp or apply threshold colors. PM decimal points, fractional numbers and out-of-range digits are rejected. Writes must match the revision and expiry; TTL 0 clears only that region."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "9ef5efd67f3256810b492145a26ced167369178c0ae94458950aa56d51d6050d"
+      },
+      "source_refs": [
+        "v1.0.0:b017"
+      ]
+    },
+    {
+      "change_id": "v1-m1-display-compatibility",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "显示能力协商、修订校验与配置迁移",
+        "en": "Display negotiation, revision checks and configuration migration"
+      },
+      "description": {
+        "zh-CN": "新显示配置使用 revision/CAS，并支持带冒号或连续形式、大小写不敏感的 MAC。先探测主控能力再启用新接口，保留冻结的旧 API / UART；支持已定义旧配置与备份迁移，未知未来布局进入恢复路径。",
+        "en": "New display configuration uses revision/CAS checks and accepts compact or colon-separated MAC addresses in either case. Probe the sensor MCU before enabling new interfaces and retain the frozen legacy API and UART behavior. Defined older configurations and backups migrate; unknown future layouts enter recovery."
+      },
+      "ota_summary": {
+        "zh-CN": "新显示配置使用 revision/CAS，并支持带冒号或连续形式、大小写不敏感的 MAC。先探测主控能力再启用新接口，保留冻结的旧 API / UART；支持已定义旧配置与备份迁移，未知未来布局进入恢复路径。",
+        "en": "New display configuration uses revision/CAS checks and accepts compact or colon-separated MAC addresses in either case. Probe the sensor MCU before enabling new interfaces and retain the frozen legacy API and UART behavior. Defined older configurations and backups migrate; unknown future layouts enter recovery."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "ffc2565232729c2f5dc072f06f4110ca4147e11e8dc64818535c9a8111818f05"
+      },
+      "source_refs": [
+        "v1.0.0:b018"
+      ]
+    },
+    {
+      "change_id": "v1-daikin-hub-variant",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "独立大金中枢与共用网页登录",
+        "en": "Separate DAIKIN hub and shared web login"
+      },
+      "description": {
+        "zh-CN": "独立 hub 变体在传感器功能上增加局域网设备发现、配对与管理。中枢共用设备网页密码和会话；未设密码可直接进入，已有密码仍需认证。中枢用户名用于主题命名空间，不提供云端邮箱注册或 GitHub 登录。",
+        "en": "The separate hub variant adds LAN discovery, pairing and management to sensor functions. It shares the device web password and session: an unset password permits direct access, while an existing password requires authentication. The hub username remains a topic namespace; cloud email registration and GitHub login are not included."
+      },
+      "ota_summary": {
+        "zh-CN": "独立 hub 变体在传感器功能上增加局域网设备发现、配对与管理。中枢共用设备网页密码和会话；未设密码可直接进入，已有密码仍需认证。中枢用户名用于主题命名空间，不提供云端邮箱注册或 GitHub 登录。",
+        "en": "The separate hub variant adds LAN discovery, pairing and management to sensor functions. It shares the device web password and session: an unset password permits direct access, while an existing password requires authentication. The hub username remains a topic namespace; cloud email registration and GitHub login are not included."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "4bcd5b08864de0c6b9b3d007f1a497b8b30b3c11ea7d6dca6b1d00f5e02dcbec"
+      },
+      "source_refs": [
+        "v1.0.0:b019"
+      ]
+    },
+    {
+      "change_id": "v1-daikin-hub-webui",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "中枢设备与服务网页设置",
+        "en": "Hub device and service settings"
+      },
+      "description": {
+        "zh-CN": "从设备网页打开中枢管理，设置局域网设备、上游 MQTT、巴法云映射与可选 Apple 家庭；控制页与中枢页共用设备网页登录会话。",
+        "en": "Open Hub management from the device page to configure LAN devices, upstream MQTT, Bemfa mappings and optional Apple Home. Control and hub pages share the device web session."
+      },
+      "ota_summary": {
+        "zh-CN": "从设备网页打开中枢管理，设置局域网设备、上游 MQTT、巴法云映射与可选 Apple 家庭；控制页与中枢页共用设备网页登录会话。",
+        "en": "Open Hub management from the device page to configure LAN devices, upstream MQTT, Bemfa mappings and optional Apple Home. Control and hub pages share the device web session."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "dbd9a9d692a83ab00f9df79ec03f8e0edc55ab2c6adcddc6eab3834054869c41"
+      },
+      "source_refs": [
+        "v1.0.0:b020"
+      ]
+    },
+    {
+      "change_id": "v1-daikin-local-broker",
+      "version": "1.0.0",
+      "type": "breaking",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "withdrawn"
+      },
+      "title": {
+        "zh-CN": "移除中枢内置 MQTT Broker",
+        "en": "Remove the embedded hub MQTT broker"
+      },
+      "description": {
+        "zh-CN": "中枢不再提供本地 TCP 1883 或 WebSocket MQTT Broker。设备、Home Assistant 和其它 MQTT 客户端改用外部 Broker；中枢通过配对 UDP 管理设备。",
+        "en": "The hub no longer provides a local TCP 1883 or WebSocket MQTT broker. Devices, Home Assistant and other MQTT clients use an external broker; the hub manages devices over paired UDP."
+      },
+      "ota_summary": {
+        "zh-CN": "中枢不再提供本地 TCP 1883 或 WebSocket MQTT Broker。设备、Home Assistant 和其它 MQTT 客户端改用外部 Broker；中枢通过配对 UDP 管理设备。",
+        "en": "The hub no longer provides a local TCP 1883 or WebSocket MQTT broker. Devices, Home Assistant and other MQTT clients use an external broker; the hub manages devices over paired UDP."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "39d16c97c813acdfb757d718b04374c0b6577850346ab6aee8025d4d7e931289"
+      },
+      "source_refs": [
+        "v1.0.0:b021"
+      ]
+    },
+    {
+      "change_id": "v1-daikin-broker-client-forwarding",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "上游 MQTT 与巴法云转发",
+        "en": "Upstream MQTT and Bemfa forwarding"
+      },
+      "description": {
+        "zh-CN": "中枢作为上游 MQTT 客户端工作，按方向和主题映射转发事件，并支持巴法云设备映射。局域网设备通过 mDNS 发现和配对 UDP 连接，不再依赖内置 Broker。",
+        "en": "The hub acts as an upstream MQTT client, forwarding events by direction and topic mapping and supporting Bemfa device mappings. LAN devices use mDNS discovery and paired UDP instead of an embedded broker."
+      },
+      "ota_summary": {
+        "zh-CN": "中枢作为上游 MQTT 客户端工作，按方向和主题映射转发事件，并支持巴法云设备映射。局域网设备通过 mDNS 发现和配对 UDP 连接，不再依赖内置 Broker。",
+        "en": "The hub acts as an upstream MQTT client, forwarding events by direction and topic mapping and supporting Bemfa device mappings. LAN devices use mDNS discovery and paired UDP instead of an embedded broker."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "5f674261637693737d41596137e404ca96464c21691438a51c8270813f562eb0"
+      },
+      "source_refs": [
+        "v1.0.0:b022"
+      ]
+    },
+    {
+      "change_id": "v1-daikin-hap-bridge",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "可选 HomeKit HAP 桥接",
+        "en": "Optional HomeKit HAP bridge"
+      },
+      "description": {
+        "zh-CN": "默认关闭的实验性 HAP 桥接支持 TC1 六路开关、S30 插座、A1 净化器及新风、灯与 M1 / 大金 G2 / G3 的有效传感器。净化器采用标准 AirPurifier 服务；与灯编组后的主体图标由 Apple 家庭决定。HomeKit 配对独立保存，不包含在普通配置备份中；不包含 Matter。",
+        "en": "Experimental HAP bridging is off by default and supports six TC1 switches, S30 sockets, A1 purifiers and fresh-air variants, lights and valid M1 / DAIKIN G2 / G3 sensors. Purifiers use the standard AirPurifier service; Apple Home controls the primary icon when grouped with a light. HomeKit pairing is stored separately and excluded from ordinary configuration backups. Matter is not included."
+      },
+      "ota_summary": {
+        "zh-CN": "默认关闭的实验性 HAP 桥接支持 TC1 六路开关、S30 插座、A1 净化器及新风、灯与 M1 / 大金 G2 / G3 的有效传感器。净化器采用标准 AirPurifier 服务；与灯编组后的主体图标由 Apple 家庭决定。HomeKit 配对独立保存，不包含在普通配置备份中；不包含 Matter。",
+        "en": "Experimental HAP bridging is off by default and supports six TC1 switches, S30 sockets, A1 purifiers and fresh-air variants, lights and valid M1 / DAIKIN G2 / G3 sensors. Purifiers use the standard AirPurifier service; Apple Home controls the primary icon when grouped with a light. HomeKit pairing is stored separately and excluded from ordinary configuration backups. Matter is not included."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "210405d36ef9cb5bc532dbbdc9eb44d04bdd7efc543e0519453a458d88558438"
+      },
+      "source_refs": [
+        "v1.0.0:b023"
+      ]
+    },
+    {
+      "change_id": "v1-daikin-explicit-hub-conversion",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "明确确认后从普通版切换中枢",
+        "en": "Explicitly confirmed conversion from full to hub"
+      },
+      "description": {
+        "zh-CN": "声明支持的新 full 可通过本地 HTTP、网页密码、匹配实际 OTA 容量的 hub 签名镜像和明确确认切换，保留联网配置。普通升级仍隔离变体，不支持直接 hub → full OTA。",
+        "en": "A new full image advertising this capability can switch to hub over local HTTP using the web password, a signed hub image that fits the installed OTA slot, and explicit confirmation. Network settings are retained. Ordinary updates remain variant-isolated; direct hub-to-full OTA is unsupported."
+      },
+      "ota_summary": {
+        "zh-CN": "声明支持的新 full 可通过本地 HTTP、网页密码、匹配实际 OTA 容量的 hub 签名镜像和明确确认切换，保留联网配置。普通升级仍隔离变体，不支持直接 hub → full OTA。",
+        "en": "A new full image advertising this capability can switch to hub over local HTTP using the web password, a signed hub image that fits the installed OTA slot, and explicit confirmation. Network settings are retained. Ordinary updates remain variant-isolated; direct hub-to-full OTA is unsupported."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "1ee4d336f804c9a09758d1c5c8827b61bfeaa7ac974140d23c3e7af4b2237e10"
+      },
+      "source_refs": [
+        "v1.0.0:b024"
+      ]
+    },
+    {
+      "change_id": "v1-authenticated-backup-recovery",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "tc1",
+          "a1",
+          "m1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "完整配置备份、校验恢复与迁移保护",
+        "en": "Complete configuration backup, validated restore and migration protection"
+      },
+      "description": {
+        "zh-CN": "通过有网页密码的局域网 HTTP 下载或恢复完整配置，先核对机型、变体、配置版本及内容。保留已支持的旧配置迁移；不支持布局保留原存储并要求确认后清空。M1 MCU 音乐和 HomeKit 配对不在普通 Wi-Fi 配置备份中。",
+        "en": "Download or restore complete configuration over local HTTP protected by the web password after validating the model, variant, configuration version and contents. Retain supported older-configuration migration paths. Unsupported layouts preserve storage and require confirmation before clearing it. M1 MCU music and HomeKit pairing are excluded from ordinary Wi-Fi configuration backups."
+      },
+      "ota_summary": {
+        "zh-CN": "通过有网页密码的局域网 HTTP 下载或恢复完整配置，先核对机型、变体、配置版本及内容。保留已支持的旧配置迁移；不支持布局保留原存储并要求确认后清空。M1 MCU 音乐和 HomeKit 配对不在普通 Wi-Fi 配置备份中。",
+        "en": "Download or restore complete configuration over local HTTP protected by the web password after validating the model, variant, configuration version and contents. Retain supported older-configuration migration paths. Unsupported layouts preserve storage and require confirmation before clearing it. M1 MCU music and HomeKit pairing are excluded from ordinary Wi-Fi configuration backups."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "778be23fe921ac945e5df538a5f256b4032bbfe94fe4f50a05712be644a3c7df"
+      },
+      "source_refs": [
+        "v1.0.0:b025"
+      ]
+    },
+    {
+      "change_id": "v1-browser-inline-upgrade-diff",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "tc1",
+          "a1",
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "fresh-air"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "在升级页核对跨版本差异",
+        "en": "Check cross-version differences within the update page"
+      },
+      "description": {
+        "zh-CN": "TC1、A1、M1 的设备升级页由浏览器直接获取并校验结构化发布资料，计算当前到目标版本的差异；资料不可用时说明原因并额外确认后才能继续。已有官网差异入口保留。",
+        "en": "On TC1, A1 and M1, the browser fetches and verifies structured release data in the device update page and computes changes from the current to the target version. If data is unavailable, the page explains the reason and requires additional confirmation before proceeding. The existing website comparison link remains available."
+      },
+      "ota_summary": {
+        "zh-CN": "TC1、A1、M1 的设备升级页由浏览器直接获取并校验结构化发布资料，计算当前到目标版本的差异；资料不可用时说明原因并额外确认后才能继续。已有官网差异入口保留。",
+        "en": "On TC1, A1 and M1, the browser fetches and verifies structured release data in the device update page and computes changes from the current to the target version. If data is unavailable, the page explains the reason and requires additional confirmation before proceeding. The existing website comparison link remains available."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "c65ed12e8759bbb0c265ae83ba22bda828c01dffb92aa4e9d909a48e45c58a08"
+      },
+      "source_refs": [
+        "v1.0.0:b026"
+      ]
+    },
+    {
+      "change_id": "v1-emw3080-release-memory",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "a1",
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "EMW3080 release 分配保留 8 KiB",
+        "en": "8 KiB allocation reserve for EMW3080 release images"
+      },
+      "description": {
+        "zh-CN": "A1 / M1 release 的内存分配保留底线调整为 8 KiB。不适用于 TC1 的 EMW3031 或大金 ESP32。",
+        "en": "A1 and M1 release images lower the memory allocation reserve to 8 KiB. This does not apply to TC1’s EMW3031 or Daikin’s ESP32."
+      },
+      "ota_summary": {
+        "zh-CN": "A1 / M1 release 的内存分配保留底线调整为 8 KiB。不适用于 TC1 的 EMW3031 或大金 ESP32。",
+        "en": "A1 and M1 release images lower the memory allocation reserve to 8 KiB. This does not apply to TC1’s EMW3031 or Daikin’s ESP32."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "f062baed390e91e632aa55b24ed55130fad85fa49fd61104bdf90b1718272332"
+      },
+      "source_refs": [
+        "v1.0.0:b027"
+      ]
+    },
+    {
+      "change_id": "v1-open-source-development",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "service",
+      "scope": {
+        "models": [
+          "tc1",
+          "a1",
+          "m1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "开源、归档与跨仓库开发规范",
+        "en": "Open source, archives and cross-repository development rules"
+      },
+      "description": {
+        "zh-CN": "归档 v0.9.x，整理 CI、Issue / PR 模板与接口、配置迁移及固定依赖的贡献规范。维护代码采用 GPL-3.0，第三方声明保留；这些仓库与开发资料变更不属于设备 OTA 功能。",
+        "en": "Archive v0.9.x and organize CI, issue and PR templates, and contribution rules for interfaces, configuration migration and pinned dependencies. Maintained code uses GPL-3.0 while third-party notices are retained. Repository and development-material changes are separate from device OTA features."
+      },
+      "ota_summary": {
+        "zh-CN": "归档 v0.9.x，整理 CI、Issue / PR 模板与接口、配置迁移及固定依赖的贡献规范。维护代码采用 GPL-3.0，第三方声明保留；这些仓库与开发资料变更不属于设备 OTA 功能。",
+        "en": "Archive v0.9.x and organize CI, issue and PR templates, and contribution rules for interfaces, configuration migration and pinned dependencies. Maintained code uses GPL-3.0 while third-party notices are retained. Repository and development-material changes are separate from device OTA features."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "83c2b4d7f3302f16d319053a806e72db1051b55e4e3e08f1f4f4427d6d1ff38c"
+      },
+      "source_refs": [
+        "v1.0.0:b028"
+      ]
+    },
+    {
+      "change_id": "v1-device-guides-protocol-pages",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "service",
+      "scope": {
+        "models": [
+          "tc1",
+          "a1",
+          "m1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "按设备组织指南与集中开发者协议",
+        "en": "Device-organized guides and shared developer protocols"
+      },
+      "description": {
+        "zh-CN": "用户指南按 M1 / A1 / TC1 / 大金组织安装、升级、使用与恢复，保持 Pages 风格；接口、协议、配置兼容性和样例集中提供中英文开发者 Pages。",
+        "en": "Organize installation, updates, daily use and recovery guides by M1, A1, TC1 and Daikin while retaining the Pages style. Centralized Chinese and English developer Pages document interfaces, protocols, configuration compatibility and examples."
+      },
+      "ota_summary": {
+        "zh-CN": "用户指南按 M1 / A1 / TC1 / 大金组织安装、升级、使用与恢复，保持 Pages 风格；接口、协议、配置兼容性和样例集中提供中英文开发者 Pages。",
+        "en": "Organize installation, updates, daily use and recovery guides by M1, A1, TC1 and Daikin while retaining the Pages style. Centralized Chinese and English developer Pages document interfaces, protocols, configuration compatibility and examples."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "3235dc5467f478be861c6e73bb0f69f7530513a74217eb8b9e86e62e41978380"
+      },
+      "source_refs": [
+        "v1.0.0:b029"
+      ]
+    },
+    {
+      "change_id": "v1-m1-display-profile-webui",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "双区域来源、数字与九段灯设置页",
+        "en": "Settings for two display regions, digits and nine lamp segments"
+      },
+      "description": {
+        "zh-CN": "设备完整网页可为甲醛、PM 区域独立选择来源、有效期、数字模式、字样 / 单位及九段灯，并设置双击整体切换；显示传感器 MCU 支持情况和确认状态，提供固定玻璃布局预览。应用新显示需使用支持该能力的 MCU。",
+        "en": "The full device page configures each formaldehyde or PM region’s source, expiry, display mode, legend and unit visibility, and nine lamp segments, plus whole-display switching on double press. It shows sensor MCU support and confirmation status and previews the fixed glass layout. Applying the new display requires a capable MCU."
+      },
+      "ota_summary": {
+        "zh-CN": "设备完整网页可为甲醛、PM 区域独立选择来源、有效期、数字模式、字样 / 单位及九段灯，并设置双击整体切换；显示传感器 MCU 支持情况和确认状态，提供固定玻璃布局预览。应用新显示需使用支持该能力的 MCU。",
+        "en": "The full device page configures each formaldehyde or PM region’s source, expiry, display mode, legend and unit visibility, and nine lamp segments, plus whole-display switching on double press. It shows sensor MCU support and confirmation status and previews the fixed glass layout. Applying the new display requires a capable MCU."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "0125d18b456610bf49bb6ab45efa1d632f16330d9e2b9bef64fcd6124c658e29"
+      },
+      "source_refs": [
+        "v1.0.0:b030"
+      ]
+    },
+    {
+      "change_id": "v1-m1-sensor-buzzer-webui",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "分别设置两种传感器蜂鸣报警",
+        "en": "Separate controls for both sensor buzzer alarms"
+      },
+      "description": {
+        "zh-CN": "网页分别提供甲醛和 PM2.5 超阈值蜂鸣开关，默认关闭，保存后核对配置；不支持的旧主控明确显示能力限制。",
+        "en": "The page provides separate formaldehyde and PM2.5 threshold buzzer switches, both off by default, and checks saved configuration. Older unsupported sensor MCUs show the capability limitation."
+      },
+      "ota_summary": {
+        "zh-CN": "网页分别提供甲醛和 PM2.5 超阈值蜂鸣开关，默认关闭，保存后核对配置；不支持的旧主控明确显示能力限制。",
+        "en": "The page provides separate formaldehyde and PM2.5 threshold buzzer switches, both off by default, and checks saved configuration. Older unsupported sensor MCUs show the capability limitation."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "45f1f2778804f0210395080a48b5a6fc83e54d921303f9339faa7213f827e06f"
+      },
+      "source_refs": [
+        "v1.0.0:b031"
+      ]
+    },
+    {
+      "change_id": "v1-daikin-hub-self-device",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "中枢本机自动显示在设备列表",
+        "en": "Show the hub itself in the device list"
+      },
+      "description": {
+        "zh-CN": "中枢自动出现在自己的设备列表，可查看本机传感器并进入设备设置。本机项不占用 12 个外部设备名额，不能被当作外部设备删除或重复注册。",
+        "en": "The hub automatically appears in its own device list, where its local sensors and device settings are accessible. The self entry does not consume any of the 12 external-device slots and cannot be removed or registered again as an external device."
+      },
+      "ota_summary": {
+        "zh-CN": "中枢自动出现在自己的设备列表，可查看本机传感器并进入设备设置。本机项不占用 12 个外部设备名额，不能被当作外部设备删除或重复注册。",
+        "en": "The hub automatically appears in its own device list, where its local sensors and device settings are accessible. The self entry does not consume any of the 12 external-device slots and cannot be removed or registered again as an external device."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "ea6041cb6af28372d9c8a91381b120ed1604b727f8d1c4a5954c014a790663ee"
+      },
+      "source_refs": [
+        "v1.0.0:b032"
+      ]
+    },
+    {
+      "change_id": "v1-daikin-hub-optional-web-password",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "中枢管理不再强制先设网页密码",
+        "en": "Make the device web password optional for hub setup"
+      },
+      "description": {
+        "zh-CN": "中枢管理不强制预先设置网页密码；未设密码直接进入，已有密码必须认证。中枢共用设备网页登录，不再保留独立的中枢登录密码；UDP 配对与外部 Broker 凭据仍分别配置。",
+        "en": "Hub management does not require setting a web password first. An unset password permits direct access; an existing password requires authentication. The hub shares device web login without a separate hub login password. UDP pairing and external-broker credentials remain separate."
+      },
+      "ota_summary": {
+        "zh-CN": "中枢管理不强制预先设置网页密码；未设密码直接进入，已有密码必须认证。中枢共用设备网页登录，不再保留独立的中枢登录密码；UDP 配对与外部 Broker 凭据仍分别配置。",
+        "en": "Hub management does not require setting a web password first. An unset password permits direct access; an existing password requires authentication. The hub shares device web login without a separate hub login password. UDP pairing and external-broker credentials remain separate."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "472420b9b3e231aa82dbca136b91f52a178935ee22ccbdfc0f8152e3efda7238"
+      },
+      "source_refs": [
+        "v1.0.0:b033"
+      ]
+    },
+    {
+      "change_id": "v1-daikin-conversion-optional-web-password",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "普通版切换中枢无需预先设置网页密码",
+        "en": "Allow full-to-hub conversion without first setting a web password"
+      },
+      "description": {
+        "zh-CN": "声明转换能力的新版 full，可在局域网网页选择匹配的 hub 签名包并明确确认切换，无需先设置网页密码；已有密码时仍需鉴权。机型、签名和实际 OTA 容量检查继续有效，联网配置保留，普通 OTA 继续隔离变体且不支持直接 hub → full OTA。",
+        "en": "A new full image advertising conversion support can switch through its LAN web page using a matching signed hub image and explicit confirmation, without first setting a web password. An existing password still requires authentication. Model, signature and installed OTA-slot checks remain in force, network settings are retained, ordinary updates remain variant-isolated, and direct hub-to-full OTA is unsupported."
+      },
+      "ota_summary": {
+        "zh-CN": "声明转换能力的新版 full，可在局域网网页选择匹配的 hub 签名包并明确确认切换，无需先设置网页密码；已有密码时仍需鉴权。机型、签名和实际 OTA 容量检查继续有效，联网配置保留，普通 OTA 继续隔离变体且不支持直接 hub → full OTA。",
+        "en": "A new full image advertising conversion support can switch through its LAN web page using a matching signed hub image and explicit confirmation, without first setting a web password. An existing password still requires authentication. Model, signature and installed OTA-slot checks remain in force, network settings are retained, ordinary updates remain variant-isolated, and direct hub-to-full OTA is unsupported."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "41e7eee1818d0614fa70a452e2ec16293137d950baf4053a0cd064bfeccede5f"
+      },
+      "source_refs": [
+        "v1.0.0:b034"
+      ]
+    },
+    {
+      "change_id": "v1-daikin-homekit-status-refresh",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "HomeKit 设置后继续刷新真实状态",
+        "en": "Refresh HomeKit status after settings changes"
+      },
+      "description": {
+        "zh-CN": "调整 HomeKit 开关或重置配对后，网页在等待重启期间继续检查状态，服务恢复后显示当前状态，会话失效时提示重新登录。等待期间不重复提交开关或重置请求，也不显示过期配对码。",
+        "en": "After changing the HomeKit switch or resetting pairing, the page continues checking status while the hub restarts, shows the current state when the service returns, and prompts for sign-in if the session expires. It does not replay the change or reset request, or display stale pairing codes while waiting."
+      },
+      "ota_summary": {
+        "zh-CN": "调整 HomeKit 开关或重置配对后，网页在等待重启期间继续检查状态，服务恢复后显示当前状态，会话失效时提示重新登录。等待期间不重复提交开关或重置请求，也不显示过期配对码。",
+        "en": "After changing the HomeKit switch or resetting pairing, the page continues checking status while the hub restarts, shows the current state when the service returns, and prompts for sign-in if the session expires. It does not replay the change or reset request, or display stale pairing codes while waiting."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "011be62bee01206d4781edc43a82813f01c81943ab99227128c4dca1ab4bc0d3"
+      },
+      "source_refs": [
+        "v1.0.0:b035"
+      ]
+    },
+    {
+      "change_id": "v1-generic-number-field-publication",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1",
+          "a1",
+          "tc1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "设备按字段发布通用数值",
+        "en": "Publish generic numeric fields"
+      },
+      "description": {
+        "zh-CN": "设备以 MessagePack schema 3 分别发布保留的 metadata 描述和非保留的 state 实时值，按字段 ID 声明名称、类型和单位，并携带有效性与帧龄。TC1 功率、A1 生效风机输出以及大金 / M1 读数使用 number；A1 输出为 0–100%，不是 RPM。无效值不伪装成零。",
+        "en": "Devices use MessagePack schema 3 with retained metadata and non-retained state snapshots. Field IDs declare names, types and units; readings carry validity and age. TC1 power, effective A1 fan output and DAIKIN / M1 readings use number fields. A1 output is 0–100%, not RPM. Invalid values are not represented as zero."
+      },
+      "ota_summary": {
+        "zh-CN": "设备以 MessagePack schema 3 分别发布保留的 metadata 描述和非保留的 state 实时值，按字段 ID 声明名称、类型和单位，并携带有效性与帧龄。TC1 功率、A1 生效风机输出以及大金 / M1 读数使用 number；A1 输出为 0–100%，不是 RPM。无效值不伪装成零。",
+        "en": "Devices use MessagePack schema 3 with retained metadata and non-retained state snapshots. Field IDs declare names, types and units; readings carry validity and age. TC1 power, effective A1 fan output and DAIKIN / M1 readings use number fields. A1 output is 0–100%, not RPM. Invalid values are not represented as zero."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "b93b55b28a3f6196f72d9bfceccff95a74714563f5da21e8ab531a284994fe07"
+      },
+      "source_refs": [
+        "v1.0.0:b036"
+      ]
+    },
+    {
+      "change_id": "v1-m1-device-field-display-source",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "M1 按设备和字段选择数值来源",
+        "en": "Select M1 numeric sources by device and field"
+      },
+      "description": {
+        "zh-CN": "M1 显示配置 schema 4 按“设备 + 字段”选择来源，不再按设备型号适配。来源设备增加数值字段后，无需新增型号映射；M1 仅接受类型和单位匹配的 `number`。缺失、无效或 `unknown` 等非数值字段不再沿用旧读数；协议保留未来类型扩展。",
+        "en": "M1 display-profile schema 4 selects a source by device and field, rather than adapting to its model. New numeric fields do not need another model mapping. M1 accepts only `number` fields matching the configured type and unit. Missing, invalid, `unknown` or other nonnumeric fields revoke the old reading; the protocol reserves future type extensions."
+      },
+      "ota_summary": {
+        "zh-CN": "M1 显示配置 schema 4 按“设备 + 字段”选择来源，不再按设备型号适配。来源设备增加数值字段后，无需新增型号映射；M1 仅接受类型和单位匹配的 `number`。缺失、无效或 `unknown` 等非数值字段不再沿用旧读数；协议保留未来类型扩展。",
+        "en": "M1 display-profile schema 4 selects a source by device and field, rather than adapting to its model. New numeric fields do not need another model mapping. M1 accepts only `number` fields matching the configured type and unit. Missing, invalid, `unknown` or other nonnumeric fields revoke the old reading; the protocol reserves future type extensions."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "6efa72b923cb475c1c1fe3f5bd78eef2226f864c9a3002bb0b2e412e98daa387"
+      },
+      "source_refs": [
+        "v1.0.0:b037"
+      ]
+    },
+    {
+      "change_id": "m1-recovery-network-reset-rejection",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "M1 恢复模式不再误报网络重置成功",
+        "en": "Reject network-only resets during M1 configuration recovery"
+      },
+      "description": {
+        "zh-CN": "配置不兼容并要求确认清空时，M1 不再将仅重置网络误报为成功或向主控发送成功确认。原始存储继续保留，需在网页明确确认完整清空后重新配网；完整清空仍校验存储提交，失败可重试，结果不确定时继续阻止写入。本次不增加未知第三方配置布局的自动迁移。",
+        "en": "When an incompatible configuration requires confirmation, M1 rejects a network-only reset instead of reporting success or acknowledging success to the controller. Stored bytes remain intact until a full clear is explicitly confirmed in the page. Full clearing still checks the storage commit, allows retry after failure and blocks further writes when the commit result is uncertain. No automatic migration for unknown third-party layouts is added."
+      },
+      "ota_summary": {
+        "zh-CN": "配置不兼容并要求确认清空时，M1 不再将仅重置网络误报为成功或向主控发送成功确认。原始存储继续保留，需在网页明确确认完整清空后重新配网；完整清空仍校验存储提交，失败可重试，结果不确定时继续阻止写入。本次不增加未知第三方配置布局的自动迁移。",
+        "en": "When an incompatible configuration requires confirmation, M1 rejects a network-only reset instead of reporting success or acknowledging success to the controller. Stored bytes remain intact until a full clear is explicitly confirmed in the page. Full clearing still checks the storage commit, allows retry after failure and blocks further writes when the commit result is uncertain. No automatic migration for unknown third-party layouts is added."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "efa7eb4d69e8e39d437e4122b1bcdd653aa703efe172473176c3579d73186a68"
+      },
+      "source_refs": [
+        "v1.0.0:b038"
+      ]
+    },
+    {
+      "change_id": "web-maintenance-page-mount",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "m1",
+          "a1",
+          "tc1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "fresh-air",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "恢复完整网页的重启与恢复入口",
+        "en": "Restore the full maintenance page"
+      },
+      "description": {
+        "zh-CN": "修复完整网页“重启与恢复”页内容未挂载的问题，使重启、备份和完整清空按钮能够显示。A1 触摸按键长按无响应的问题仍需单独排查。",
+        "en": "Fix missing content in the full Reboot and recovery page so its reboot, backup and full-clear controls are shown. The A1 Wi-Fi touch-key hold issue remains a separate investigation."
+      },
+      "ota_summary": {
+        "zh-CN": "修复完整网页“重启与恢复”页内容未挂载的问题，使重启、备份和完整清空按钮能够显示。A1 触摸按键长按无响应的问题仍需单独排查。",
+        "en": "Fix missing content in the full Reboot and recovery page so its reboot, backup and full-clear controls are shown. The A1 Wi-Fi touch-key hold issue remains a separate investigation."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "a7e1e64ba1f859bc2722cc94988b8f818d17577f789a57145c0a50e511303e82"
+      },
+      "source_refs": [
+        "v1.0.0:b039"
+      ]
+    },
+    {
+      "change_id": "web-config-recovery-refresh",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "m1",
+          "a1",
+          "tc1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "清空后刷新恢复状态并继续配网",
+        "en": "Refresh recovery state after clearing and resume setup"
+      },
+      "description": {
+        "zh-CN": "完整网页与精简配网页在恢复过程中重新读取状态，明确确认清空后等待重启与重连，再退出旧迁移提示并更新表单，无需另开页面。等待时阻止重复提交，失败可重试；重启后仍需恢复时提示清空结果未确认。普通刷新保留未保存输入。",
+        "en": "The full and minimal setup pages refresh recovery state. After an explicitly confirmed clear, they wait for restart and reconnection before retiring the old migration warning and updating the form in the same tab. Duplicate submissions are blocked while waiting, failures can be retried, and a restart that still requires recovery is reported as an unconfirmed clear. Ordinary refreshes preserve unsaved input."
+      },
+      "ota_summary": {
+        "zh-CN": "完整网页与精简配网页在恢复过程中重新读取状态，明确确认清空后等待重启与重连，再退出旧迁移提示并更新表单，无需另开页面。等待时阻止重复提交，失败可重试；重启后仍需恢复时提示清空结果未确认。普通刷新保留未保存输入。",
+        "en": "The full and minimal setup pages refresh recovery state. After an explicitly confirmed clear, they wait for restart and reconnection before retiring the old migration warning and updating the form in the same tab. Duplicate submissions are blocked while waiting, failures can be retried, and a restart that still requires recovery is reported as an unconfirmed clear. Ordinary refreshes preserve unsaved input."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "4a5cded8e49fa81ad3185e9554788f6de97b1d7b530543dcb34ba47f3c38e48c"
+      },
+      "source_refs": [
+        "v1.0.0:b040"
+      ]
+    },
+    {
+      "change_id": "a1-short-touch-recovery",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "a1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "A1 新增短触组合恢复手势",
+        "en": "Add A1 recovery sequences for touch panels with short holds"
+      },
+      "description": {
+        "zh-CN": "A1 Wi-Fi 键新增保留恢复组合：短按两次，第 3 次按住 1–2 秒后松手重置网络；短按三次，第 4 次按住 1–2 秒后松手恢复出厂。每次短按须松手，相邻触碰间隔小于 0.3 秒，最终按住至少 1 秒、不足 5 秒，面板报告松开才触发。绕过童锁，不执行本组连击或最终长按的自定义动作；原 5 秒 / 10 秒恢复手势保留。恢复出厂清除用户设置。此补充手势仍为测试功能。",
+        "en": "A1 reserves two Wi-Fi recovery sequences: tap twice, hold the third touch for 1–2 seconds and release to reset networking; tap three times, hold the fourth touch for 1–2 seconds and release to factory reset. Release each short tap, leave less than 0.3 seconds between touches and hold the final touch for at least 1 second and less than 5 seconds. Recovery runs only when the panel reports release, bypasses child lock and suppresses custom click and hold actions for this sequence. Existing 5 / 10 second recovery holds remain. Factory reset clears user settings. These alternative sequences remain experimental."
+      },
+      "ota_summary": {
+        "zh-CN": "A1 Wi-Fi 键新增保留恢复组合：短按两次，第 3 次按住 1–2 秒后松手重置网络；短按三次，第 4 次按住 1–2 秒后松手恢复出厂。每次短按须松手，相邻触碰间隔小于 0.3 秒，最终按住至少 1 秒、不足 5 秒，面板报告松开才触发。绕过童锁，不执行本组连击或最终长按的自定义动作；原 5 秒 / 10 秒恢复手势保留。恢复出厂清除用户设置。此补充手势仍为测试功能。",
+        "en": "A1 reserves two Wi-Fi recovery sequences: tap twice, hold the third touch for 1–2 seconds and release to reset networking; tap three times, hold the fourth touch for 1–2 seconds and release to factory reset. Release each short tap, leave less than 0.3 seconds between touches and hold the final touch for at least 1 second and less than 5 seconds. Recovery runs only when the panel reports release, bypasses child lock and suppresses custom click and hold actions for this sequence. Existing 5 / 10 second recovery holds remain. Factory reset clears user settings. These alternative sequences remain experimental."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "26d4537d6c4ea76ab441ec4e5b843559819414b3a8844bba5bcb150da306cc4a"
+      },
+      "source_refs": [
+        "v1.0.0:b041"
+      ]
+    },
+    {
+      "change_id": "openiot-binary-default",
+      "version": "1.0.0",
+      "type": "breaking",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "HTTP、设备 MQTT 与 UDP 统一二进制接口",
+        "en": "Use binary HTTP, device MQTT and UDP interfaces"
+      },
+      "description": {
+        "zh-CN": "设备业务默认使用 MessagePack，内部使用类型化参数视图和直接输出；不再保留旧 JSON 业务接口。Home Assistant 独立保留精简 JSON。升级时必须使用本版配套网页及支持发现协议的云平台；旧 JSON 调用方需改造。",
+        "en": "Device business APIs default to MessagePack with typed parameter views and direct output. Legacy JSON business interfaces are removed; Home Assistant keeps a separate compact JSON path. Use the matching frontend and a discovery-aware cloud platform; migrate custom JSON clients."
+      },
+      "ota_summary": {
+        "zh-CN": "设备业务默认使用 MessagePack，内部使用类型化参数视图和直接输出；不再保留旧 JSON 业务接口。Home Assistant 独立保留精简 JSON。升级时必须使用本版配套网页及支持发现协议的云平台；旧 JSON 调用方需改造。",
+        "en": "Device business APIs default to MessagePack with typed parameter views and direct output. Legacy JSON business interfaces are removed; Home Assistant keeps a separate compact JSON path. Use the matching frontend and a discovery-aware cloud platform; migrate custom JSON clients."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "4af956b70ca776d1a58c469cf23b4557bf1a7a315d4c99a668dfdf0e633330b5"
+      },
+      "source_refs": [
+        "v1.0.0:b042"
+      ]
+    },
+    {
+      "change_id": "business-status-diagnostics-cache",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "完整业务状态缓存与独立诊断",
+        "en": "Cache complete business state and separate diagnostics"
+      },
+      "description": {
+        "zh-CN": "完整状态保持可读；状态变化标记后合并编码，无变化时复用缓存。运行时、HTTP、面板及串口诊断通过 diagnostics.get 按需读取，采用所有设备共用的固定数字字段编号，缺失字段跳过。原生 MQTT 与 HA 分别记录发送进度，命令回执独立处理。",
+        "en": "The complete business snapshot remains available. Changes are coalesced before encoding and unchanged snapshots are reused. Read runtime, HTTP, panel and serial diagnostics on demand with diagnostics.get and shared numeric field IDs, skipping absent fields. Native MQTT and HA track delivery separately; command receipts remain independent."
+      },
+      "ota_summary": {
+        "zh-CN": "完整状态保持可读；状态变化标记后合并编码，无变化时复用缓存。运行时、HTTP、面板及串口诊断通过 diagnostics.get 按需读取，采用所有设备共用的固定数字字段编号，缺失字段跳过。原生 MQTT 与 HA 分别记录发送进度，命令回执独立处理。",
+        "en": "The complete business snapshot remains available. Changes are coalesced before encoding and unchanged snapshots are reused. Read runtime, HTTP, panel and serial diagnostics on demand with diagnostics.get and shared numeric field IDs, skipping absent fields. Native MQTT and HA track delivery separately; command receipts remain independent."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "42b9f9390ef40c9a83bdc78389f798d2dd2dc40f391da66cd6a312d9bd5aec0c"
+      },
+      "source_refs": [
+        "v1.0.0:b043"
+      ]
+    },
+    {
+      "change_id": "web-request-coordination",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "减少重复读取并保留切页内容",
+        "en": "Coordinate reads and retain content during tab changes"
+      },
+      "description": {
+        "zh-CN": "公共 HTTP 请求串行合并，优先写操作并进行有限确认；合并重复读取、取消过期只读请求并隔离旧响应，不取消已发出的写操作。联动页保留旧内容和未保存表单，成组数据原子更新；修复登录布局及 busy/503 处理。A1 本地刷新圆环动画，A1/M1 普通状态约每 5 秒读取，调速后短时加快确认。",
+        "en": "The shared HTTP queue coalesces reads, prioritizes writes and bounds confirmation. It cancels stale reads and isolates late responses without cancelling issued writes. Automation pages retain existing content and unsaved forms and apply grouped updates atomically. Login layout and busy/503 handling are corrected. A1 animates locally; ordinary A1/M1 state reads run about every five seconds with brief faster confirmation after control."
+      },
+      "ota_summary": {
+        "zh-CN": "公共 HTTP 请求串行合并，优先写操作并进行有限确认；合并重复读取、取消过期只读请求并隔离旧响应，不取消已发出的写操作。联动页保留旧内容和未保存表单，成组数据原子更新；修复登录布局及 busy/503 处理。A1 本地刷新圆环动画，A1/M1 普通状态约每 5 秒读取，调速后短时加快确认。",
+        "en": "The shared HTTP queue coalesces reads, prioritizes writes and bounds confirmation. It cancels stale reads and isolates late responses without cancelling issued writes. Automation pages retain existing content and unsaved forms and apply grouped updates atomically. Login layout and busy/503 handling are corrected. A1 animates locally; ordinary A1/M1 state reads run about every five seconds with brief faster confirmation after control."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "716f090d73bc91bdc870a1da692dc04a543ca1b1e1d0e81874420e6cab37afca"
+      },
+      "source_refs": [
+        "v1.0.0:b044"
+      ]
+    },
+    {
+      "change_id": "mqtt-busy-recovery",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "修复 busy 分类与 MQTT 内存回退",
+        "en": "Correct busy errors and MQTT memory fallback"
+      },
+      "description": {
+        "zh-CN": "A1 将非法参数、版本冲突和存储失败与资源繁忙区分，避免误报 busy。修复 MQTT 缩小接收缓冲失败时的断连处理，保留订阅状态，避免重放保留的工作消息；TC1 二进制 MQTT 不再因消息包含 NUL 字节而拒收。HTTP 最多保留两个等待请求，过载仍有界返回。",
+        "en": "A1 distinguishes invalid parameters, revision conflicts and storage failures from resource contention. MQTT buffer-shrink failure handling preserves subscriptions and avoids replaying retained work. TC1 accepts embedded NUL bytes in binary MQTT messages. HTTP queues at most two waiting requests and returns bounded overload errors."
+      },
+      "ota_summary": {
+        "zh-CN": "A1 将非法参数、版本冲突和存储失败与资源繁忙区分，避免误报 busy。修复 MQTT 缩小接收缓冲失败时的断连处理，保留订阅状态，避免重放保留的工作消息；TC1 二进制 MQTT 不再因消息包含 NUL 字节而拒收。HTTP 最多保留两个等待请求，过载仍有界返回。",
+        "en": "A1 distinguishes invalid parameters, revision conflicts and storage failures from resource contention. MQTT buffer-shrink failure handling preserves subscriptions and avoids replaying retained work. TC1 accepts embedded NUL bytes in binary MQTT messages. HTTP queues at most two waiting requests and returns bounded overload errors."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "43612b182ac9da5f03463a5b04626f54b312411664d4d45bca590e46d3d3acbd"
+      },
+      "source_refs": [
+        "v1.0.0:b045"
+      ]
+    },
+    {
+      "change_id": "authenticated-lan-v4",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "mDNS 发现与经过配对的 UDP 通信",
+        "en": "Discover with mDNS and communicate over paired UDP"
+      },
+      "description": {
+        "zh-CN": "内网业务使用统一二进制封包及有界参数解析，支持管理密码配对和已有 MQTT 下发传感器会话授权。同步请求仅借用输入数据，异步操作持有独立数据；精简 mDNS/UDP 的重复逻辑，同时保留发现、配对和重新发现路径。",
+        "en": "LAN business uses shared binary packets and bounded parsing. It supports administration-password pairing and existing MQTT-granted sensor sessions. Synchronous requests borrow input only during processing; asynchronous work owns its data. Shared mDNS/UDP logic reduces duplication while retaining discovery, pairing and rediscovery."
+      },
+      "ota_summary": {
+        "zh-CN": "内网业务使用统一二进制封包及有界参数解析，支持管理密码配对和已有 MQTT 下发传感器会话授权。同步请求仅借用输入数据，异步操作持有独立数据；精简 mDNS/UDP 的重复逻辑，同时保留发现、配对和重新发现路径。",
+        "en": "LAN business uses shared binary packets and bounded parsing. It supports administration-password pairing and existing MQTT-granted sensor sessions. Synchronous requests borrow input only during processing; asynchronous work owns its data. Shared mDNS/UDP logic reduces duplication while retaining discovery, pairing and rediscovery."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "92233415ea8889489581b5ea729a2d414faaf48a7677719862c6b3929c9d809e"
+      },
+      "source_refs": [
+        "v1.0.0:b046"
+      ]
+    },
+    {
+      "change_id": "hub-mdns-udp-runtime",
+      "version": "1.0.0",
+      "type": "breaking",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "中枢移除内置 Broker，改用 mDNS 与 UDP",
+        "en": "Replace the embedded hub broker with mDNS and UDP"
+      },
+      "description": {
+        "zh-CN": "中枢通过 mDNS 自动发现、UDP 配对及通信，提供统一网页设备管理，保留上游 MQTT、巴法云与实验性 HomeKit 桥接。本地 Home Assistant 及 MQTT 客户端须连接外部 Broker。修复配对存储、转发归属/关联、有限队列及空闲 HTTP 连接回收；旧内置 Broker 配置不能继续作为局域网连接入口。",
+        "en": "The hub discovers devices with mDNS, pairs and communicates over UDP, and provides shared web management. Upstream MQTT, Bemfa and experimental HomeKit bridging remain available. Local Home Assistant and MQTT clients must use an external broker. Pair storage, forwarding ownership/correlation, bounded queues and idle HTTP reclamation are corrected. The former embedded broker is no longer a LAN endpoint."
+      },
+      "ota_summary": {
+        "zh-CN": "中枢通过 mDNS 自动发现、UDP 配对及通信，提供统一网页设备管理，保留上游 MQTT、巴法云与实验性 HomeKit 桥接。本地 Home Assistant 及 MQTT 客户端须连接外部 Broker。修复配对存储、转发归属/关联、有限队列及空闲 HTTP 连接回收；旧内置 Broker 配置不能继续作为局域网连接入口。",
+        "en": "The hub discovers devices with mDNS, pairs and communicates over UDP, and provides shared web management. Upstream MQTT, Bemfa and experimental HomeKit bridging remain available. Local Home Assistant and MQTT clients must use an external broker. Pair storage, forwarding ownership/correlation, bounded queues and idle HTTP reclamation are corrected. The former embedded broker is no longer a LAN endpoint."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "eb2fd818db2adaee43c1eff18effa55cf87c379d35c40bef243777f9a04344c3"
+      },
+      "source_refs": [
+        "v1.0.0:b047"
+      ]
+    },
+    {
+      "change_id": "webui-auth-and-config-recovery",
+      "version": "1.0.0",
+      "type": "security",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "可选网页认证与受保护的配置迁移",
+        "en": "Optional web authentication and protected configuration migration"
+      },
+      "description": {
+        "zh-CN": "未设管理密码时直接进入网页且不占登录会话；设密码后使用 token 会话，保留 admin Basic 访问。密码变化、退出及重启按设备认证策略处理。已识别的 0.9.x 配置布局迁移保留原有设置；未知或无法可靠写入的布局进入配置恢复，不盲目覆盖。请在升级前备份，并按各机型迁移/恢复说明操作。",
+        "en": "An unset administration password permits direct web access without consuming login sessions. Configured passwords use token sessions while retaining admin Basic access. Password changes, logout and restart follow device authentication rules. Recognized 0.9.x configuration layouts preserve settings during migration; unknown layouts or unsafe writes enter recovery instead of being overwritten. Back up before upgrading and follow the model-specific migration and recovery guide."
+      },
+      "ota_summary": {
+        "zh-CN": "未设管理密码时直接进入网页且不占登录会话；设密码后使用 token 会话，保留 admin Basic 访问。密码变化、退出及重启按设备认证策略处理。已识别的 0.9.x 配置布局迁移保留原有设置；未知或无法可靠写入的布局进入配置恢复，不盲目覆盖。请在升级前备份，并按各机型迁移/恢复说明操作。",
+        "en": "An unset administration password permits direct web access without consuming login sessions. Configured passwords use token sessions while retaining admin Basic access. Password changes, logout and restart follow device authentication rules. Recognized 0.9.x configuration layouts preserve settings during migration; unknown layouts or unsafe writes enter recovery instead of being overwritten. Back up before upgrading and follow the model-specific migration and recovery guide."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "ec83dccdffbec3edde31632a3e058b96595538361896050a81ff97cf250903ae"
+      },
+      "source_refs": [
+        "v1.0.0:b048"
+      ]
+    },
+    {
+      "change_id": "compact-builds-and-hostnames",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "精简资源、固定工具链与 iotcloud 主机名",
+        "en": "Trim resources, pin compilers and use iotcloud hostnames"
+      },
+      "description": {
+        "zh-CN": "配套前端按设备能力裁剪，精简未用资源及格式化依赖；MXCHIP 发布构建使用固定 GCC14 编译器及原 GCC5 运行库，S30 使用 GCC5。DHCP 主机名使用 iotcloud、真实型号及本机有效工厂 MAC 尾号，A1/M1/TC1 协议身份统一为 openiot。",
+        "en": "The matching frontend is trimmed by device capability and unused resources and formatting dependencies are reduced. MXCHIP release builds use pinned GCC14 with the existing GCC5 runtime; S30 uses GCC5. DHCP hostnames include iotcloud, the actual model and a valid factory-MAC suffix. A1/M1/TC1 protocol identities use openiot."
+      },
+      "ota_summary": {
+        "zh-CN": "配套前端按设备能力裁剪，精简未用资源及格式化依赖；MXCHIP 发布构建使用固定 GCC14 编译器及原 GCC5 运行库，S30 使用 GCC5。DHCP 主机名使用 iotcloud、真实型号及本机有效工厂 MAC 尾号，A1/M1/TC1 协议身份统一为 openiot。",
+        "en": "The matching frontend is trimmed by device capability and unused resources and formatting dependencies are reduced. MXCHIP release builds use pinned GCC14 with the existing GCC5 runtime; S30 uses GCC5. DHCP hostnames include iotcloud, the actual model and a valid factory-MAC suffix. A1/M1/TC1 protocol identities use openiot."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "66d7f0fc158f11f3377b52bc8ed368e74cfb12cc2d38ebebd6772395cbe2a6d7"
+      },
+      "source_refs": [
+        "v1.0.0:b049"
+      ]
+    },
+    {
+      "change_id": "s30-v1b-native-support",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "s30"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "新增 S30-V1B 计量插座与原厂免拆安装",
+        "en": "Add the S30-V1B metering socket and stock network installation"
+      },
+      "description": {
+        "zh-CN": "新增 ORVIBO S30-V1B（BL2028N/BK7231N/HLW8032）：复用公共网页与二进制 HTTP/MQTT/UDP，提供开关、功率/电压/电流/累计电量及持久化倍率设置。默认采用原厂分区布局，发布原生 RBL 和从 0x11000 写入的 STOCK_UA；原厂 2M.1220 已实测正常网络 OTA 首次安装，首次社区启动需重新配网。保留 S30M_V1B_ 热点前缀；灯语及 5 秒/10 秒松手恢复手势见操作说明。网页仅支持 URL OTA。",
+        "en": "Add ORVIBO S30-V1B (BL2028N/BK7231N/HLW8032) using the shared web UI and binary HTTP/MQTT/UDP services. It provides outlet control, power, voltage, current, energy and persistent meter multipliers. Native RBL and STOCK_UA images use the stock partition layout; write STOCK_UA at 0x11000. First network installation from stock 2M.1220 was physically verified; configure Wi-Fi again on community first boot. The AP retains S30M_V1B_. See the operation guide for LEDs and release-triggered 5/10-second recovery. Web OTA accepts a URL only."
+      },
+      "ota_summary": {
+        "zh-CN": "新增 ORVIBO S30-V1B（BL2028N/BK7231N/HLW8032）：复用公共网页与二进制 HTTP/MQTT/UDP，提供开关、功率/电压/电流/累计电量及持久化倍率设置。默认采用原厂分区布局，发布原生 RBL 和从 0x11000 写入的 STOCK_UA；原厂 2M.1220 已实测正常网络 OTA 首次安装，首次社区启动需重新配网。保留 S30M_V1B_ 热点前缀；灯语及 5 秒/10 秒松手恢复手势见操作说明。网页仅支持 URL OTA。",
+        "en": "Add ORVIBO S30-V1B (BL2028N/BK7231N/HLW8032) using the shared web UI and binary HTTP/MQTT/UDP services. It provides outlet control, power, voltage, current, energy and persistent meter multipliers. Native RBL and STOCK_UA images use the stock partition layout; write STOCK_UA at 0x11000. First network installation from stock 2M.1220 was physically verified; configure Wi-Fi again on community first boot. The AP retains S30M_V1B_. See the operation guide for LEDs and release-triggered 5/10-second recovery. Web OTA accepts a URL only."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "0ff5d7afdd40b2aec5558bcc3845a89023e36be5f7f2504231dcd33c44139801"
+      },
+      "source_refs": [
+        "v1.0.0:b050"
+      ]
+    },
+    {
+      "change_id": "hub-shared-web-auth",
+      "version": "1.0.0",
+      "type": "breaking",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "大金中枢共用网页认证",
+        "en": "Shared device and hub authentication"
+      },
+      "description": {
+        "zh-CN": "中枢不再单独设置账号密码，改用设备 WebUI 管理密码和会话；未设管理密码时直接进入。同一标签页刷新、切换控制页与中枢页复用有效会话，退出和密码变更清除会话。已有中枢用户名、设备列表、配对与转发设置保留；旧中枢密码停用，用户名继续作为主题命名空间。UDP 配对及外部 MQTT broker 认证继续独立配置。",
+        "en": "The DAIKIN hub uses the device WebUI administration password and session instead of a separate account password. With no password it opens directly. Refreshing or switching between the control and hub pages in the same tab reuses the session; sign-out and password changes clear it. Existing hub usernames, devices, pairing and forwarding settings are retained. The old hub password is retired, while the username remains the topic namespace. UDP pairing and external MQTT broker authentication remain separate."
+      },
+      "ota_summary": {
+        "zh-CN": "中枢不再单独设置账号密码，改用设备 WebUI 管理密码和会话；未设管理密码时直接进入。同一标签页刷新、切换控制页与中枢页复用有效会话，退出和密码变更清除会话。已有中枢用户名、设备列表、配对与转发设置保留；旧中枢密码停用，用户名继续作为主题命名空间。UDP 配对及外部 MQTT broker 认证继续独立配置。",
+        "en": "The DAIKIN hub uses the device WebUI administration password and session instead of a separate account password. With no password it opens directly. Refreshing or switching between the control and hub pages in the same tab reuses the session; sign-out and password changes clear it. Existing hub usernames, devices, pairing and forwarding settings are retained. The old hub password is retired, while the username remains the topic namespace. UDP pairing and external MQTT broker authentication remain separate."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "3b794917b56cc048f1daf28c3b109e4ae09d71687271a248505c9ceb05f99937"
+      },
+      "source_refs": [
+        "v1.0.0:b051"
+      ]
+    },
+    {
+      "change_id": "hub-device-http-udp-transport",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "中枢设备参数、功率与 HomeKit 读数",
+        "en": "Hub device state, power and HomeKit readings"
+      },
+      "description": {
+        "zh-CN": "中枢网页通过 HTTP→UDP 读取已配对设备状态并发送控制，浏览器只需访问中枢。TC1 列表补齐功率，新读数到达时不再短暂显示空白，计量数据过期时隐藏读数；M1 优先读取首屏状态，初始能力读取失败后恢复可用控件。HomeKit 按 M1 实际传感器有效位更新温湿度与 PM2.5。请求串行合并并校验设备身份与响应编号，过期响应不会覆盖新设备，已发出的写操作不自动重放。远端页面提供已实现的控制与诊断；网络、认证、自动化、升级及备份从目标设备本地网页操作。",
+        "en": "The hub reads paired-device state and sends controls over HTTP-to-UDP; the browser only needs to reach the hub. TC1 list cards no longer briefly hide power when a new reading arrives, and hide expired meter readings. M1 prioritizes the initial state and restores supported controls after a failed first capability read. HomeKit uses M1 sensor-validity flags for temperature, humidity and PM2.5. Requests are serialized and coalesced, with device identity and response-ID checks. Stale replies cannot replace another device, and issued writes are never automatically replayed. Remote pages expose supported controls and diagnostics. Use the target device’s local page for network settings, authentication, automation, upgrades and backups."
+      },
+      "ota_summary": {
+        "zh-CN": "中枢网页通过 HTTP→UDP 读取已配对设备状态并发送控制，浏览器只需访问中枢。TC1 列表补齐功率，新读数到达时不再短暂显示空白，计量数据过期时隐藏读数；M1 优先读取首屏状态，初始能力读取失败后恢复可用控件。HomeKit 按 M1 实际传感器有效位更新温湿度与 PM2.5。请求串行合并并校验设备身份与响应编号，过期响应不会覆盖新设备，已发出的写操作不自动重放。远端页面提供已实现的控制与诊断；网络、认证、自动化、升级及备份从目标设备本地网页操作。",
+        "en": "The hub reads paired-device state and sends controls over HTTP-to-UDP; the browser only needs to reach the hub. TC1 list cards no longer briefly hide power when a new reading arrives, and hide expired meter readings. M1 prioritizes the initial state and restores supported controls after a failed first capability read. HomeKit uses M1 sensor-validity flags for temperature, humidity and PM2.5. Requests are serialized and coalesced, with device identity and response-ID checks. Stale replies cannot replace another device, and issued writes are never automatically replayed. Remote pages expose supported controls and diagnostics. Use the target device’s local page for network settings, authentication, automation, upgrades and backups."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "0de099c89b4155dcc9160af7fc5db02146f603f69ab42d4f0b71989c6ad8fdfc"
+      },
+      "source_refs": [
+        "v1.0.0:b052"
+      ]
+    },
+    {
+      "change_id": "dispatch-auth-and-control-receipts",
+      "version": "1.0.0",
+      "type": "security",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin",
+          "s30"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "HTTP 鉴权与控制回执",
+        "en": "HTTP authorization and control receipts"
+      },
+      "description": {
+        "zh-CN": "HTTP 在排队、业务执行和回复时重新核对认证，退出、密码变化或过期后，排队请求不能继续沿用旧权限。控制回执采用有限预留，TC1 在执行前准备回复空间，减少执行成功却无法确认的情况；收包、按钮与 MQTT 心跳保持独立调度。A1/M1 的连接上限诊断改为报告实际请求值。",
+        "en": "HTTP checks credentials again while queued, at execution and at reply delivery. Requests cannot retain old permissions after sign-out, expiry or a password change. Control receipts use bounded reservations, and TC1 prepares reply space before execution. Packet reception, local buttons and MQTT heartbeats keep their own scheduling. A1/M1 diagnostics report the actual requested TCP connection limit."
+      },
+      "ota_summary": {
+        "zh-CN": "HTTP 在排队、业务执行和回复时重新核对认证，退出、密码变化或过期后，排队请求不能继续沿用旧权限。控制回执采用有限预留，TC1 在执行前准备回复空间，减少执行成功却无法确认的情况；收包、按钮与 MQTT 心跳保持独立调度。A1/M1 的连接上限诊断改为报告实际请求值。",
+        "en": "HTTP checks credentials again while queued, at execution and at reply delivery. Requests cannot retain old permissions after sign-out, expiry or a password change. Control receipts use bounded reservations, and TC1 prepares reply space before execution. Packet reception, local buttons and MQTT heartbeats keep their own scheduling. A1/M1 diagnostics report the actual requested TCP connection limit."
+      },
+      "summary_complete": true,
+      "critical": true,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "ffbf3c7854ee07c62e338114227b4200d3cf2e2dcf943fc524b1a0a8f99dc92d"
+      },
+      "source_refs": [
+        "v1.0.0:b053"
+      ]
+    },
+    {
+      "change_id": "tc1-mqtt-and-s30-lan",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "tc1",
+          "s30"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "TC1 MQTT 与 S30 二进制局域网修复",
+        "en": "TC1 MQTT and S30 binary LAN fixes"
+      },
+      "description": {
+        "zh-CN": "TC1 周期上报交由 MQTT owner 线程调度，避免额外上报线程与控制争用。S30 接入共享 UDP v4 的类型化解析、密码配对、原子认证保存及有界回执；可选 SENSOR 订阅被 broker 拒绝时不再断开主 MQTT 连接，并按退避重试。云后端补齐 S30 精确 SENSOR 命令主题 ACL，同时拒绝跨账户与通配符订阅。",
+        "en": "TC1 periodic telemetry runs on the MQTT owner thread to reduce contention. S30 uses the shared typed UDP v4 parser, password pairing, atomic authentication persistence and bounded receipts. A rejected optional SENSOR subscription no longer disconnects the main MQTT connection and retries with backoff. The cloud backend permits the exact S30 SENSOR command topic while rejecting cross-account and wildcard subscriptions."
+      },
+      "ota_summary": {
+        "zh-CN": "TC1 周期上报交由 MQTT owner 线程调度，避免额外上报线程与控制争用。S30 接入共享 UDP v4 的类型化解析、密码配对、原子认证保存及有界回执；可选 SENSOR 订阅被 broker 拒绝时不再断开主 MQTT 连接，并按退避重试。云后端补齐 S30 精确 SENSOR 命令主题 ACL，同时拒绝跨账户与通配符订阅。",
+        "en": "TC1 periodic telemetry runs on the MQTT owner thread to reduce contention. S30 uses the shared typed UDP v4 parser, password pairing, atomic authentication persistence and bounded receipts. A rejected optional SENSOR subscription no longer disconnects the main MQTT connection and retries with backoff. The cloud backend permits the exact S30 SENSOR command topic while rejecting cross-account and wildcard subscriptions."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "5cadb48e02d1d569db72472ff2d7df9df56977d551a1cb7bfa2341c7065af3fc"
+      },
+      "source_refs": [
+        "v1.0.0:b054"
+      ]
+    },
+    {
+      "change_id": "hub-pair-route-atomic",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "中枢配对持久化与路由一致性",
+        "en": "Consistent hub pairing storage and routing"
+      },
+      "description": {
+        "zh-CN": "中枢将设备配对凭据与确认的 UDP 路由一起提交，存储失败时不提前启用路由，移除配对流程中的临时密码写入。修复旧配置占用存储导致的中枢写入失败，保留有效配置与配对数据。",
+        "en": "The hub commits pairing credentials and the confirmed UDP route together. Failed storage does not activate a route, and temporary password writes are removed. Legacy configuration storage is reclaimed while retaining valid settings and pairing data."
+      },
+      "ota_summary": {
+        "zh-CN": "中枢将设备配对凭据与确认的 UDP 路由一起提交，存储失败时不提前启用路由，移除配对流程中的临时密码写入。修复旧配置占用存储导致的中枢写入失败，保留有效配置与配对数据。",
+        "en": "The hub commits pairing credentials and the confirmed UDP route together. Failed storage does not activate a route, and temporary password writes are removed. Legacy configuration storage is reclaimed while retaining valid settings and pairing data."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "ea3ffe6e89b1265a95e9185738a6eec49207e883ddbbd17eeb826075c006b4c3"
+      },
+      "source_refs": [
+        "v1.0.0:b055"
+      ]
+    },
+    {
+      "change_id": "web-generation-and-utc",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin",
+          "s30"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "网页状态与 UTC 时区",
+        "en": "Web state and UTC settings"
+      },
+      "description": {
+        "zh-CN": "修复状态代次更新后仍沿用旧快照的问题；设置保存后重新取得对应完整状态。UTC 时区的零分钟偏移按原值显示和保存，不再误变成 UTC+8。",
+        "en": "Fix stale snapshots after a state-generation change, and fetch the corresponding complete state after saving settings. A UTC offset of zero displays and saves correctly instead of becoming UTC+8."
+      },
+      "ota_summary": {
+        "zh-CN": "修复状态代次更新后仍沿用旧快照的问题；设置保存后重新取得对应完整状态。UTC 时区的零分钟偏移按原值显示和保存，不再误变成 UTC+8。",
+        "en": "Fix stale snapshots after a state-generation change, and fetch the corresponding complete state after saving settings. A UTC offset of zero displays and saves correctly instead of becoming UTC+8."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "210ff3076742c0b1fe18db5738e1aefbac6a94bd960c98b7fe12ec54c975645a"
+      },
+      "source_refs": [
+        "v1.0.0:b056"
+      ]
+    },
+    {
+      "change_id": "device-name-homekit-sync",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin",
+          "s30"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "设备名称与 HomeKit 同步",
+        "en": "Device names and HomeKit synchronization"
+      },
+      "description": {
+        "zh-CN": "设备提供只修改名称的 name.set。中枢同步设备名和 TC1 / S30 插口名，并通知家庭控制器刷新配置，保留既有配对与标识。A1 / M1 / 大金支持经 ConfiguredName 改名，持久化并读回确认后更新；插口名称只读。Apple 家庭普通重命名是本地别名。需要 Hub v1.0.0 及目标设备 rc.6 或更新兼容版本。",
+        "en": "Devices provide name.set to change only the name. The hub synchronizes device names and TC1 / S30 socket names, notifies home controllers to refresh configuration and retains pairings and identities. A1 / M1 / DAIKIN support ConfiguredName writes with persistence and readback; socket names are read-only. Ordinary Apple Home renames are local aliases. Requires hub v1.0.0 and target devices running rc.6 or a newer compatible release."
+      },
+      "ota_summary": {
+        "zh-CN": "设备提供只修改名称的 name.set。中枢同步设备名和 TC1 / S30 插口名，并通知家庭控制器刷新配置，保留既有配对与标识。A1 / M1 / 大金支持经 ConfiguredName 改名，持久化并读回确认后更新；插口名称只读。Apple 家庭普通重命名是本地别名。需要 Hub v1.0.0 及目标设备 rc.6 或更新兼容版本。",
+        "en": "Devices provide name.set to change only the name. The hub synchronizes device names and TC1 / S30 socket names, notifies home controllers to refresh configuration and retains pairings and identities. A1 / M1 / DAIKIN support ConfiguredName writes with persistence and readback; socket names are read-only. Ordinary Apple Home renames are local aliases. Requires hub v1.0.0 and target devices running rc.6 or a newer compatible release."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "de487c319fa13dfc209fcdbac67498e024f41151fc8359de659b975704802c66"
+      },
+      "source_refs": [
+        "v1.0.0:b057"
+      ]
+    },
+    {
+      "change_id": "hub-homekit-stack-restart",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "修复中枢 HomeKit 处理时重启",
+        "en": "Fix hub restarts while processing HomeKit data"
+      },
+      "description": {
+        "zh-CN": "修复中枢处理 HomeKit 数据时主循环栈占用过大导致的重启。",
+        "en": "Fix hub restarts caused by excessive main-loop stack use when processing HomeKit data."
+      },
+      "ota_summary": {
+        "zh-CN": "修复中枢处理 HomeKit 数据时主循环栈占用过大导致的重启。",
+        "en": "Fix hub restarts caused by excessive main-loop stack use when processing HomeKit data."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "7c1522147c0ac2358aba6e8fc8b645de78b8f8882ec3b054029ef981cc4e7f84"
+      },
+      "source_refs": [
+        "v1.0.0:b058"
+      ]
+    },
+    {
+      "change_id": "s30-power-and-sensor",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "s30"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "S30 来电保持、功率规则与 M1 远程读数",
+        "en": "S30 power restoration, power rules and M1 readings"
+      },
+      "description": {
+        "zh-CN": "S30 增加来电关闭／开启／保持和最多 8 条本地功率规则；功率严格高于或低于阈值、持续指定秒数后开关，0 秒为立即触发。规则无需 MQTT 或校时，本地按键优先。S30 通过 MessagePack schema 3 发布电压、电流、功率和累计电量的字段描述与数值；同一外部 broker、同一账户的 M1 可独立订阅显示，网页可关闭。保持恢复最近一次已保存的输出，规则计时不跨重启恢复。",
+        "en": "S30 adds off, on and restore power-on modes and up to eight local power rules. Power strictly above or below a threshold for the specified number of seconds triggers switching; zero seconds means immediate triggering. Rules need neither MQTT nor a synced clock, and local buttons take priority. MessagePack schema 3 publishes voltage, current, power and energy metadata and readings for M1 devices on the same external broker and account without an open web page. Restore uses the last saved output; rule timers restart after reboot."
+      },
+      "ota_summary": {
+        "zh-CN": "S30 增加来电关闭／开启／保持和最多 8 条本地功率规则；功率严格高于或低于阈值、持续指定秒数后开关，0 秒为立即触发。规则无需 MQTT 或校时，本地按键优先。S30 通过 MessagePack schema 3 发布电压、电流、功率和累计电量的字段描述与数值；同一外部 broker、同一账户的 M1 可独立订阅显示，网页可关闭。保持恢复最近一次已保存的输出，规则计时不跨重启恢复。",
+        "en": "S30 adds off, on and restore power-on modes and up to eight local power rules. Power strictly above or below a threshold for the specified number of seconds triggers switching; zero seconds means immediate triggering. Rules need neither MQTT nor a synced clock, and local buttons take priority. MessagePack schema 3 publishes voltage, current, power and energy metadata and readings for M1 devices on the same external broker and account without an open web page. Restore uses the last saved output; rule timers restart after reboot."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "ad0424072067963e684a993a5dc2a9b095e1cbac42678c3a3a7f9a557b0c1f64"
+      },
+      "source_refs": [
+        "v1.0.0:b059"
+      ]
+    },
+    {
+      "change_id": "tc1-local-power-rules",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "tc1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "TC1 本地功率条件自动化",
+        "en": "TC1 local power-condition automation"
+      },
+      "description": {
+        "zh-CN": "TC1 增加最多 8 条总功率条件规则，可对单路或全部插座执行开／关，支持高于／低于阈值及立即／持续触发。条件连续满足期间只执行一次，条件解除后重新计时；无效采样中断计时，本地按键优先。原有定时任务与二进制备份格式保留。",
+        "en": "TC1 adds up to eight total-power rules targeting one or all outlets, with above/below thresholds and immediate or sustained triggering. Each continuous matching condition triggers once and rearms after the condition clears. Invalid samples interrupt timing, and local buttons take priority. Existing timed tasks and binary backup layouts are retained."
+      },
+      "ota_summary": {
+        "zh-CN": "TC1 增加最多 8 条总功率条件规则，可对单路或全部插座执行开／关，支持高于／低于阈值及立即／持续触发。条件连续满足期间只执行一次，条件解除后重新计时；无效采样中断计时，本地按键优先。原有定时任务与二进制备份格式保留。",
+        "en": "TC1 adds up to eight total-power rules targeting one or all outlets, with above/below thresholds and immediate or sustained triggering. Each continuous matching condition triggers once and rearms after the condition clears. Invalid samples interrupt timing, and local buttons take priority. Existing timed tasks and binary backup layouts are retained."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "f8a5336aeee3b713d5cc31121080cb125bab9e3ab9f1efc4847d8139ce09c4e3"
+      },
+      "source_refs": [
+        "v1.0.0:b060"
+      ]
+    },
+    {
+      "change_id": "s30-wifi-storage-recovery",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "s30"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "S30 Wi-Fi 扫描与配置升级",
+        "en": "S30 Wi-Fi scanning and settings migration"
+      },
+      "description": {
+        "zh-CN": "修复 S30 扫描结果长度、释放与 STA 状态处理，保存配置完成后才执行延迟重启。新配置使用独立 PBL4，自动读取已识别的 PBL1／2／3 布局，保留网络、管理密码、双向配对、名称、计量倍率和累计量。连接清理保留 MQTT 认证／ACL 失败原因，便于排查断连。",
+        "en": "Fix S30 scan-result bounds, allocation release and STA state handling, and defer reboot until settings are saved. The distinct PBL4 layout imports recognized PBL1/2/3 records while retaining networks, administration password, inbound and outbound pairing, names, meter multipliers and energy. MQTT cleanup retains authentication and ACL failure reasons for troubleshooting."
+      },
+      "ota_summary": {
+        "zh-CN": "修复 S30 扫描结果长度、释放与 STA 状态处理，保存配置完成后才执行延迟重启。新配置使用独立 PBL4，自动读取已识别的 PBL1／2／3 布局，保留网络、管理密码、双向配对、名称、计量倍率和累计量。连接清理保留 MQTT 认证／ACL 失败原因，便于排查断连。",
+        "en": "Fix S30 scan-result bounds, allocation release and STA state handling, and defer reboot until settings are saved. The distinct PBL4 layout imports recognized PBL1/2/3 records while retaining networks, administration password, inbound and outbound pairing, names, meter multipliers and energy. MQTT cleanup retains authentication and ACL failure reasons for troubleshooting."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "84674cf33d7096aee4022450b622b9944408001c1fa706b6ebe1f3ea6cf572da"
+      },
+      "source_refs": [
+        "v1.0.0:b061"
+      ]
+    },
+    {
+      "change_id": "web-ota-availability-guard",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin",
+          "s30"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "网页在线升级按钮与版本路径",
+        "en": "Web update availability and upgrade path"
+      },
+      "description": {
+        "zh-CN": "在线升级仅在检查成功、版本明确且确有可用更新时显示安装按钮，点击时再次核对状态；已是最新版、检查失败或信息缺失时不会安装。保留升级差异确认，并提示 0.9.x 经 1.0.0 升级至后续稳定版的路径。",
+        "en": "Online updates show Install only after a successful check identifies an available version, and recheck availability on click. Up-to-date, failed or incomplete results cannot start installation. The change confirmation remains, with guidance to upgrade 0.9.x through 1.0.0 before later stable releases."
+      },
+      "ota_summary": {
+        "zh-CN": "在线升级仅在检查成功、版本明确且确有可用更新时显示安装按钮，点击时再次核对状态；已是最新版、检查失败或信息缺失时不会安装。保留升级差异确认，并提示 0.9.x 经 1.0.0 升级至后续稳定版的路径。",
+        "en": "Online updates show Install only after a successful check identifies an available version, and recheck availability on click. Up-to-date, failed or incomplete results cannot start installation. The change confirmation remains, with guidance to upgrade 0.9.x through 1.0.0 before later stable releases."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "5b433bedfe66bbb320817aa467ddda72f7e0f76cbd679f914527f5ec66936150"
+      },
+      "source_refs": [
+        "v1.0.0:b062"
+      ]
+    },
+    {
+      "change_id": "g3-screen-platform",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "大金 G3 屏幕与传感器支持",
+        "en": "Daikin G3 screen and sensor support"
+      },
+      "description": {
+        "zh-CN": "新增带屏幕 BRY88BBA15G 的 ESP32 固件和独立屏幕 MCU，支持原厂协议与能力协商的扩展协议、传感器读数、电池状态、RTC 校时、触摸换页、模块启停和启动维护窗口。新增媒体与显示策略需配套 v1.0.0 屏幕 MCU 和 WebUI。",
+        "en": "Adds ESP32 firmware and a separate screen MCU for BRY88BBA15G, with stock and capability-negotiated extended protocols, sensor readings, battery status, RTC synchronization, touch page navigation, module control and a startup maintenance window. New media and display policies require matching v1.0.0 screen MCU and WebUI."
+      },
+      "ota_summary": {
+        "zh-CN": "新增带屏幕 BRY88BBA15G 的 ESP32 固件和独立屏幕 MCU，支持原厂协议与能力协商的扩展协议、传感器读数、电池状态、RTC 校时、触摸换页、模块启停和启动维护窗口。新增媒体与显示策略需配套 v1.0.0 屏幕 MCU 和 WebUI。",
+        "en": "Adds ESP32 firmware and a separate screen MCU for BRY88BBA15G, with stock and capability-negotiated extended protocols, sensor readings, battery status, RTC synchronization, touch page navigation, module control and a startup maintenance window. New media and display policies require matching v1.0.0 screen MCU and WebUI."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "75a4de2907339f853e833da2700c59c289bce6a3a5e5c2ff8284c546d650d310"
+      },
+      "source_refs": [
+        "v1.0.0:b063"
+      ]
+    },
+    {
+      "change_id": "g3-layout-theme-weather",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "可编排屏幕、天气与提醒",
+        "en": "Screen composition, weather and reminders"
+      },
+      "description": {
+        "zh-CN": "网页可组合时钟、数值、文字、折线和堆叠图表、天气与提醒，按真实屏幕比例预览。支持六组主题、组件配色、壁纸、语言、亮度和每周调光计划；外部字库失败时降级显示，通信和恢复服务继续工作。新增布局（行 × 列）：天气 1×4、2×4，时钟 1×4，reading 1×2；网页预览与 MCU 同步。",
+        "en": "Compose clocks, readings, text, line and stacked charts, weather and reminders with a preview at the real screen aspect ratio. Includes six themes, per-widget colors, wallpaper, language, brightness and weekly dimming. Font resource failures degrade display while communication and recovery services remain available. New layouts (rows × columns): weather 1×4 and 2×4, clock 1×4, and reading 1×2, with matching WebUI and MCU rendering."
+      },
+      "ota_summary": {
+        "zh-CN": "网页可组合时钟、数值、文字、折线和堆叠图表、天气与提醒，按真实屏幕比例预览。支持六组主题、组件配色、壁纸、语言、亮度和每周调光计划；外部字库失败时降级显示，通信和恢复服务继续工作。新增布局（行 × 列）：天气 1×4、2×4，时钟 1×4，reading 1×2；网页预览与 MCU 同步。",
+        "en": "Compose clocks, readings, text, line and stacked charts, weather and reminders with a preview at the real screen aspect ratio. Includes six themes, per-widget colors, wallpaper, language, brightness and weekly dimming. Font resource failures degrade display while communication and recovery services remain available. New layouts (rows × columns): weather 1×4 and 2×4, clock 1×4, and reading 1×2, with matching WebUI and MCU rendering."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "019cf11ad6e578260ec08fcaff1a486176efa7c28d9bd1649503ee0361058e1c"
+      },
+      "source_refs": [
+        "v1.0.0:b064"
+      ]
+    },
+    {
+      "change_id": "g3-online-update",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "ESP32、屏幕和字库在线更新",
+        "en": "Online updates for ESP32, screen and font"
+      },
+      "description": {
+        "zh-CN": "ESP32 可从 GitHub、国内和国际镜像检查并安装签名更新，RC 构建使用独立候选通道。屏幕和字库可在局域网页资源页检查、下载并校验后安装；屏幕大文件上传需要本地直连。免拆迁移先更新 ESP32 并保留原厂屏幕，再按需直接安装社区屏幕应用，保留原厂引导区。安装工具与固件从同一版本下载页配套获取，或使用更新的兼容版本。",
+        "en": "ESP32 can check and install signed updates from GitHub, China and global mirrors; RC builds use a separate candidate channel. Screen applications and fonts can be checked, downloaded and verified from the LAN resource page; large screen uploads require direct LAN access. Wireless migration updates ESP32 first while preserving the stock screen, then optionally installs the community screen application directly while preserving the stock boot region. Get matching tools and firmware from the same release download page, or use a newer compatible release."
+      },
+      "ota_summary": {
+        "zh-CN": "ESP32 可从 GitHub、国内和国际镜像检查并安装签名更新，RC 构建使用独立候选通道。屏幕和字库可在局域网页资源页检查、下载并校验后安装；屏幕大文件上传需要本地直连。免拆迁移先更新 ESP32 并保留原厂屏幕，再按需直接安装社区屏幕应用，保留原厂引导区。安装工具与固件从同一版本下载页配套获取，或使用更新的兼容版本。",
+        "en": "ESP32 can check and install signed updates from GitHub, China and global mirrors; RC builds use a separate candidate channel. Screen applications and fonts can be checked, downloaded and verified from the LAN resource page; large screen uploads require direct LAN access. Wireless migration updates ESP32 first while preserving the stock screen, then optionally installs the community screen application directly while preserving the stock boot region. Get matching tools and firmware from the same release download page, or use a newer compatible release."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "43c31933c88b73ed4d872eb0c2372bf454b7c62b0472be58e066554272e0a076"
+      },
+      "source_refs": [
+        "v1.0.0:b065"
+      ]
+    },
+    {
+      "change_id": "m1-clock-retry",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "M1 校时恢复重试",
+        "en": "M1 clock recovery retries"
+      },
+      "description": {
+        "zh-CN": "主控时间读回暂时失败时有界重试，网络校时失败后独立安排重试，减少短暂通信异常造成的时间不同步。",
+        "en": "Retries transient MCU clock readback failures within a bound and schedules network time retries independently, reducing clock desynchronization after temporary communication failures."
+      },
+      "ota_summary": {
+        "zh-CN": "主控时间读回暂时失败时有界重试，网络校时失败后独立安排重试，减少短暂通信异常造成的时间不同步。",
+        "en": "Retries transient MCU clock readback failures within a bound and schedules network time retries independently, reducing clock desynchronization after temporary communication failures."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "56caaa4cb0072e5698ba77fb98ebaf9e3734870a1915e7e925223fcb3561431d"
+      },
+      "source_refs": [
+        "v1.0.0:b066"
+      ]
+    },
+    {
+      "change_id": "s30-clock-automation-stock-ota",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "s30"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "S30 定时、功率自动化与原厂安装",
+        "en": "S30 schedules, power automation and stock installation"
+      },
+      "description": {
+        "zh-CN": "S30 的插座定时和功率自动化与 TC1 行为对齐，补齐原厂 HTTP 80 端口 OTA 安装工具及教程；继续使用原生 RBL/STOCK_UA 镜像。",
+        "en": "Aligns S30 socket schedules and power automation with TC1 and adds a stock OTA installer using HTTP port 80 with instructions. S30 continues to use native RBL/STOCK_UA images."
+      },
+      "ota_summary": {
+        "zh-CN": "S30 的插座定时和功率自动化与 TC1 行为对齐，补齐原厂 HTTP 80 端口 OTA 安装工具及教程；继续使用原生 RBL/STOCK_UA 镜像。",
+        "en": "Aligns S30 socket schedules and power automation with TC1 and adds a stock OTA installer using HTTP port 80 with instructions. S30 continues to use native RBL/STOCK_UA images."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "c8056720890a7293561b79201195d963d423c8ee2258b379c6dc0248b889d0f6"
+      },
+      "source_refs": [
+        "v1.0.0:b067"
+      ]
+    },
+    {
+      "change_id": "shared-power-web-demos",
+      "version": "1.0.0",
+      "type": "improvement",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "daikin",
+          "bry88bba15g",
+          "s30"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "统一网页与 G3 演示",
+        "en": "Shared WebUI and G3 demos"
+      },
+      "description": {
+        "zh-CN": "更新公共网页的插座自动化和功率刷新，新增 G3 布局、亮度、天气、提醒与在线更新设置，提供屏幕设计和设备网页演示。大金下载分为已验证 G2 与带屏幕 G3，G1 适配尚未确认。",
+        "en": "Updates shared socket automation and power refresh, adds G3 layout, brightness, weather, reminder and online update settings, and provides screen design and device WebUI demos. Daikin downloads distinguish verified G2 from the G3 display model; G1 compatibility remains unconfirmed."
+      },
+      "ota_summary": {
+        "zh-CN": "更新公共网页的插座自动化和功率刷新，新增 G3 布局、亮度、天气、提醒与在线更新设置，提供屏幕设计和设备网页演示。大金下载分为已验证 G2 与带屏幕 G3，G1 适配尚未确认。",
+        "en": "Updates shared socket automation and power refresh, adds G3 layout, brightness, weather, reminder and online update settings, and provides screen design and device WebUI demos. Daikin downloads distinguish verified G2 from the G3 display model; G1 compatibility remains unconfirmed."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "e1aa05c46e2ad3cf31e930f580ea0cd0dc70696da8dae0e936399479aedbeda6"
+      },
+      "source_refs": [
+        "v1.0.0:b068"
+      ]
+    },
+    {
+      "change_id": "g3-nor-wallpaper-sensors",
+      "component": "firmware",
+      "critical": false,
+      "description": {
+        "zh-CN": "修复壁纸上传失败，以及上传后 PM2.5/TVOC 读数未恢复、后续 OTA 受阻的问题。NOR 默认使用四线硬件 SFC。",
+        "en": "Fixes wallpaper upload failures and the PM2.5/TVOC readings failing to resume afterward, which also blocked later OTA uploads. NOR defaults to hardware quad SFC."
+      },
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "修复壁纸上传失败，以及上传后 PM2.5/TVOC 读数未恢复、后续 OTA 受阻的问题。NOR 默认使用四线硬件 SFC。",
+        "en": "Fixes wallpaper upload failures and the PM2.5/TVOC readings failing to resume afterward, which also blocked later OTA uploads. NOR defaults to hardware quad SFC."
+      },
+      "review_status": "approved",
+      "scope": {
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ]
+      },
+      "summary_complete": true,
+      "title": {
+        "en": "G3 NOR and wallpaper upload fixes",
+        "zh-CN": "G3 NOR 与壁纸上传修复"
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "3cce647c5855e86f145ae6c9a14ea321be33c1b5455c1e8beb3d04dae98df5ff"
+      },
+      "type": "bugfix",
+      "version": "1.0.0",
+      "source_refs": [
+        "v1.0.0:b069"
+      ]
+    },
+    {
+      "change_id": "g3-stock-weather-linux",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "G3 原厂天气与 Linux 迁移",
+        "en": "G3 stock weather and Linux migration"
+      },
+      "description": {
+        "zh-CN": "保留原厂屏幕 MCU 时，ESP32 将真实当前天气转换为原厂温度、湿度和天气图标；室外 PM2.5 保留缺测。新增 Linux 蓝牙配网脚本，免拆迁移教程补齐实际 STA MAC、2.4 GHz Wi-Fi 和原厂网关应答步骤。修复 ESP32 以 80 MHz 运行时 TLS 握手超时导致的天气缺测。",
+        "en": "With the stock screen MCU, ESP32 converts real current weather into factory temperature, humidity and condition fields; outdoor PM2.5 remains missing. Adds Linux Bluetooth provisioning and documents the actual STA MAC, 2.4 GHz Wi-Fi and factory gateway responses for wireless migration. Fixes missing weather caused by TLS handshake timeouts with the ESP32 running at 80 MHz."
+      },
+      "ota_summary": {
+        "zh-CN": "保留原厂屏幕 MCU 时，ESP32 将真实当前天气转换为原厂温度、湿度和天气图标；室外 PM2.5 保留缺测。新增 Linux 蓝牙配网脚本，免拆迁移教程补齐实际 STA MAC、2.4 GHz Wi-Fi 和原厂网关应答步骤。修复 ESP32 以 80 MHz 运行时 TLS 握手超时导致的天气缺测。",
+        "en": "With the stock screen MCU, ESP32 converts real current weather into factory temperature, humidity and condition fields; outdoor PM2.5 remains missing. Adds Linux Bluetooth provisioning and documents the actual STA MAC, 2.4 GHz Wi-Fi and factory gateway responses for wireless migration. Fixes missing weather caused by TLS handshake timeouts with the ESP32 running at 80 MHz."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "89e1e613ecf70db4209d2a201f7e4393365bda48cc8badddbe92f45310f5cb3c"
+      },
+      "source_refs": [
+        "v1.0.0:b070"
+      ]
+    },
+    {
+      "change_id": "g3-startup-online-power",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "G3 启动与在线升级负载",
+        "en": "G3 startup and online update load"
+      },
+      "description": {
+        "zh-CN": "ESP32 按原厂使用 10–80 MHz 动态调频和自动轻睡眠，Wi-Fi 稳定后关闭恢复热点；MCU 空闲时浅层等待，并协调 ESP32 唤醒。屏幕先完成字库加载再开启传感器，降低初始化并发负载。修复 OTA 准备失败和上传中断；支持屏幕正常运行时连续更新，完成后恢复传感器。",
+        "en": "ESP32 follows the stock 10–80 MHz dynamic frequency and automatic light-sleep policy, closing the recovery access point after Wi-Fi stabilizes. The MCU waits in shallow sleep while idle and coordinates ESP32 wake. The screen loads fonts before enabling sensors to reduce concurrent startup load. Fixes OTA preparation failures and interrupted uploads. Consecutive updates work while the screen runs normally, with sensors resuming afterward."
+      },
+      "ota_summary": {
+        "zh-CN": "ESP32 按原厂使用 10–80 MHz 动态调频和自动轻睡眠，Wi-Fi 稳定后关闭恢复热点；MCU 空闲时浅层等待，并协调 ESP32 唤醒。屏幕先完成字库加载再开启传感器，降低初始化并发负载。修复 OTA 准备失败和上传中断；支持屏幕正常运行时连续更新，完成后恢复传感器。",
+        "en": "ESP32 follows the stock 10–80 MHz dynamic frequency and automatic light-sleep policy, closing the recovery access point after Wi-Fi stabilizes. The MCU waits in shallow sleep while idle and coordinates ESP32 wake. The screen loads fonts before enabling sensors to reduce concurrent startup load. Fixes OTA preparation failures and interrupted uploads. Consecutive updates work while the screen runs normally, with sensors resuming afterward."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "c94f02da709e0a8da8ef2c937d4d6d37789c7936e6b38094f35e0a19f72153ad"
+      },
+      "source_refs": [
+        "v1.0.0:b071"
+      ]
+    },
+    {
+      "change_id": "g3-charging-network-icons",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "G3 充电与网络图标",
+        "en": "G3 charging and network icons"
+      },
+      "description": {
+        "zh-CN": "电池图标在 USB 供电时显示闪电，联网圆点改为 Wi-Fi 图标，断网时显示斜线。修正外部供电与电池对应的熄屏时间选择，网页预览同步屏幕显示。修复拔掉 USB 后充电图标仍亮的问题。",
+        "en": "The battery icon shows a lightning mark while powered by USB. A Wi-Fi icon replaces the network dot and shows a slash while offline. Corrects the external-power and battery screen-timeout selection and keeps the WebUI preview aligned with the display. Fixes the charging icon remaining on after USB is disconnected."
+      },
+      "ota_summary": {
+        "zh-CN": "电池图标在 USB 供电时显示闪电，联网圆点改为 Wi-Fi 图标，断网时显示斜线。修正外部供电与电池对应的熄屏时间选择，网页预览同步屏幕显示。修复拔掉 USB 后充电图标仍亮的问题。",
+        "en": "The battery icon shows a lightning mark while powered by USB. A Wi-Fi icon replaces the network dot and shows a slash while offline. Corrects the external-power and battery screen-timeout selection and keeps the WebUI preview aligned with the display. Fixes the charging icon remaining on after USB is disconnected."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "22dbd08f9f67595ef15f5d080b8083fed2f86bb979bbf6de64016af7a593ba96"
+      },
+      "source_refs": [
+        "v1.0.0:b072"
+      ]
+    },
+    {
+      "change_id": "g3-power-key-shutdown",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "G3 长按关机",
+        "en": "G3 long-press shutdown"
+      },
+      "description": {
+        "zh-CN": "修复长按关机后立即重新启动。关机后等待松键，USB 保持供电时需重新长按约 2 秒开机；短按切页和唤醒保持可用。从熄屏开始持续长按也可关机，不再只执行唤醒。最小维护黑屏状态下也支持长按关机和重新开机；传输固件时禁止按键关机。",
+        "en": "Fixes immediate restart after a long-press shutdown. Shutdown waits for key release; when USB keeps the MCU powered, a new press of about 2 seconds turns it on. Short-press paging and wake remain available. A sustained press from a sleeping display now shuts down instead of only waking it. Long-press shutdown and restart also work in minimal recovery with a black display; power-key shutdown is disabled during firmware transfer."
+      },
+      "ota_summary": {
+        "zh-CN": "修复长按关机后立即重新启动。关机后等待松键，USB 保持供电时需重新长按约 2 秒开机；短按切页和唤醒保持可用。从熄屏开始持续长按也可关机，不再只执行唤醒。最小维护黑屏状态下也支持长按关机和重新开机；传输固件时禁止按键关机。",
+        "en": "Fixes immediate restart after a long-press shutdown. Shutdown waits for key release; when USB keeps the MCU powered, a new press of about 2 seconds turns it on. Short-press paging and wake remain available. A sustained press from a sleeping display now shuts down instead of only waking it. Long-press shutdown and restart also work in minimal recovery with a black display; power-key shutdown is disabled during firmware transfer."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "e18405c954c43888d10843d43801c4c04f61a07140a12d249f04f1e4b6e74c44"
+      },
+      "source_refs": [
+        "v1.0.0:b073"
+      ]
+    },
+    {
+      "change_id": "g3-web-direct-install",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "G3 屏幕网页直接安装",
+        "en": "G3 direct screen installation from the WebUI"
+      },
+      "description": {
+        "zh-CN": "首次从原厂屏幕安装和后续社区屏幕升级均可直接选择在线安装或上传文件。一次确认后自动校验、传输并激活，确认新 MCU 正常启动后显示安装成功。修复首次安装后偶发黑屏，以及在线下载误报参数无效的问题。更新提示的换行不再显示为问号。",
+        "en": "Both first installation from stock screen firmware and later community updates support online installation or file upload. One confirmation starts verification, transfer and activation; success appears after the new MCU starts normally. Fixes intermittent black screens after first installation and invalid-parameter errors during online downloads. Update-message line breaks no longer appear as question marks."
+      },
+      "ota_summary": {
+        "zh-CN": "首次从原厂屏幕安装和后续社区屏幕升级均可直接选择在线安装或上传文件。一次确认后自动校验、传输并激活，确认新 MCU 正常启动后显示安装成功。修复首次安装后偶发黑屏，以及在线下载误报参数无效的问题。更新提示的换行不再显示为问号。",
+        "en": "Both first installation from stock screen firmware and later community updates support online installation or file upload. One confirmation starts verification, transfer and activation; success appears after the new MCU starts normally. Fixes intermittent black screens after first installation and invalid-parameter errors during online downloads. Update-message line breaks no longer appear as question marks."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "1933b326536c1610d975b40fd90bf75e191ef1b39b1da53c44cd97b5ba58f2b6"
+      },
+      "source_refs": [
+        "v1.0.0:b074"
+      ]
+    },
+    {
+      "change_id": "g3-cloud-fresh-readings",
+      "version": "1.0.0",
+      "type": "bugfix",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "G3 云端实时读数",
+        "en": "G3 live cloud readings"
+      },
+      "description": {
+        "zh-CN": "同时连接局域网和 MQTT 时，云端卡片和详情页使用较新的传感器读数，避免旧局域网快照使 G3 显示无数据；按硬件型号选择 G3 详情页。",
+        "en": "When LAN and MQTT are both connected, cloud cards and details use the newer sensor readings, preventing an older LAN snapshot from leaving G3 with no data. The G3 detail page is selected by hardware identity."
+      },
+      "ota_summary": {
+        "zh-CN": "同时连接局域网和 MQTT 时，云端卡片和详情页使用较新的传感器读数，避免旧局域网快照使 G3 显示无数据；按硬件型号选择 G3 详情页。",
+        "en": "When LAN and MQTT are both connected, cloud cards and details use the newer sensor readings, preventing an older LAN snapshot from leaving G3 with no data. The G3 detail page is selected by hardware identity."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "bae3fe79d6ecc59fd9d079660d3eda7c3c56782b2f44b43f7c8105693a5073f6"
+      },
+      "source_refs": [
+        "v1.0.0:b075"
+      ]
+    },
+    {
+      "change_id": "g3-sensor-calibration",
+      "version": "1.0.0",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "G3 传感器校准",
+        "en": "G3 sensor calibration"
+      },
+      "description": {
+        "zh-CN": "新增原厂 CO₂ 400 ppm 与 TVOC 校准入口。网页简要说明预热和参考环境条件，显示采样及发送、应答状态，发命令前可取消。TVOC 完整厂家校准条件尚未公开，页面同步说明。",
+        "en": "Adds factory CO₂ 400 ppm and TVOC calibration controls. The WebUI explains warmup and reference conditions, reports sampling, command transmission and acknowledgement, and permits cancellation before transmission. Complete manufacturer conditions for TVOC calibration remain unpublished and are identified in the UI."
+      },
+      "ota_summary": {
+        "zh-CN": "新增原厂 CO₂ 400 ppm 与 TVOC 校准入口。网页简要说明预热和参考环境条件，显示采样及发送、应答状态，发命令前可取消。TVOC 完整厂家校准条件尚未公开，页面同步说明。",
+        "en": "Adds factory CO₂ 400 ppm and TVOC calibration controls. The WebUI explains warmup and reference conditions, reports sampling, command transmission and acknowledgement, and permits cancellation before transmission. Complete manufacturer conditions for TVOC calibration remain unpublished and are identified in the UI."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "e1637bf707451a1c0f23becb26023aeea4bf1334e6eb17e514f713bce18ebeba"
+      },
+      "source_refs": [
+        "v1.0.0:b076"
+      ]
+    },
+    {
+      "change_id": "hub-request-and-homekit-recovery",
+      "type": "bugfix",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "中枢请求调度与 HomeKit 状态恢复",
+        "en": "Hub request scheduling and HomeKit recovery"
+      },
+      "description": {
+        "zh-CN": "修复 HTTP / UDP 请求的回执匹配、忙状态处理和设备状态刷新，约束临时内存与等待队列；过期或其它设备的响应不能覆盖当前状态，已发送控制不自动重放。补齐 S30、A1 新风与 G3 的能力和有效传感器映射。",
+        "en": "Fix HTTP / UDP receipt matching, busy handling and device-state refresh with bounded temporary memory and waiting queues. Expired or other-device responses cannot replace current state, and issued controls are not automatically replayed. Complete capability and valid-sensor mapping for S30, A1 fresh-air variants and G3."
+      },
+      "ota_summary": {
+        "zh-CN": "修复 HTTP / UDP 请求的回执匹配、忙状态处理和设备状态刷新，约束临时内存与等待队列；过期或其它设备的响应不能覆盖当前状态，已发送控制不自动重放。补齐 S30、A1 新风与 G3 的能力和有效传感器映射。",
+        "en": "Fix HTTP / UDP receipt matching, busy handling and device-state refresh with bounded temporary memory and waiting queues. Expired or other-device responses cannot replace current state, and issued controls are not automatically replayed. Complete capability and valid-sensor mapping for S30, A1 fresh-air variants and G3."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "version": "1.0.0",
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "6be19100afb224cc2872385ba64d3aa24e47bc127f18c323ad5db91cce97007d"
+      },
+      "source_refs": [
+        "v1.0.0:b077"
+      ]
+    },
+    {
+      "change_id": "hub-power-energy-display",
+      "type": "feature",
+      "component": "bundled_web",
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "中枢计量与 Apple 家庭显示边界",
+        "en": "Hub metering and Apple Home display support"
+      },
+      "description": {
+        "zh-CN": "中枢网页显示 TC1 功率与 S30 电压、电流、功率、电量，计量失效或过期时清除旧值。HAP 通过 Eve 自定义特征提供整机 W / kWh；Apple 家庭不显示这些自定义读数，支持相应特征的第三方客户端可读取。",
+        "en": "Hub web pages show TC1 power and S30 voltage, current, power and energy, clearing invalid or expired readings. HAP exposes whole-device W / kWh through Eve custom characteristics. Apple Home does not display these custom readings; third-party clients supporting them can read the data."
+      },
+      "ota_summary": {
+        "zh-CN": "中枢网页显示 TC1 功率与 S30 电压、电流、功率、电量，计量失效或过期时清除旧值。HAP 通过 Eve 自定义特征提供整机 W / kWh；Apple 家庭不显示这些自定义读数，支持相应特征的第三方客户端可读取。",
+        "en": "Hub web pages show TC1 power and S30 voltage, current, power and energy, clearing invalid or expired readings. HAP exposes whole-device W / kWh through Eve custom characteristics. Apple Home does not display these custom readings; third-party clients supporting them can read the data."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "version": "1.0.0",
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "a2069634bb4f438078367ec2c6de48eb0803adc4f3294c5b20f531e245d6095d"
+      },
+      "source_refs": [
+        "v1.0.0:b078"
+      ]
+    },
+    {
+      "change_id": "g3-media-push-display-policy",
+      "type": "feature",
+      "component": "firmware",
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "stable"
+        ]
+      },
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "title": {
+        "zh-CN": "G3 媒体、推送与显示策略",
+        "en": "G3 media, push and display policies"
+      },
+      "description": {
+        "zh-CN": "配套 v1.0.0 ESP32、屏幕 MCU 与 WebUI 支持 JPEG / MJPEG 媒体、URL 来源和上传 / 推送流程、通知队列与过期以及显示策略。资源上传和激活前核对能力、容量及校验值；屏幕、恢复镜像和字库使用同一发布的固定资产。",
+        "en": "Matching v1.0.0 ESP32 firmware, screen MCU and WebUI support JPEG / MJPEG media, URL sources and upload / push workflows, notification queues and expiry, and display policies. Check capabilities, capacity and digests before uploading or activating resources. Use pinned screen, recovery and font assets from the same release."
+      },
+      "ota_summary": {
+        "zh-CN": "配套 v1.0.0 ESP32、屏幕 MCU 与 WebUI 支持 JPEG / MJPEG 媒体、URL 来源和上传 / 推送流程、通知队列与过期以及显示策略。资源上传和激活前核对能力、容量及校验值；屏幕、恢复镜像和字库使用同一发布的固定资产。",
+        "en": "Matching v1.0.0 ESP32 firmware, screen MCU and WebUI support JPEG / MJPEG media, URL sources and upload / push workflows, notification queues and expiry, and display policies. Check capabilities, capacity and digests before uploading or activating resources. Use pinned screen, recovery and font assets from the same release."
+      },
+      "summary_complete": true,
+      "critical": false,
+      "version": "1.0.0",
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root",
+        "reason": "Author reviewed both languages and current stable behavior; this is not independent or hardware acceptance.",
+        "reviewed_utc": "2026-11-13T21:39:08.127190+00:00",
+        "reviewed_content_sha256": "326e56d5b5c98b056a604629f89c6ae7cb34aa1f3b634556f27f83716501a660"
+      },
+      "source_refs": [
+        "v1.0.0:b079"
+      ]
     }
   ],
   "merges": []

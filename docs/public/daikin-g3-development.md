@@ -6,9 +6,9 @@ G3 使用两套独立工程：ESP32 负责网络、IoTCloud、网页、天气和
 
 | 项目 | 资料 |
 | --- | --- |
-| ESP32 | [RC6 源码](https://github.com/phicomm-io/iotcloud-community-firmware/tree/v1.0.0-rc.6/BRY88BBA15G)、[构建与接线](https://github.com/phicomm-io/iotcloud-community-firmware/blob/v1.0.0-rc.6/BRY88BBA15G/README.md) |
-| 屏幕 MCU | [独立仓库 RC6](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/tree/v1.0.0-rc.6)、[构建说明](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/README.md) |
-| 扩展服务 | [参数、能力位、二进制布局与 OTA](https://github.com/phicomm-io/iotcloud-community-firmware/blob/v1.0.0-rc.6/BRY88BBA15G/SERVICES.md) |
+| ESP32 | [v1.0.0 源码](https://github.com/phicomm-io/iotcloud-community-firmware/tree/v1.0.0/BRY88BBA15G)、[构建与接线](https://github.com/phicomm-io/iotcloud-community-firmware/blob/v1.0.0/BRY88BBA15G/README.md) |
+| 屏幕 MCU | [独立仓库 RC6](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/tree/v1.0.0)、[构建说明](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/README.md) |
+| 扩展服务 | [参数、能力位、二进制布局与 OTA](https://github.com/phicomm-io/iotcloud-community-firmware/blob/v1.0.0/BRY88BBA15G/SERVICES.md) |
 | 网页与平台 | [统一前端]({{FRONTEND_URL}})、[IoTCloud]({{PLATFORM_URL}})、[通用设备协议](device-api) |
 | 使用与资源 | [编排](daikin-g3-layout)、[天气与推送](daikin-g3-services)、[诊断](daikin-g3-diagnostics)、[原厂备份](stock-backups) |
 
@@ -52,9 +52,9 @@ G3 GPIO2 是屏幕 MCU 的唤醒输入。电平为高或正在升级时持有 AP
 
 上传每次至多写入 512 B，在线下载缓冲为 1024 B，每 16 KiB 主动让出执行，并随接收逐扇区擦除。启用休眠的 SDK 构建仍保留原有 OTA 目标标识、应用描述和原厂分区；整机电流需另行实测。
 
-屏幕启动先完成字库加载与校验，再开启传感器；三个传感器 UART 保留独立中断缓冲。升级时降低亮度并将 PD12 SET 拉低。ESP32 通过有界租期及匹配回执续约模块休眠，保持 UART owner 接收。Flash 写入期间可能丢失周期状态，因此已确认租期不依赖每次周期通告；回执年龄使用接收后的当前时间计算，避免旧循环时间戳产生无符号下溢。实现见[模块控制](https://github.com/phicomm-io/iotcloud-community-firmware/blob/v1.0.0-rc.6/BRY88BBA15G/screen_module.inc)。
+屏幕启动先完成字库加载与校验，再开启传感器；三个传感器 UART 保留独立中断缓冲。升级时降低亮度并将 PD12 SET 拉低。ESP32 通过有界租期及匹配回执续约模块休眠，保持 UART owner 接收。Flash 写入期间可能丢失周期状态，因此已确认租期不依赖每次周期通告；回执年龄使用接收后的当前时间计算，避免旧循环时间戳产生无符号下溢。实现见[模块控制](https://github.com/phicomm-io/iotcloud-community-firmware/blob/v1.0.0/BRY88BBA15G/screen_module.inc)。
 
-ESP32 单独重启后会请求屏幕重新协商扩展能力。如果启动请求丢失，收到带有效 CRC 的旧会话扩展帧时再次请求重置，恢复能力协商、布局和显示策略同步；无需重启 MCU。实现见[串口桥接](https://github.com/phicomm-io/iotcloud-community-firmware/blob/v1.0.0-rc.6/BRY88BBA15G/bridge.c)。
+ESP32 单独重启后会请求屏幕重新协商扩展能力。如果启动请求丢失，收到带有效 CRC 的旧会话扩展帧时再次请求重置，恢复能力协商、布局和显示策略同步；无需重启 MCU。实现见[串口桥接](https://github.com/phicomm-io/iotcloud-community-firmware/blob/v1.0.0/BRY88BBA15G/bridge.c)。
 
 ## 校准接入
 
@@ -80,14 +80,14 @@ NOR 默认四线硬件 SFC，用于字库、壁纸与升级暂存的读写和回
 
 | 主题 | 文档 |
 | --- | --- |
-| 实现与阶段记录 | [IMPLEMENTATION](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/IMPLEMENTATION.md)、[2026-11-05 实现](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/IMPLEMENTATION-20261105.md) |
-| 串口与能力协商 | [screen-link](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/screen-link.md) |
-| 引导、看门狗、恢复 | [BOOTLOADER](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/BOOTLOADER-20261105.md)、[RECOVERY-WDT](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/RECOVERY-WDT.md)、[MCU-RECOVERY](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/MCU-RECOVERY-20261106.md) |
-| 验证与首次烧录 | [VALIDATION](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/VALIDATION.md)、[FLASH-TEST](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/FLASH-TEST-20261105.md) |
-| 启动与传感器 | [STARTUP-LOADING](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/STARTUP-LOADING.md)、[SENSORS-CALIBRATION](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/SENSORS-CALIBRATION.md)、[MODULE-CONTROL](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/MODULE-CONTROL.md)、[RTC](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/RTC.md) |
-| UI 与外观 | [UI-REDESIGN-PLAN](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/UI-REDESIGN-PLAN.md)、[UI-AND-RESOURCES](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/UI-AND-RESOURCES.md)、[APPEARANCE](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/APPEARANCE.md)、[BRIGHTNESS-PLAN](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/BRIGHTNESS-PLAN.md) |
-| 字库 | [EXTERNAL-FONT](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/EXTERNAL-FONT.md) |
-| 显示性能 | [DISPLAY-DIAGNOSTICS](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/DISPLAY-DIAGNOSTICS.md)、[RENDER-PERFORMANCE](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/RENDER-PERFORMANCE.md)、[PAGE-SWITCH-PERFORMANCE](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0-rc.6/docs/PAGE-SWITCH-PERFORMANCE.md) |
+| 实现与阶段记录 | [IMPLEMENTATION](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/IMPLEMENTATION.md)、[2026-11-05 实现](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/IMPLEMENTATION-20261105.md) |
+| 串口与能力协商 | [screen-link](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/screen-link.md) |
+| 引导、看门狗、恢复 | [BOOTLOADER](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/BOOTLOADER-20261105.md)、[RECOVERY-WDT](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/RECOVERY-WDT.md)、[MCU-RECOVERY](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/MCU-RECOVERY-20261106.md) |
+| 验证与首次烧录 | [VALIDATION](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/VALIDATION.md)、[FLASH-TEST](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/FLASH-TEST-20261105.md) |
+| 启动与传感器 | [STARTUP-LOADING](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/STARTUP-LOADING.md)、[SENSORS-CALIBRATION](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/SENSORS-CALIBRATION.md)、[MODULE-CONTROL](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/MODULE-CONTROL.md)、[RTC](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/RTC.md) |
+| UI 与外观 | [UI-REDESIGN-PLAN](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/UI-REDESIGN-PLAN.md)、[UI-AND-RESOURCES](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/UI-AND-RESOURCES.md)、[APPEARANCE](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/APPEARANCE.md)、[BRIGHTNESS-PLAN](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/BRIGHTNESS-PLAN.md) |
+| 字库 | [EXTERNAL-FONT](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/EXTERNAL-FONT.md) |
+| 显示性能 | [DISPLAY-DIAGNOSTICS](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/DISPLAY-DIAGNOSTICS.md)、[RENDER-PERFORMANCE](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/RENDER-PERFORMANCE.md)、[PAGE-SWITCH-PERFORMANCE](https://github.com/phicomm-io/iotcloud-bry88bba15g-screenmcu/blob/v1.0.0/docs/PAGE-SWITCH-PERFORMANCE.md) |
 
 ## 构建与验收
 

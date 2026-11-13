@@ -1,6 +1,6 @@
 # S30M-V1B automation, linkage and remote display
 
-**Version requirement:** RC5 includes local power rules and MQTT remote display. Weekly / once schedules and Clock settings are subsequent main features that require new firmware containing this fix; published RC5 packages do not include calendar schedules.
+**Version requirement:** v1.0.0 includes local power rules, weekly / once schedules, Clock settings and MQTT remote display. Published RC5 packages include power rules but not calendar schedules; check the target version before installing.
 
 ## Socket automation
 
