@@ -2,6 +2,7 @@
 #pragma once
 #include "hub_device_bus.h"
 #include <ArduinoJson.h>
+#include <cstring>
 
 namespace iotcloud {
 // One local owner; cloud identities and credentials never authorize this
@@ -62,7 +63,7 @@ public:
       return false;
     for (JsonPairConst p : object) {
       std::string name = "|" + std::string(p.key().c_str()) + "|";
-      if (std::string(names).find(name) == std::string::npos)
+      if (!std::strstr(names, name.c_str()))
         return false;
     }
     return true;

@@ -12,6 +12,16 @@ static std::string hex(const uint8_t *bytes, size_t n) {
   return s;
 }
 int main() {
+  {
+    DynamicJsonDocument fields(256);
+    fields["mac"] = true;
+    assert(iotcloud::HubService::fields(fields.as<JsonObjectConst>(), "|mac||model|"));
+    for (const char *unknown : {"ma", "mac_extra", "other"}) {
+      fields[unknown] = true;
+      assert(!iotcloud::HubService::fields(fields.as<JsonObjectConst>(), "|mac||model|"));
+      fields.remove(unknown);
+    }
+  }
   DynamicJsonDocument config(16384);
   config["auth"]["password"] = "device-web-password";
   config.shrinkToFit();
