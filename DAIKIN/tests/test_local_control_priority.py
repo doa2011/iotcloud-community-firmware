@@ -32,7 +32,7 @@ namespace iotcloud {struct HubHome{enum Control{Outlet};};}
 static bool homeHealthy(){return true;}
 struct {
  void tick(uint32_t){}
- bool begin(size_t,iotcloud::HubHome::Control,unsigned,double,bool,bool){return true;}
+ bool begin(size_t,iotcloud::HubHome::Control,unsigned,double,bool,bool,bool,bool){return true;}
  bool finished(){return false;}
  bool finish(){++finishes;return false;}
 }hubHome;

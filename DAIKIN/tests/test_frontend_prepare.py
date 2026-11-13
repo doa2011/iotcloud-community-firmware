@@ -52,11 +52,14 @@ class FrontendPrepareTest(unittest.TestCase):
         self.version = ModuleType('check_version')
         self.version.resolve_version = lambda path: {'version': 'v-test', 'git_commit': 'abcdef0123456789'}
 
-    def run_build(self, variant, local=None):
+    def run_build(self, variant, local=None, hub_dist=None):
         project = self.root / 'DAIKIN'
         project.mkdir(exist_ok=True)
         env = BuildEnv(PROJECT_DIR=str(project), PIOENV={'hub':'bry88ab-hub','g3':'bry88bba15g','full':'bry88ab'}[variant])
         with patch.dict(sys.modules, {'frontend_release': self.release, 'check_version': self.version}), patch.dict(os.environ):
+            os.environ.pop('PHICOMM_HUB_FRONTEND_DIST', None)
+            if hub_dist is not None:
+                os.environ['PHICOMM_HUB_FRONTEND_DIST'] = str(hub_dist)
             if local is None:
                 os.environ.pop('PHICOMM_FRONTEND_SOURCE', None)
             else:
@@ -113,6 +116,35 @@ class FrontendPrepareTest(unittest.TestCase):
         (self.bundle / 'hub/standalone-daikin.html').unlink()
         with self.assertRaisesRegex(RuntimeError, 'Hub shared frontend missing'):
             self.run_build('hub')
+
+    def test_hub_local_uses_explicit_cache_build_instead_of_stale_dist(self):
+        source = self.root/'source'
+        stale = source/'frontend/dist'
+        stale.mkdir(parents=True)
+        (stale/'index.html').write_text('stale Cloud bundle')
+        built = self.bundle/'hub'
+        (built/'frontend-build.json').write_text(json.dumps({'schema': 1, 'mode': 'hub'}))
+        with patch('subprocess.check_output', side_effect=lambda cmd, **kwargs: ('fixture\n' if 'rev-parse' in cmd else '') if kwargs.get('text') else b''):
+            out = self.run_build('hub', source, built)
+        self.assertEqual(gzip.decompress(self.root_bytes(out)), self.files['standalone-daikin.html'])
+        metadata = json.loads((out/'frontend.json').read_text())
+        self.assertEqual(metadata['hub_build'], {'schema': 1, 'mode': 'hub'})
+        self.assertIn('frontend-build.json', metadata['hub_files'])
+
+    def test_hub_local_rejects_cloud_or_unmarked_build(self):
+        source = self.root/'source'
+        source.mkdir()
+        marker = self.bundle/'hub/frontend-build.json'
+        with patch('subprocess.check_output', side_effect=lambda cmd, **kwargs: ('fixture\n' if 'rev-parse' in cmd else '') if kwargs.get('text') else b''):
+            with self.assertRaisesRegex(RuntimeError, 'metadata missing'):
+                self.run_build('hub', source, self.bundle/'hub')
+            marker.write_text(json.dumps({'schema': 1, 'mode': 'cloud'}))
+            with self.assertRaisesRegex(RuntimeError, 'not a Cloud bundle'):
+                self.run_build('hub', source, self.bundle/'hub')
+
+    def test_hub_dist_override_requires_explicit_development_source(self):
+        with self.assertRaisesRegex(RuntimeError, 'requires PHICOMM_FRONTEND_SOURCE'):
+            self.run_build('hub', hub_dist=self.bundle/'hub')
 
 
 if __name__ == '__main__':

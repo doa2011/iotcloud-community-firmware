@@ -58,6 +58,8 @@ G1/G2 原厂 SensorKit2 的 `esp_clk_init` 在 `0x400d1f2e` 选择 240 MHz；社
 
 G3 的项目名称保留 `arduino-lib-builder`，保持已安装固件检查的 OTA 应用描述；目标与变体描述继续固定在原偏移，分区布局保持原样。Hub 保留已有 LTO 构建，以容纳完整前端及原厂 OTA 余量。
 
+G3 每秒更新屏幕时钟和提醒状态时，先保留有时限的完整 HTTP 快照，待新状态编码完成后替换，避免常规刷新期间返回 `busy`。配置提交和已知失效的传感器仍立即撤下旧快照。
+
 ## 构建与安装
 
 安装 PlatformIO Core 后执行：
@@ -65,6 +67,23 @@ G3 的项目名称保留 `arduino-lib-builder`，保持已安装固件检查的 
 ```sh
 ./DAIKIN/build.sh
 ```
+
+本地开发 Hub 前端时，先在前端仓库用 `VITE_HUB=1` 构建，再明确指定该产物目录。打包器检查 `frontend-build.json` 的 Hub 模式，避免混入 Cloud 页面或旧的默认构建目录；正式锁定归档仍由 `frontend.lock.json` 校验。
+
+```sh
+PHICOMM_FIRMWARE_VARIANT=hub \
+PHICOMM_FRONTEND_SOURCE=/path/to/iotcloud-community-frontend \
+PHICOMM_HUB_FRONTEND_DIST=/path/to/shared-cache/hub-dist \
+./DAIKIN/build.sh
+```
+
+Hub 的 MQTT 收发缓冲为 1024 字节，按 SDK 的分片偏移组装入站消息、分片发送较大出站消息，消息长度限制保持不变。HomeKit 完整请求的接收与处理分开，接收/解密用的栈缓冲在调用业务处理前释放；中枢仍保留既有的字节堆准入余量。
+
+Hub HTTP 命令按 8 KiB 响应上限检查连续内存，保留总内存预算及 16 KiB 业务余量；状态转发直接复制已验证的 MessagePack 子树。JSON 响应转换池按需增长至原有 12 KiB 上限，使设备列表和命令能在剩余堆已分段时继续工作。
+
+S30M-V1B 可使用明确配对的固定 IP 跨网段通信：仅在当前凭据的 CONTROL 会话认证成功后启用路由，完整 UDP 回执延续在线时间；不虚构固件版本或覆盖尚在线的 mDNS 地址。HomeKit 收到设备和插口名称后合并更新配置编号，提示控制器刷新缓存；空气净化器服务标记为 A1 的主服务，并分配独立于旧风扇服务的标识，保留配对和现有控制特征的标识。
+
+G3 的周期刷新和普通 MCU 遥测保留完整的已发布状态，编码完成后再整体替换；配置变更和已知失效的传感器样本仍立即撤下旧快照，原有读取租约及样本有效期不变。
 
 产物位于 `build/daikin-release/`：
 

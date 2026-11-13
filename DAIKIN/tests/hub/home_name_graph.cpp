@@ -6,6 +6,7 @@
 #include <deque>
 #include <set>
 using boolean=bool;
+static const unsigned PW=2;
 using Home=iotcloud::HubHome;
 static iotcloud::HubDeviceBus bus;
 static Home hubHome(bus);
@@ -19,7 +20,7 @@ static SpanService *currentService;
 static std::vector<std::pair<uint32_t,uint32_t>> identities;
 struct SpanCharacteristic {
   SpanService *owner;uint32_t iid;double value=0,next=0;
-  std::string text,nextText;bool flag=false,iotcloudAvailable=true;
+  std::string text,nextText;bool flag=false,iotcloudAvailable=true,writable=true;
   uint8_t iotcloudStringLimit=0;
   explicit SpanCharacteristic(double v=0):owner(currentService),iid(++currentIID),value(v),next(v){identities.emplace_back(currentAid,iid);}
   explicit SpanCharacteristic(const char *v):SpanCharacteristic(){text=nextText=v;}
@@ -33,24 +34,27 @@ struct SpanCharacteristic {
   char *getNewString(){return const_cast<char *>(nextText.c_str());}
   void setString(const char *v,bool=true){assert(!flag);text=nextText=v;}
   void setRange(double,double,double){}
+  void setDescription(const char *){}
+  void removePerms(unsigned){writable=false;}
 };
 static std::vector<SpanCharacteristic*> chars;
 static std::vector<SpanService*> services;
 struct SpanService {
-  std::string type;
+  std::string type;bool primary=false;
   SpanService(const char *type,const char * = ""):type(type){currentService=this;identities.emplace_back(currentAid,++currentIID);services.push_back(this);}
   virtual ~SpanService(){}
   virtual bool update(){return true;}
   virtual void loop(){}
+  void setPrimary(){primary=true;}
 };
 struct SpanAccessory;
 static std::vector<SpanAccessory*> accessories;
 struct SpanAccessory {explicit SpanAccessory(uint32_t aid){currentAid=aid;currentIID=0;accessories.push_back(this);}};
-struct {void resetIID(uint32_t iid){currentIID=iid-1;}}homeSpan;
+struct {unsigned configUpdates=0;void resetIID(uint32_t iid){currentIID=iid-1;}void updateDatabase(bool mdns,bool force){assert(mdns&&force);++configUpdates;}}homeSpan;
 namespace Service {
 struct AccessoryInformation:SpanService{AccessoryInformation():SpanService("3E") {}};
 struct Switch:SpanService{Switch():SpanService("49") {}};
-struct Fan:SpanService{Fan():SpanService("B7") {}};
+struct AirPurifier:SpanService{AirPurifier():SpanService("BB") {}};
 struct LightBulb:SpanService{LightBulb():SpanService("43") {}};
 }
 namespace Characteristic {
@@ -59,7 +63,8 @@ namespace Characteristic {
 HOST_NUM(Identify) HOST_NUM(On) HOST_NUM(Active) HOST_NUM(RotationSpeed) HOST_NUM(Brightness)
 HOST_NUM(CurrentTemperature) HOST_NUM(CurrentRelativeHumidity) HOST_NUM(CarbonDioxideDetected)
 HOST_NUM(CarbonDioxideLevel) HOST_NUM(AirQuality) HOST_NUM(PM25Density) HOST_NUM(PM10Density)
-HOST_NUM(StatusActive) HOST_NUM(StatusFault)
+HOST_NUM(StatusActive) HOST_NUM(StatusFault) HOST_NUM(CurrentAirPurifierState) HOST_NUM(TargetAirPurifierState)
+HOST_NUM(HomePower) HOST_NUM(HomeEnergy)
 HOST_TEXT(Name) HOST_TEXT(ConfiguredName) HOST_TEXT(Manufacturer) HOST_TEXT(Model)
 HOST_TEXT(SerialNumber) HOST_TEXT(FirmwareRevision)
 #undef HOST_NUM
@@ -79,14 +84,14 @@ static std::string wire(const JsonDocument &doc){std::string out;serializeMsgPac
 static DynamicJsonDocument status(size_t i,const std::string &name){
   DynamicJsonDocument doc(2048);const auto &d=hubHome.devices[i];
   doc["model"]=d.model;doc["device_id"]=d.mac;doc["name"]=name;
-  if(d.outletCount()){auto a=doc.createNestedArray("socket_states");for(unsigned c=0;c<d.outletCount();++c){if(d.model=="tc1")a.add(0);else a.add(false);}}
+  if(d.outletCount()){auto names=doc.createNestedArray("socket_names");for(unsigned c=0;c<d.outletCount();++c)names.add(name+" "+std::to_string(c));auto a=doc.createNestedArray("socket_states");for(unsigned c=0;c<d.outletCount();++c){if(d.model=="tc1")a.add(0);else a.add(false);}}
   else if(d.model=="a1"){doc["fan_on"]=false;doc["percentage"]=0;doc["led_visible"]=false;doc["brightness"]=0;}
   else if(d.model=="m1")doc["sensor_valid"]=false;
   else doc.createNestedObject("sensors");
   return doc;
 }
 static bool writeName(size_t i,const std::string &name){
-  auto c=homeConfiguredNames[i];const auto old=c->text;
+  auto c=homeConfiguredNames[i];if(!c->writable)return false;const auto old=c->text;
   c->nextText=name;c->flag=true;const bool ok=c->owner->update();
   c->flag=false;if(ok)c->text=c->nextText;else c->nextText=old;
   homeSyncNames();return ok;
@@ -105,13 +110,22 @@ int main(){
     discovery["firmware_version"]="test";discovery["wire_version"]=1;discovery["default_wire_format"]="msgpack";
     discovery.createNestedArray("wire_formats").add("msgpack");iotcloud::hubWire.observe("lab/discovery/"+d.mac,wire(discovery));
     std::set<unsigned> ids;for(const auto &identity:identities)if(identity.first==d.aid)ids.insert(identity.second);
-    assert(ids.size()==end+1&&ids.count(1000));for(unsigned iid=1;iid<=end;++iid)assert(ids.count(iid));
+    assert(ids.size()==end+1+(d.outletCount()?d.outletCount()+1:d.model=="a1"?2:0)&&ids.count(1000));
+    for(unsigned iid=1;iid<=end;++iid)assert(ids.count(iid)==(d.model!="a1"||iid!=8));
+    if(d.model=="a1")assert(ids.count(2000)&&ids.count(9)&&ids.count(10)&&ids.count(11));
     auto name=homeConfiguredNames[i];assert(name&&name->getIID()==1000);
-    assert(name->owner->type==(d.outletCount()?"49":d.model=="a1"?"B7":"8A"));
+    assert(name->owner->type==(d.outletCount()?"49":d.model=="a1"?"BB":"8A"));
+    if(d.model=="a1")assert(name->owner->primary);
     d.nameMax=d.model=="tc1"?31:63;d.nameCapabilitiesAt=clockMs;d.nameCapabilitiesKnown=true;
     hubHome.tick(clockMs);hubHome.observe(d.base+"/state",wire(status(i,"original")));
-    homeSyncNames();assert(homeNames[i]->text=="original"&&name->text=="original");
+    homeSyncNames();for(auto service:services)service->loop();assert(homeNames[i]->text=="original"&&name->text==(d.outletCount()?"original 0":"original"));
   }
+  // All initial accessory/channel names cause one controller refresh after
+  // hydration. Re-reading the same names must not write NVS each poll.
+  homeRefreshNames(clockMs+1499);assert(homeSpan.configUpdates==0);
+  clockMs+=1500;homeRefreshNames(clockMs);assert(homeSpan.configUpdates==1);
+  homeSyncNames();for(auto service:services)service->loop();
+  homeRefreshNames(clockMs+2000);assert(homeSpan.configUpdates==1);
   unsigned serial=0,writes=0;bool savedOk=true,admit=true,respond=true;
   std::array<std::string,Home::Capacity> savedNames;for(auto &name:savedNames)name="original";
   hubHome.randomHex=[&](size_t n){auto s=std::to_string(++serial);return std::string(2*n-s.size(),'0')+s;};
@@ -127,7 +141,7 @@ int main(){
     if(respond)events.emplace_back(hubHome.devices[i].base+"/result",wire(reply));
     return true;
   };
-  for(size_t i=0;i<hubHome.size;++i){assert(writeName(i,"同名, [温度]: \"name\" \\"));assert(homeNames[i]->text==savedNames[i]&&homeConfiguredNames[i]->text==savedNames[i]);}
+  for(size_t i=0;i<hubHome.size;++i){if(hubHome.devices[i].outletCount())continue;assert(writeName(i,"同名, [温度]: \"name\" \\"));assert(homeNames[i]->text==savedNames[i]&&homeConfiguredNames[i]->text==savedNames[i]);}
   const auto before=homeConfiguredNames[2]->text;
   savedOk=false;assert(!writeName(2,"failed")&&homeConfiguredNames[2]->text==before);savedOk=true;
   admit=false;assert(!writeName(2,"busy")&&homeNames[2]->text==before);admit=true;
@@ -138,10 +152,9 @@ int main(){
   // an offline cached identity, without rebuilding or changing pairing IDs.
   hubHome.observe(hubHome.devices[2].base+"/state",wire(status(2,"设备侧改名")));homeSyncNames();
   assert(homeNames[2]->text=="设备侧改名"&&homeConfiguredNames[2]->text=="设备侧改名"&&identities==stable);
-  // A name and relay update in one service are rejected before either command.
-  HomeOutlet *outlet=nullptr;
-  for(auto service:services)if((outlet=dynamic_cast<HomeOutlet *>(service))&&outlet->device==1&&outlet->channel==0)break;
-  assert(outlet);outlet->on->flag=true;assert(!writeName(1,"mixed")&&writes==count);outlet->on->flag=false;
+  const auto revisions=homeSpan.configUpdates;
+  homeRefreshNames(clockMs+1499);assert(homeSpan.configUpdates==revisions);
+  homeRefreshNames(clockMs+1500);assert(homeSpan.configUpdates==revisions+1);
   assert(writeName(2,"设备侧改名")&&writes==count); // unchanged name has no flash write
   healthy=false;assert(!writeName(2,"storage unavailable")&&writes==count);healthy=true;
   for(auto c:chars)delete c;for(auto s:services)delete s;

@@ -347,10 +347,8 @@ int main() {
   assert(masked.status == 200 && !deserializeJson(response, masked.body) &&
          response["key_set"] == true && !response.containsKey("api_key") &&
          masked.body.find("0123456789abcdef") == std::string::npos);
-  assert(
-      service
-          .handle(Request("DELETE", "/api/devices/aabbccddeeff", "", token), 6)
-          .status == 200);
+  const auto removed=service.handle(Request("DELETE", "/api/devices/aabbccddeeff", "", token), 6);
+  assert(removed.status==200&&removed.body=="{}"); // HTTP must emit a MessagePack map, not text null.
   assert(config["hub"]["bemfa"]["mappings"].size() == 0 &&
          config["hub"]["bemfa"]["enabled"] == false);
   auto bridge = Request(
@@ -464,6 +462,34 @@ int main() {
     auto all = large.handle(Request("GET", "/api/devices", "", true), 8);
     assert(all.status == 200 && !deserializeJson(devices, all.body) && devices.size() == 13);
     for (JsonObjectConst d : devices.as<JsonArrayConst>()) assert(d["username"] == owner);
+    // Full discovery metadata, including its worst printable JSON escaping,
+    // fits one row and stays inside the separately advertised wire budget.
+    large.deviceMetadata = [](JsonObject row) {
+      row["wire_version"] = 1;
+      row["default_wire_format"] = "msgpack";
+      row.createNestedArray("wire_formats").add("msgpack");
+      row["firmware_variant"] = std::string(32, '"');
+      row["firmware_version"] = std::string(64, '\\');
+      row["online"] = true; row["paired"] = true; row["route_confirmed"] = true;
+      row["ip"] = "255.255.255.255";
+    };
+    const Request list("GET", "/api/devices", "", true);
+    all = large.handle(list, 8);
+    DynamicJsonDocument detailed(16384);
+    assert(all.status == 200 && !deserializeJson(detailed, all.body) && detailed.size() == 13);
+    assert(large.workingMemory(list) >= 16384 + 1024 + all.body.size());
+    for (JsonObjectConst d : detailed.as<JsonArrayConst>()) {
+      assert(d["firmware_variant"].as<std::string>() == std::string(32, '"'));
+      assert(d["firmware_version"].as<std::string>() == std::string(64, '\\'));
+    }
+    // Seven visible rows reproduce the real paired Hub's inventory size.
+    while (maximum["hub"]["devices"].size() > 6)
+      maximum["hub"]["devices"].as<JsonArray>().remove(6);
+    assert(large.workingMemory(list) < 24576);
+    large.deviceMetadata = [](JsonObject row) { row["oversized"] = std::string(2048, 'x'); };
+    all = large.handle(list, 8);
+    assert(all.status == 503 && all.body == "{\"code\":\"internal_error\"}");
+    assert(large.handle(Request("GET", "/api/devices"), 8).status == 401);
   }
   // Obsolete independent credentials have no mutation path.
   const unsigned unchanged=writes;

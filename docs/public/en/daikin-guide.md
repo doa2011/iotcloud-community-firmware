@@ -69,13 +69,20 @@ Select **Hub management** on the device page, or open `http://DEVICE-IP/iotcloud
 
 After upgrading to rc.5, the separate hub password is retired. The existing hub username, device list, forwarding and pairing settings are retained. The hub username remains the topic namespace. Configure UDP device-pairing passwords and external MQTT broker credentials separately.
 
-The DAIKIN itself appears automatically in the hub device list. Paired-device parameters and controls use the hub UDP transport, so the browser only needs to reach the hub. TC1 cards show power and hide expired meter readings. Remote pages expose supported controls and diagnostics. Open the target device’s local page for network settings, administration passwords, automation, upgrades and backups.
+The DAIKIN itself appears automatically in the hub device list. Paired-device parameters and controls use the hub UDP transport, so the browser only needs to reach the hub. TC1 / S30 cards show power and hide expired meter readings. Remote pages expose supported controls and diagnostics. Open the target device’s local page for network settings, administration passwords, automation, upgrades and backups.
 
 In Hub management, select a discovered LAN device, check its model, ID and IP, and pair using that device's management password. Confirm and pair again if its IP changes. Move devices previously connected to the hub's embedded broker to an external broker.
 
+You can also register S30M-V1B through the management API and pair it at a specified IP across subnets where mDNS is unavailable. The hub uses that address after authenticating the session.
+
 Apple Home uses experimental HAP bridging, off by default. Enable it under **Apple Home** to obtain the pairing code. Matter is unavailable.
 
-Device names synchronize to HomeKit. A client that writes ConfiguredName can rename the device through the hub, with persistence and readback confirmation. Upgrade both the hub and target device to rc.5. Names follow each device’s UTF-8 byte limit: 31 bytes for TC1, 63 for A1, M1, DAIKIN and S30. Pairings and device identities are retained. Ordinary Apple Home renames are client-local aliases; use device settings when you want to change the shared device name.
+After receiving new device and socket names, the hub notifies the home controller to refresh its configuration. Existing pairings are retained.
+
+Each TC1 / S30 switch synchronizes its device-side socket name. Change socket names in device settings; the hub refreshes them automatically. Socket ConfiguredName is read-only; renaming in Apple Home remains a client-local alias. Device names synchronize to HomeKit. A1, M1 and DAIKIN also accept ConfiguredName writes through the hub, with persistence and readback confirmation. Upgrade both the hub and target device to rc.6 for these name and metering features. Names follow each device’s UTF-8 byte limit: 31 bytes for TC1, 63 for A1, M1, DAIKIN and S30. Pairings and device identities are retained. Use device settings when you want to change the shared device name.
+
+A1 purifiers and fresh-air variants use the standard AirPurifier service for power, speed and automatic/manual mode. Upgrades assign this service a separate identity from the former Fan service while preserving pairing and existing control characteristic identities. The first TC1 / S30 switch also exposes whole-device power (W) and cumulative energy (kWh) using Eve custom characteristics. Compatible clients can read them; Apple Home decides whether to display them.
+
 
 ### Switch from full to hub
 

@@ -689,7 +689,9 @@ static void screenServicesPoll(uint32_t now) {
   if (now - screenServicesAt < 1000 || screenImage.active)
     return;
   screenServicesAt = now;
-  invalidateBusinessStatusCache();
+  // Clock and reminder status needs a new publication each second. Keep the
+  // complete, leased snapshot readable while its replacement is encoded.
+  requestBusinessStatusRefresh();
   uint32_t cursor = screenSchedule.cursor;
   bool started = screenSchedule.started;
   uint32_t epoch = time(nullptr), ids[REMINDER_MAX];

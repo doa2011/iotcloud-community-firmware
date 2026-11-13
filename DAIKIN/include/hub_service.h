@@ -248,6 +248,8 @@ public:
   Reply handle(const Request &request, uint32_t now) {
     const auto &path = request.path;
     const bool get = request.method == "GET";
+    if (get && path == "/api/devices")
+      return request.webAuthorized ? devicesReply(request) : fail(401, "unauthorized");
     // Most requests contain only credentials or a single device. Reserving two
     // maximum-size documents here starves the ESP32 byte-addressable heap.
     DynamicJsonDocument input(inputCapacity(request)), output(outputCapacity(request));
@@ -369,24 +371,6 @@ public:
       return json(output, 202);
     }
     if (path == "/api/devices") {
-      if (get) {
-        auto devices = output.to<JsonArray>();
-        if (!localMac.empty()) {
-          auto self = devices.createNestedObject();
-          self["mac"] = localMac;
-          self["model"] = "daikin";
-          self["version"] = "v2";
-          self["status"] = "active";
-          self["username"] = user();
-          self["self"] = true;
-          if (deviceMetadata) deviceMetadata(self);
-        }
-        for (JsonObjectConst device : config["hub"]["devices"].as<JsonArrayConst>())
-          if (localMac.empty() || device["mac"] != localMac)
-            { auto row = devices.createNestedObject(); row.set(device);
-              if (deviceMetadata) deviceMetadata(row); }
-        return json(output);
-      }
       if (request.method != "POST")
         return fail(405, "method_not_allowed");
       input["status"] = "active";
@@ -434,7 +418,7 @@ public:
         next["hub"]["bemfa"]["enabled"] = false;
       if (!commit(next, false))
         return fail(503, "storage_error");
-      return json(output);
+      return Reply();
     }
     if (path == "/api/hub/bridge") {
       if (get) {
@@ -567,16 +551,56 @@ private:
     return value;
   }
   size_t outputCapacity(const Request &request) const {
-    if (request.method == "GET" && (request.path == "/api/hub/lan" || request.path == "/api/devices")) return 8192;
+    if (request.method == "GET" && request.path == "/api/devices") return 1024;
+    if (request.method == "GET" && request.path == "/api/hub/lan") return 8192;
     return std::max<size_t>(2048, responseValue(request).memoryUsage() + 1024);
   }
   size_t responseCapacity(const Request &request) const {
-    if (request.method == "GET" && (request.path == "/api/hub/lan" || request.path == "/api/devices")) return 8192;
+    if (request.method == "GET" && request.path == "/api/devices")
+      // One runtime self row plus bounded LAN metadata for each registration.
+      // Printable discovery strings can double when JSON-escaped.
+      return std::max<size_t>(2048, measureJson(responseValue(request)) + 256 +
+          (deviceMetadata ? (config["hub"]["devices"].size() + 1) * 512 : 0));
+    if (request.method == "GET" && request.path == "/api/hub/lan") return 8192;
     // Repeated JSON strings share pool storage, while escaped strings expand
     // on the wire. Budget the serialized bytes separately from the JSON pool.
     // The margin covers bridge MQTT metadata (127-byte host, 63-byte user,
     // escaped up to sixfold), status fields and the terminating byte.
     return std::max<size_t>(2048, measureJson(responseValue(request)) + 1536);
+  }
+  Reply devicesReply(const Request &request) const {
+    // Serialize one row at a time: HAP and UDP keep running without an 8 KiB
+    // inventory tree. Never send a partial list if metadata exceeds its bound.
+    DynamicJsonDocument row(outputCapacity(request));
+    if (!row.capacity()) return fail(503, "busy");
+    Reply reply;
+    const size_t limit = responseCapacity(request);
+    reply.body.reserve(limit);
+    reply.body = "[";
+    auto append = [&]() {
+      if (deviceMetadata) deviceMetadata(row.as<JsonObject>());
+      if (row.overflowed() || reply.body.size() + measureJson(row) + 2 >= limit)
+        return false;
+      if (reply.body.size() > 1) reply.body += ',';
+      serializeJson(row, reply.body);
+      return true;
+    };
+    if (!localMac.empty()) {
+      row["mac"] = localMac;
+      row["model"] = "daikin";
+      row["version"] = "v2";
+      row["status"] = "active";
+      row["username"] = user();
+      row["self"] = true;
+      if (!append()) return fail(503, "internal_error");
+    }
+    for (JsonObjectConst device : config["hub"]["devices"].as<JsonArrayConst>()) {
+      if (!localMac.empty() && device["mac"] == localMac) continue;
+      row.clear();
+      if (!row.set(device) || !append()) return fail(503, "internal_error");
+    }
+    reply.body += ']';
+    return reply;
   }
   DynamicJsonDocument &config;
   static bool suffix(const std::string &value, const std::string &end) {

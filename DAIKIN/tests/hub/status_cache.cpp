@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <cassert>
+#include <functional>
 #include <thread>
 #include "wire_mp.h"
 #include "http_read_snapshot.h"
@@ -73,13 +74,69 @@ static int mqttLastEvent = 1, mqttErrorType = 0, mqttSocketError = 0;
 static bool mqttConnected = true;
 #ifdef IOTCLOUD_BRY88_SCREEN
 static bool mqttCommandReady = true;
-static void screenStatus(JsonObject out){out["sensor_source"]="screen_mcu";if(duringStateBuild)duringStateBuild();}
+static void screenStatus(JsonObject out);
 static void screenPowerStatus(JsonObject) {}
 #endif
 #include "indicators.inc"
 #include "state.inc"
 #include "public_read.inc"
 #include "account_scope.inc"
+
+#ifdef IOTCLOUD_BRY88_SCREEN
+extern "C" {
+#include "../../../BRY88BBA15G/protocol/screen_caps.h"
+#include "../../../BRY88BBA15G/protocol/scene.h"
+}
+static struct {bool extended=true;uint32_t session=1,capabilities=SCREEN_CAP_BACKLIGHT|SCREEN_CAP_SCENE_V3|SCREEN_CAP_RESOURCE_IO|SCREEN_CAP_MODULE_CONTROL;} screenBridge;
+static struct {bool active=false;} screenImage;
+static struct {unsigned mode=0;} screenGuard;
+static bool screenRecovering=false;
+static bool screenGuardAvailable(){return true;}
+static void delay(unsigned n){clockMs+=n;}
+static bool screenFields(JsonObjectConst,const char *){return true;}
+static bool bry_bridge_send(void *,const void *,size_t,unsigned){return true;}
+#include "../../../BRY88BBA15G/screen_brightness.inc"
+#include "../../../BRY88BBA15G/screen_module.inc"
+static void screenStatus(JsonObject out){
+ out["sensor_source"]="screen_mcu";
+ JsonObject screen=out.createNestedObject("screen");
+ screenBrightnessStatus(screen.createNestedObject("brightness"));
+ screenResourceStatus(screen.createNestedObject("resources"));
+ screenModuleStatus(screen.createNestedObject("module"));
+ if(duringStateBuild)duringStateBuild();
+}
+static void telemetryKeepsPublication(){
+ auto receive=[&](const std::function<void()> &callback){
+  String before,copy;assert(businessReadSnapshot.copy(before,false,clockMs));
+  const unsigned builds=businessStatusBuilds;
+  callback();assert(businessStatusInvalid);
+  assert(businessReadSnapshot.copy(copy,false,clockMs)&&copy==before);
+  duringStateBuild=[](){String previous;assert(businessReadSnapshot.copy(previous,false,clockMs));};
+  assert(pollBusinessStatusCache(clockMs));duringStateBuild=nullptr;
+  assert(businessStatusBuilds==builds+1);
+ };
+ uint8_t backlight[SCREEN_BACKLIGHT_BYTES];
+ assert(screen_backlight_encode(backlight,60,10,10,false));
+ receive([&](){assert(screenBrightnessReceive(backlight,sizeof(backlight)));});
+ DynamicJsonDocument doc(8192);state(doc.to<JsonObject>());
+ assert(doc["screen"]["brightness"]["available"]==true&&doc["screen"]["brightness"]["applied_percent"]==10);
+ uint8_t bank[24]={0x2a,2,2,0,1,0,0,0,57,0,0,0,0x12,0x34,0x56,0x78};
+ receive([&](){screenResourceReceive(bank,sizeof(bank));});
+ doc.clear();state(doc.to<JsonObject>());
+ assert(doc["screen"]["resources"]["available"]==true&&doc["screen"]["resources"]["glyphs"]==1);
+ uint8_t module[20]={SCREEN_MSG_MODULE_STATUS,1,0,5};
+ scene_put32(module+8,10000);
+ receive([&](){screenModuleReceive(module,sizeof(module));});
+ doc.clear();state(doc.to<JsonObject>());
+ assert(doc["screen"]["module"]["available"]==true&&doc["screen"]["module"]["set_high"]==false);
+ // An ordinary telemetry refresh must not weaken invalid-sample withdrawal.
+ readings[PM25].received=false;
+ duringStateBuild=[](){String previous;assert(!businessReadSnapshot.copy(previous,false,clockMs));};
+ assert(pollBusinessStatusCache(clockMs));duringStateBuild=nullptr;
+ doc.clear();state(doc.to<JsonObject>());assert(doc["sensors"]["pm25"]["valid"]==false);
+ readings[PM25].set(52,clockMs);assert(pollBusinessStatusCache(clockMs));
+}
+#endif
 
 static void httpReads(){
  String original;
@@ -105,7 +162,27 @@ static void httpReads(){
  request["params"].to<JsonObject>();request["request_id"]="busy-id";body="";serializeWireMP(request,body);out="";
  assert(publicReadCommand(body,out));assert(!deserializeJson(reply,out));
  assert(reply["code"]=="busy"&&reply["request_id"]=="busy-id");
+ out="";reply.clear();assert(publicReadCommand(body,out,true));
+ assert(!deserializeMsgPack(reply,out.c_str(),out.length()));
+ assert(reply["code"]=="busy"&&reply["request_id"]=="busy-id");
  assert(pollBusinessStatusCache(clockMs));assert(businessReadSnapshot.copy(copy,false,clockMs));
+}
+
+static void largeEncodedRead(){
+ // A complete G3 publication fits the UDP response while its decoded object
+ // needs more than the former second 6 KiB JSON pool.
+ DynamicJsonDocument full(24576),reply(24576),request(512),formerPool(6144);
+ assert(!deserializeMsgPack(full,cachedBusinessState().c_str(),cachedBusinessState().length()));
+ JsonObject details=full["screen"].createNestedObject("settings");
+ for(unsigned i=0;i<80;i++)details[std::string("setting_")+std::to_string(i)]=std::string(32,'a'+i%26);
+ assert(!full.overflowed());String wire;serializeWireMP(full,wire);assert(wire.length()<8192);
+ assert(deserializeMsgPack(formerPool,wire.c_str(),wire.length())==DeserializationError::NoMemory);
+ String http("unused");assert(businessReadSnapshot.publish(String(wire),std::move(http),clockMs));
+ request["action"]="status.get";request["request_id"]="large-read";request.createNestedObject("params");
+ String body,out;serializeWireMP(request,body);assert(publicReadCommand(body,out,true));
+ assert(!deserializeMsgPack(reply,out.c_str(),out.length()));
+ assert(reply["code"]=="ok"&&reply["request_id"]=="large-read");
+ String returned;serializeWireMP(reply["data"],returned);assert(returned==wire);
 }
 
 static void concurrentCopies(){
@@ -167,7 +244,23 @@ int main(){
  readings[PM25].set(52,clockMs);
  duringStateBuild=[](){String previous;assert(businessReadSnapshot.copy(previous,false,clockMs));};
  assert(pollBusinessStatusCache(clockMs));duringStateBuild=nullptr;
+ // A periodic screen refresh also replaces a complete publication. Readers
+ // must retain the previous snapshot while JSON and MessagePack are built.
+ const String beforePeriodic=cachedBusinessState();
+ const unsigned beforePeriodicBuilds=businessStatusBuilds;
+ clockMs+=1000;requestBusinessStatusRefresh();
+ String periodicCopy;assert(businessReadSnapshot.copy(periodicCopy,false,clockMs));
+ assert(periodicCopy==beforePeriodic);
+ duringStateBuild=[](){String previous;assert(businessReadSnapshot.copy(previous,false,clockMs));};
+ assert(pollBusinessStatusCache(clockMs));duringStateBuild=nullptr;
+ assert(businessStatusBuilds==beforePeriodicBuilds+1);
+ assert(cachedBusinessState()!=beforePeriodic);
+ doc.clear();state(doc.to<JsonObject>());assert(doc["snapshot_uptime_ms"]==clockMs);
+#ifdef IOTCLOUD_BRY88_SCREEN
+ telemetryKeepsPublication();
+#endif
  config["device"]["name"]="changed";invalidateBusinessStatusCache();
+ String invalidated;assert(!businessReadSnapshot.copy(invalidated,false,clockMs));
  doc.clear();state(doc.to<JsonObject>());assert(doc["name"]=="changed");
  clockMs=100000;co2Module.warmed=false;assert(pollBusinessStatusCache(clockMs));unsigned warm=businessStatusBuilds;
  clockMs+=1000;assert(pollBusinessStatusCache(clockMs));assert(businessStatusBuilds==warm+1);
@@ -178,5 +271,5 @@ int main(){
  assert(pair.size()==2&&pair[0].is<unsigned>());if(pair[0]==PH_DIAG_MQTT_ERROR_TYPE){assert(pair[1]==0);zero=true;}}
  assert(zero);co2Module.received=false;doc.clear();diagnostics(doc.to<JsonObject>());
  for(JsonArrayConst pair:doc["fields"].as<JsonArrayConst>())assert(pair[0]!=PH_DIAG_CO2_DIAGNOSTICS_RAW_PPM);
- httpReads();concurrentCopies();
+ httpReads();largeEncodedRead();concurrentCopies();
 }

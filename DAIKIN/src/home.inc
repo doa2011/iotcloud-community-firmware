@@ -1,6 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "hub_home_budget.h"
 #include <esp_heap_caps.h>
+// Eve-compatible total device readings. Apple Home chooses which optional
+// characteristics to display; clients supporting these UUIDs can read them.
+CUSTOM_CHAR(HomePower,E863F10D-079E-48FF-8F27-9C2605A29F52,PR+EV,FLOAT,0,0,100000,true);
+CUSTOM_CHAR(HomeEnergy,E863F10C-079E-48FF-8F27-9C2605A29F52,PR+EV,FLOAT,0,0,1000000000,true);
 // HAP is deliberately opt-in. Only authenticated local UDP state are trusted as
 // live state; upstream retained messages cannot confirm a Home control.
 static iotcloud::HomeStorage homeStorage;
@@ -38,13 +42,13 @@ static bool homeAwaitControl(){
   }while(uint32_t(millis()-began)<2500);
   hubHome.finish();return false;
 }
-static bool homeControl(size_t device,iotcloud::HubHome::Control control,unsigned channel,double value,bool powerUpdated=false,bool power=false){
+static bool homeControl(size_t device,iotcloud::HubHome::Control control,unsigned channel,double value,bool powerUpdated=false,bool power=false,bool modeUpdated=false,bool automatic=false){
   hubHome.tick(millis());
-  return homeHealthy()&&!otaActive&&hubHome.begin(device,control,channel,value,powerUpdated,power)&&homeAwaitControl();
+  return homeHealthy()&&!otaActive&&hubHome.begin(device,control,channel,value,powerUpdated,power,modeUpdated,automatic)&&homeAwaitControl();
 }
 static void homeAttachName(size_t device,uint32_t nextIID){
   // Reserve one IID outside the original graph, then resume its old sequence.
-  // Existing paired controllers retain every original AID and IID.
+  // Existing characteristics keep their original AID and IID.
   homeSpan.resetIID(1000);
   homeConfiguredNames[device]=new Characteristic::ConfiguredName(hubHome.devices[device].name.c_str());
   homeConfiguredNames[device]->iotcloudStringLimit=hubHome.devices[device].model=="tc1"?31:63;
@@ -59,46 +63,91 @@ static bool homeRename(size_t device){
   if(d.name==name)return true; // No flash write for an unchanged, confirmed name.
   return hubHome.beginName(device,name)&&homeAwaitControl();
 }
+static bool homeNamesPending=false;
+static uint32_t homeNamesChangedAt=0;
+static void homeNamesChanged(){homeNamesPending=true;homeNamesChangedAt=millis();}
+static void homeRefreshNames(uint32_t now){
+  // Batch the initial UDP snapshots and channel names into one persistent c#
+  // update. Do this outside HomeSpan's service iteration, which it rebuilds.
+  if(homeNamesPending&&uint32_t(now-homeNamesChangedAt)>=1500){
+    homeNamesPending=false;homeSpan.updateDatabase(true,true);
+  }
+}
 static void homeSyncNames(){
   for(size_t i=0;i<hubHome.size;++i){
     const auto &d=hubHome.devices[i];
     if(!d.seen)continue;
     if(homeConfiguredNames[i]&&d.nameMax)homeConfiguredNames[i]->iotcloudStringLimit=d.nameMax;
-    if(homeNames[i]&&strcmp(homeNames[i]->getString(),d.name.c_str()))homeNames[i]->setString(d.name.c_str(),false);
-    if(homeConfiguredNames[i]&&!homeConfiguredNames[i]->updated()&&strcmp(homeConfiguredNames[i]->getString(),d.name.c_str()))homeConfiguredNames[i]->setString(d.name.c_str());
+    if(homeNames[i]&&strcmp(homeNames[i]->getString(),d.name.c_str())){homeNames[i]->setString(d.name.c_str(),false);homeNamesChanged();}
+    if(!d.outletCount()&&homeConfiguredNames[i]&&!homeConfiguredNames[i]->updated()&&strcmp(homeConfiguredNames[i]->getString(),d.name.c_str())){homeConfiguredNames[i]->setString(d.name.c_str());homeNamesChanged();}
   }
 }
 // Relay state uses a Switch service; TC1 and S30-V1B do not report an
 // appliance-insertion sensor for an OutletInUse characteristic.
 struct HomeOutlet:Service::Switch{
-  size_t device;unsigned channel;SpanCharacteristic *on;
+  size_t device;unsigned channel;SpanCharacteristic *on,*name,*configuredName,*power=nullptr,*energy=nullptr;
   HomeOutlet(size_t d,unsigned c):device(d),channel(c){
     on=new Characteristic::On(false);
-    auto label=new Characteristic::Name((std::string("Outlet ")+std::to_string(c+1)).c_str());
-    if(!c)homeAttachName(d,label->getIID()+1);
+    name=new Characteristic::Name(hubHome.devices[d].outletNames[c].c_str());
+    const auto next=name->getIID()+1;
+    homeSpan.resetIID(1000+c);OPT(ConfiguredName);
+    configuredName=new Characteristic::ConfiguredName(hubHome.devices[d].outletNames[c].c_str());
+    configuredName->removePerms(PW);
+    if(c==0){
+      homeConfiguredNames[d]=configuredName;
+      homeSpan.resetIID(1200);
+      power=new Characteristic::HomePower();power->setDescription("Total Power (W)");
+      energy=new Characteristic::HomeEnergy();energy->setDescription("Total Energy (kWh)");
+    }
+    homeSpan.resetIID(next);
   }
-  boolean update()override{
-    if(!channel&&homeNameUpdated(device))return !on->updated()&&homeRename(device);
-    return !on->updated()||homeControl(device,iotcloud::HubHome::Outlet,channel,on->getNewVal());
-  }
+  boolean update()override{return !on->updated()||homeControl(device,iotcloud::HubHome::Outlet,channel,on->getNewVal());}
   void loop()override{
     const auto &d=hubHome.devices[device];bool live=d.controls&&d.reachable(millis())&&!homePaused;
     on->iotcloudAvailable=live;
     if(live&&on->getVal()!=d.outlets[channel])on->setVal(d.outlets[channel]);
+    if(d.namesKnown&&!configuredName->updated()&&strcmp(configuredName->getString(),d.outletNames[channel].c_str())){
+      name->setString(d.outletNames[channel].c_str(),false);
+      configuredName->setString(d.outletNames[channel].c_str());
+      homeNamesChanged();
+    }
+    if(power){
+      const bool reachable=d.reachable(millis())&&!homePaused;
+      power->iotcloudAvailable=reachable&&d.power.fresh(millis());
+      energy->iotcloudAvailable=reachable&&d.energy.fresh(millis());
+      if(power->iotcloudAvailable&&power->getVal<double>()!=d.power.number)power->setVal(d.power.number);
+      if(energy->iotcloudAvailable&&energy->getVal<double>()!=d.energy.number)energy->setVal(d.energy.number);
+    }
   }
 };
-struct HomeFan:Service::Fan{
-  size_t device;SpanCharacteristic *active,*speed;
-  HomeFan(size_t d):device(d){active=new Characteristic::Active(0);speed=new Characteristic::RotationSpeed(0);homeAttachName(d,speed->getIID()+1);}
+struct HomeFan:Service::AirPurifier{
+  size_t device;SpanCharacteristic *active,*speed,*current,*target;
+  HomeFan(size_t d):device(d){
+    setPrimary();
+    // IID 8 belonged to the removed Fan service. Keep its unchanged controls
+    // at 9/10, but give AirPurifier a new service identity for paired clients.
+    homeSpan.resetIID(9);
+    active=new Characteristic::Active(0);speed=new Characteristic::RotationSpeed(0);
+    const auto next=speed->getIID()+1;homeSpan.resetIID(1100);
+    current=new Characteristic::CurrentAirPurifierState(0);
+    target=new Characteristic::TargetAirPurifierState(0);
+    homeSpan.resetIID(next);homeAttachName(d,next);
+  }
   boolean update()override{
-    if(homeNameUpdated(device))return !speed->updated()&&!active->updated()&&homeRename(device);
-    if(speed->updated())return homeControl(device,iotcloud::HubHome::FanSpeed,0,std::round(speed->getNewVal<double>()),active->updated(),active->getNewVal());
+    if(homeNameUpdated(device))return !speed->updated()&&!active->updated()&&!target->updated()&&homeRename(device);
+    if(speed->updated())return homeControl(device,iotcloud::HubHome::FanSpeed,0,std::round(speed->getNewVal<double>()),active->updated(),active->getNewVal(),target->updated(),target->getNewVal());
+    if(target->updated())return homeControl(device,iotcloud::HubHome::FanMode,0,target->getNewVal(),active->updated(),active->getNewVal());
     return !active->updated()||homeControl(device,iotcloud::HubHome::FanOn,0,active->getNewVal());
   }
   void loop()override{
     const auto &d=hubHome.devices[device];bool live=d.controls&&d.reachable(millis())&&!homePaused;
-    active->iotcloudAvailable=speed->iotcloudAvailable=live;
-    if(live){if(active->getVal()!=d.fan)active->setVal(d.fan);if(speed->getVal()!=d.speed)speed->setVal(d.speed);}
+    active->iotcloudAvailable=speed->iotcloudAvailable=current->iotcloudAvailable=target->iotcloudAvailable=live;
+    if(live){
+      if(active->getVal()!=d.fan)active->setVal(d.fan);if(speed->getVal<unsigned>()!=d.speed)speed->setVal(d.speed);
+      const unsigned state=!d.fan?0:d.speed?2:1;
+      if(current->getVal()!=int(state))current->setVal(state);
+      if(target->getVal()!=d.automatic)target->setVal(d.automatic);
+    }
   }
 };
 struct HomeLight:Service::LightBulb{
@@ -207,7 +256,7 @@ static void homeInit(){
   for(size_t i=0;i<hubHome.size;i++){
     const auto &d=hubHome.devices[i];homeAccessory(d.aid,d.model.c_str(),d.mac.c_str(),d.name.c_str(),i);
     if(d.outletCount())for(unsigned c=0;c<d.outletCount();c++)new HomeOutlet(i,c);
-    else if(d.model=="a1"){new HomeFan(i);new HomeLight(i);}
+    else if(d.model=="a1"){homeSpan.resetIID(2000);new HomeFan(i);new HomeLight(i);}
     else{new HomeSensor(i,Home::Temperature);new HomeSensor(i,Home::Humidity);new HomeSensor(i,Home::CO2);new HomeSensor(i,Home::PM25);if(d.model=="daikin")new HomeSensor(i,Home::PM10);}
   }
   if(!homeSpan.iotcloudInitialize()){homeSpan.iotcloudStop();return;}
@@ -216,6 +265,10 @@ static void homeInit(){
 static void homeStatus(JsonObject out){
   bool ready=homeHealthy();
   out["ready"]=ready;out["code"]=homeError;out["paired"]=ready&&HAPClient::nAdminControllers()>0;out["devices"]=homeStarted?hubHome.size:0;out["port"]=51826;
+  if(ready)out["config_number"]=homeSpan.iotcloudConfigNumber();
+  // Called on loop(), including after HAP's nested receive/control handlers.
+  // IDF reports bytes here, unlike vanilla FreeRTOS's stack-word unit.
+  out["loop_stack_min_bytes"]=uxTaskGetStackHighWaterMark(nullptr);
   if(ready&&!HAPClient::nAdminControllers()){
     char pin[11];snprintf(pin,sizeof(pin),"%.3s-%.2s-%.3s",homeCode,homeCode+3,homeCode+5);out["setup_code"]=pin;
     HapQR qr;out["setup_uri"]=qr.get(atoi(homeCode),homeSetupId,unsigned(Category::Bridges));
@@ -253,5 +306,6 @@ static void __attribute__((noinline)) pollHome(uint32_t now){
   if(due(now,homeNextQuery)){homeNextQuery=now+1000;hubHome.refresh();}
   homeSyncNames();
   homeSpan.poll();
+  homeRefreshNames(millis());
   homeHealthy();
 }

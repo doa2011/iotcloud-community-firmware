@@ -30,6 +30,7 @@ class HubHttpCommand(unittest.TestCase):
                     + section(lan, 'static bool hubLanRouteConfirmed(const iotcloud::HubLanDiscovery::Peer &peer){', 'static void hubLanReset('),
                 'lan-start.inc': section(lan, 'static void hubLanObserveDiscovery(', '// A transport failure is a correlated result,'),
                 'lan-failed.inc': section(lan, 'static void hubLanFailed(', 'static bool hubLanSend('),
+                'lan-packet.inc': section(lan, 'static bool hubLanPacket(', 'static void initHubLan('),
                 'lan-authorize.inc': section(lan, '  hubLanClient.authorize=[]', '  hubLanClient.send=[]'),
                 'http-command.inc': lan[lan.index('// Return true for this route,'):],
                 'hub-api.inc': section(hub, 'static void hubApiExecute()', 'static void hubLocalPublish('),

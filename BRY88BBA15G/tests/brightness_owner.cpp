@@ -8,9 +8,9 @@ static struct {
   uint32_t session = 123, capabilities = SCREEN_CAP_BACKLIGHT;
 } screenBridge;
 static bool screenRecovering;
-static uint32_t ms, invalidations;
+static uint32_t ms, refreshes;
 static uint32_t millis() { return ms; }
-static void invalidateBusinessStatusCache() { invalidations++; }
+static void requestBusinessStatusRefresh() { refreshes++; }
 #include "screen_brightness.inc"
 int main() {
   StaticJsonDocument<512> doc;
@@ -31,7 +31,7 @@ int main() {
   assert(doc["requested_percent"] == 60 && doc["applied_percent"] == 10);
   assert(doc["ceiling_percent"] == 10 && !doc["asleep"].as<bool>());
   p[4] = 11;
-  assert(!screenBrightnessReceive(p, sizeof(p)) && invalidations == 1);
+  assert(!screenBrightnessReceive(p, sizeof(p)) && refreshes == 1);
   ms = 16000;
   status();
   assert(!doc["available"].as<bool>() && doc["ceiling_percent"].isNull());

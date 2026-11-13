@@ -39,7 +39,21 @@ else:
         data = (bundle/'devices'/('daikin-g3' if screen else 'daikin')/'index.html.gz').read_bytes()
     frontend = json.loads((root/'frontend.lock.json').read_text())
 if variant == 'hub':
-    hub_root = source/'frontend/dist' if local else bundle/'hub'
+    # A development build may live in the shared cache instead of frontend/dist.
+    # Verify its product mode before embedding an otherwise valid Cloud bundle.
+    override = os.environ.get('PHICOMM_HUB_FRONTEND_DIST')
+    if override and not local:
+        raise RuntimeError('PHICOMM_HUB_FRONTEND_DIST requires PHICOMM_FRONTEND_SOURCE')
+    hub_root = Path(override).resolve() if override else source/'frontend/dist' if local else bundle/'hub'
+    if local:
+        marker = hub_root/'frontend-build.json'
+        try:
+            build = json.loads(marker.read_text())
+        except (OSError, ValueError) as error:
+            raise RuntimeError('Hub frontend build metadata missing; build with VITE_HUB=1') from error
+        if not isinstance(build, dict) or build.get('schema') != 1 or build.get('mode') != 'hub':
+            raise RuntimeError('Hub frontend requires a VITE_HUB=1 build, not a Cloud bundle')
+        frontend['hub_build'] = build
     standalone = hub_root/'standalone-daikin.html'
     if not (hub_root/'index.html').is_file() or not standalone.is_file():
         raise RuntimeError('Hub shared frontend missing; build the shared frontend with VITE_HUB=1')

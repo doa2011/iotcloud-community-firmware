@@ -31,8 +31,8 @@ struct HubMessage {
   uint32_t epoch = 0;
   bool retain = false, receiving = false;
 };
-// Each SDK task owns its source's partial message. The by-value inbox keeps
-// completed messages; idle sources do not need permanent working buffers.
+// Each SDK task owns its partial message, then transfers it to the bounded
+// pointer inbox. Idle slots must not reserve three 4 KiB payload buffers.
 static std::unique_ptr<HubMessage> hubMessages[2];
 static QueueHandle_t hubInbox = nullptr;
 static std::string hubRandom(size_t n) {
@@ -100,7 +100,10 @@ static bool hubCapture(esp_mqtt_event_handle_t event, unsigned source) {
     // A zero-wait send drops ordinary four-command bursts before the owner
     // loop can return a correlated busy result. This never blocks loop() or
     // grows the inbox; persistent overload still increments the drop counter.
-    if (xQueueSend(hubInbox, &part, pdMS_TO_TICKS(50))!=pdTRUE)
+    HubMessage *queued = message.get();
+    if (xQueueSend(hubInbox, &queued, pdMS_TO_TICKS(50))==pdTRUE)
+      message.release();
+    else
       ++hubInboxDropped;
     message.reset();
   }
@@ -175,7 +178,11 @@ static bool hubRestartPending() { return hubRestoring; }
 static void hubResetInbox() {
   // Both SDK clients are stopped/joined before their source slots are reset.
   ++hubEpoch;
-  if (hubInbox) xQueueReset(hubInbox);
+  if (hubInbox) {
+    HubMessage *message = nullptr;
+    while (xQueueReceive(hubInbox, &message, 0) == pdTRUE) delete message;
+    xQueueReset(hubInbox);
+  }
   for (auto &message : hubMessages) message.reset();
 }
 static void hubUpstreamChanged() {
@@ -205,6 +212,9 @@ static bool hubReady() {
   return !hubRestoring && !configRecovery && hubService.ready() && bool(hubDeviceBus.dispatch);
 }
 static void hubApiExecute() {
+  // Arduino String assignments retain capacity. Release the previous HTTP
+  // response before admission, including a large configuration backup.
+  { String previous; std::swap(webResult, previous); }
   if (hubRestoring) {
     hubHttpStatus = 503;
     webResult = "{\"code\":\"restart_required\"}";
@@ -265,7 +275,7 @@ static void hubLocalPublish(const String &topic, const String &body,
                               iotcloud::HubDeviceBus::Origin::Internal);
 }
 static void hubInit() {
-  hubInbox = xQueueCreate(3, sizeof(HubMessage));
+  hubInbox = xQueueCreate(3, sizeof(HubMessage *));
   hubService.localMac = deviceId.c_str();
   hubService.homeStatus = homeStatus;
   hubService.lanStatus = hubLanStatus;
@@ -336,19 +346,19 @@ static void pollHub(uint32_t now) {
   hubRelay.tick(now);
   if (hubInbox && uxQueueMessagesWaiting(hubInbox) &&
       hubAllocationReady(sizeof(HubMessage))) {
-    // Do not dequeue until the temporary copy exists. Allocation pressure can
-    // retry next poll without dropping the queued value or using a large stack.
-    std::unique_ptr<HubMessage> hubReceived(new (std::nothrow) HubMessage);
-    if (hubReceived && xQueueReceive(hubInbox, hubReceived.get(), 0) == pdTRUE &&
-        hubReceived->epoch == hubEpoch && !otaActive) {
-      if (hubReceived->source)
-        hubRelay.incomingBemfa(hubReceived->topic,
-                              std::string(hubReceived->body, hubReceived->length),
-                              hubReceived->retain);
-      else
-        hubRelay.incoming(hubReceived->topic,
-                          std::string(hubReceived->body, hubReceived->length),
-                          hubReceived->retain);
+    HubMessage *received = nullptr;
+    if (xQueueReceive(hubInbox, &received, 0) == pdTRUE) {
+      std::unique_ptr<HubMessage> hubReceived(received);
+      if (hubReceived->epoch == hubEpoch && !otaActive) {
+        if (hubReceived->source)
+          hubRelay.incomingBemfa(hubReceived->topic,
+                                std::string(hubReceived->body, hubReceived->length),
+                                hubReceived->retain);
+        else
+          hubRelay.incoming(hubReceived->topic,
+                            std::string(hubReceived->body, hubReceived->length),
+                            hubReceived->retain);
+      }
     }
   }
   if (bemfaConnected &&

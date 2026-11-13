@@ -284,7 +284,7 @@ static bool screenPublication(const String &topic, const uint8_t *payload,
     memcpy(screenRaw, payload, size);
     screenRawSize = size;
     screenDataAt = millis();
-    invalidateBusinessStatusCache();
+    requestBusinessStatusRefresh();
     return true;
   }
   DynamicJsonDocument doc(4096);
@@ -316,7 +316,9 @@ static bool screenPublication(const String &topic, const uint8_t *payload,
     screenMcuVersion = d["physics"]["mcu_version"].as<String>();
     screenGalleryVersion = d["physics"]["gallery_version"].as<String>();
     screenMeasurements(d["status"]);
-    invalidateBusinessStatusCache();
+    // Publish ordinary MCU telemetry as one complete replacement. The cache
+    // owner still withdraws known-invalid sensor samples before encoding.
+    requestBusinessStatusRefresh();
     if (topic.endsWith("/service_response/get_snapshot"))
       return true;
   }

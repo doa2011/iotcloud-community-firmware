@@ -68,6 +68,25 @@ static bool hubLanRouteConfirmed(const iotcloud::HubLanDiscovery::Peer &peer){
     if(entry["peer"]==peer.id&&entry["ip"]==peer.ip)return true;
   return false;
 }
+static void hubLanPinnedS30(){
+  // S30 has a fixed binary v4 contract. A fresh authenticated session at an
+  // explicitly paired IP also works across subnets where mDNS cannot travel.
+  const uint32_t now=millis(); // UDP receipts may be newer than loop's timestamp.
+  for(JsonObjectConst device:config["hub"]["devices"].as<JsonArrayConst>()){
+    if(device["model"]!="s30-v1b"||device["status"]!="active")continue;
+    const std::string id=device["mac"]|"";
+    lc_job *job=lc_find(&lanClient,id.c_str(),false);
+    if(!job||job->phase!=LC_READY||job->epoch!=ph_auth_credential_epoch(&localAuth)||!(job->scopes&PH_AUTH_SCOPE_CONTROL)||!hubLanPaired(id)||hubLanDiscovery.find(id,now))continue;
+    if(uint32_t(now-job->ready)>=90000){lc_resume(job,&lanOps);continue;}
+    iotcloud::HubLanDiscovery::Peer peer;
+    peer.id=id;peer.model="s30-v1b";peer.ip=job->ip;peer.port=LAN_V4_PORT;peer.seen=job->ready;
+    if(!hubLanRouteConfirmed(peer))continue;
+    iotcloud::HubLanDiscovery::Peer *slot=nullptr;
+    for(auto &entry:hubLanDiscovery.peers)if(entry.id==id){slot=&entry;break;}
+    if(!slot)for(auto &entry:hubLanDiscovery.peers)if(entry.id.empty()||!entry.online(now)){slot=&entry;break;}
+    if(slot)*slot=std::move(peer);
+  }
+}
 static void hubLanReset(){hubHttpCommand.cancel("cancelled");hubLanQueue.clear();hubLanClient.reset();}
 static void hubDeviceMetadata(JsonObject row){
   const std::string id=row["mac"]|"";
@@ -80,11 +99,14 @@ static void hubDeviceMetadata(JsonObject row){
   }
   row["online"]=false;row["paired"]=hubLanPaired(id);row["route_confirmed"]=false;
   for(const auto &peer:hubLanDiscovery.peers)if(peer.id==id){
-    row["model"]=peer.model;row["firmware_variant"]=peer.variant;row["firmware_version"]=peer.firmware;
+    row["model"]=peer.model;
+    if(!peer.variant.empty())row["firmware_variant"]=peer.variant;
+    if(!peer.firmware.empty())row["firmware_version"]=peer.firmware;
     row["online"]=peer.online(millis());row["route_confirmed"]=hubLanRouteConfirmed(peer);row["ip"]=peer.ip;break;
   }
 }
 static void hubLanObserveDiscovery(const iotcloud::HubLanDiscovery::Peer &peer){
+  if(peer.variant.empty()||peer.firmware.empty())return; // Pinned S30 already selects its binary codec.
   DynamicJsonDocument doc(1024);doc["schema"]=2;doc["model"]=peer.model;doc["protocol"]="tmcp";doc["protocol_version"]=2;doc["version"]="v2";
   doc["device_id"]=peer.id;doc["firmware_version"]=peer.firmware;doc["variant"]=peer.variant;doc["wire_version"]=1;doc["default_wire_format"]="msgpack";doc.createNestedArray("wire_formats").add("msgpack");
   std::string bytes;serializeMsgPack(doc,bytes);iotcloud::hubWire.observe(hubService.prefix()+"discovery/"+peer.id,bytes);
@@ -94,7 +116,7 @@ static const char *hubLanStart(const std::string &route,const std::string &body,
   if(guard&&!guard())return "unauthorized";
   if(!hubReady()||otaActive){hubLanWaitReason="not_ready";return "busy";}
   if(hubLanClient.busy()){hubLanWaitReason="inflight";return "busy";}
-  if(!hubAllocationReady(body.size()+LAN_V4_RESPONSE_MAX+4096)){hubLanWaitReason="heap";return "busy";}
+  if(!hubAllocationReady(body.size()+LAN_V4_RESPONSE_MAX+4096,LAN_V4_RESPONSE_MAX+32)){hubLanWaitReason="heap";return "busy";}
   const uint32_t now=millis();
   for(const auto &peer:hubLanDiscovery.peers){
     if(!peer.online(now)||route!=hubService.prefix()+peer.model+"/"+peer.id+"/command")continue;
@@ -152,7 +174,45 @@ static bool hubLanPacket(const ph_value *root,const char *ip,uint16_t port){
   ph_value op;if(!phv_get(root,"op",&op)||!phv_equal_text(&op,"result"))return false;
   ph_value version;int64_t wire;if(!phv_get(root,"v",&version)||!phv_int(&version,&wire)||wire!=4)return false;
   lan_v4_packet packet={};if(!lan_v4_decode_value(root,&packet))return true;
-  hubLanClient.receive(packet,ip,port,millis());return true;
+  const bool received=hubLanClient.receive(packet,ip,port,millis());
+  if(received&&!strcmp(hubLanClient.lastCode,"auth_required")){
+    lc_job *job=lc_find(&lanClient,packet.src,false);
+    if(job&&job->phase==LC_READY&&job->epoch==lanOps.epoch()&&!memcmp(job->token,packet.token,16)){
+      // A reboot drops the peer's session. Renew the rejected token for the
+      // next command; the completed failure must never replay a write.
+      memset(job->token,0,sizeof(job->token));lc_resume(job,&lanOps);
+    }
+  }
+  return true;
+}
+static void hubLanComplete(const std::string &command,const void *bytes,size_t length){
+  if(!hubReady())return;
+  const bool status=hubLanRequestStatus;
+  // The client already bound this owned route to the authenticated peer. Its
+  // fixed MAC suffix avoids allocating route strings for every inventory slot.
+  for(auto &peer:hubLanDiscovery.peers)if(!peer.id.empty()&&!memcmp(command.data()+command.size()-20,peer.id.data(),12)){
+    peer.seen=millis();
+    // Identity-bearing receipts refresh the actual firmware after OTA and for
+    // fixed-IP peers whose mDNS metadata cannot travel across subnets.
+    {
+      ph_value root,value,data;char firmware[65],variant[33];
+      if(phv_parse(PH_WIRE_MSGPACK,bytes,length,&root)&&
+         phv_get(&root,"code",&value)&&phv_equal_text(&value,"ok")&&
+         phv_get(&root,"request_id",&value)&&phv_equal_text(&value,hubLanRequestId.c_str())&&
+         phv_get(&root,"data",&data)&&
+         phv_get(&data,"device_id",&value)&&phv_equal_text(&value,peer.id.c_str())&&
+         phv_get(&data,"model",&value)&&phv_equal_text(&value,peer.model.c_str())&&
+         phv_get(&data,"firmware_version",&value)&&phv_text(&value,firmware,sizeof(firmware))&&firmware[0]&&
+         phv_get(&data,"firmware_variant",&value)&&phv_text(&value,variant,sizeof(variant))&&variant[0]){
+        peer.firmware=firmware;peer.variant=variant;
+      }
+    }
+    break;
+  }
+  if(hubHttpCommand.expects(command,hubLanRequestId))hubHttpCommand.complete(command,bytes,length);
+  // The router validates the ID before invoking any bus callback that could
+  // start another command; no owned copy of the ID is needed for dispatch.
+  iotcloud::routeHubLanResult(hubDeviceBus,command,bytes,length,status,hubLanRequestId);
 }
 static void initHubLan(){
   hubLanBoot=sensorBoot;
@@ -167,12 +227,7 @@ static void initHubLan(){
     return sensorUdp.write(static_cast<const uint8_t*>(bytes),length)==length&&sensorUdp.endPacket()==1;
   };
   hubLanClient.failed=hubLanFailed;
-  hubLanClient.complete=[](const std::string &command,const void *bytes,size_t length){
-    if(!hubReady()||command.size()<8)return;
-    const bool status=hubLanRequestStatus;const std::string expectedId=hubLanRequestId;
-    if(hubHttpCommand.expects(command,expectedId))hubHttpCommand.complete(command,bytes,length);
-    iotcloud::routeHubLanResult(hubDeviceBus,command,bytes,length,status,expectedId);
-  };
+  hubLanClient.complete=[](const std::string &command,const void *bytes,size_t length){hubLanComplete(command,bytes,length);};
   hubService.lanOperation=[](const std::string &op,JsonObjectConst input,JsonObject output)->const char*{
     if(op=="status")return lanPairStatus(input["peer"]|"",output)?"ok":"invalid_params";
     const char *code="invalid_params";
@@ -185,7 +240,7 @@ static void pollHubLan(uint32_t now){
   if(hubRestartPending()){hubLanReset();return;}
   if(otaActive){hubLanReset();return;}
   // Also called inside HomeKit's bounded wait so UDP receipts can complete.
-  pollSessions();pollLanPairing();hubLanClient.tick(now);hubLanDiscover(now);
+  pollSessions();pollLanPairing();hubLanClient.tick(now);hubLanDiscover(now);hubLanPinnedS30();
   if(!hubReady())return;
   now=millis(); // Commands may have been enqueued after the loop timestamp.
   hubLanQueue.pollGuarded(now,hubLanClient.busy(),[](const std::string &route,const std::string &body,const iotcloud::HubLanQueue::Guard &guard){return hubLanStart(route,body,false,guard);},hubLanFailed);
@@ -223,9 +278,9 @@ static bool hubHttpCommandStart(){
   iotcloud::HubHttpCommand::Guard guard=[context](){return localAuthContextValid(&context);};
   if(!guard()){error(401,"unauthorized",requestId);return true;}
   // Keep the aggregate budget/reserve. It spans separate response buffers,
-  // not one contiguous allocation. The largest is the bounded state writer:
-  // PHW_MAX_BYTES plus its NUL and conservative alignment/allocator slack.
-  if(!hubReady()||otaActive||!hubAllocationReady(body.size()+2*LAN_V4_RESPONSE_MAX+4096,PHW_MAX_BYTES+32)){
+  // not one contiguous allocation. Response assembly/ownership is bounded by
+  // LAN_V4_RESPONSE_MAX; state routing copies the validated subtree directly.
+  if(!hubReady()||otaActive||!hubAllocationReady(body.size()+2*LAN_V4_RESPONSE_MAX+4096,LAN_V4_RESPONSE_MAX+32)){
     error(503,"busy",requestId);return true;
   }
   if(id==deviceId.c_str()){

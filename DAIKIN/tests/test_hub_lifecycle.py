@@ -10,7 +10,8 @@ class HubLifecycle(unittest.TestCase):
    (p/'globals.inc').write_text(section('static bool hubReload','static std::string hubRandom('))
    (p/'capture.inc').write_text(section('static bool hubCapture(','static void hubConfigureUpstream('))
    (p/'lifecycle.inc').write_text(section('static void hubResetInbox()','static bool hubReady()'))
-   (p/'reload.inc').write_text(section('static void pollHub(uint32_t now) {','  hubRelay.tick(now);')+'\n(void)now;\n}\n')
+   poll_start=source.index('static void pollHub(uint32_t now) {')
+   (p/'reload.inc').write_text(source[poll_start:])
    (p/'wire.c').write_text('#include "lan_wire_v4.inc"\n')
    flags=['-O1','-g','-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie'];objects=[]
    for i,f in enumerate([ROOT/'common/typed_wire.c',ROOT/'common/wire_buffer.c',p/'wire.c']):
