@@ -1,6 +1,6 @@
 # Device interfaces and protocols
 
-This guide uses **v1.0.0** and **v0.9.27 (stable)** as integration baselines. Check the model, running version and variant in the device WebUI before choosing an encoding and capabilities. The M1 sensor controller has its own version.
+This guide uses **v1.0.0** and **v0.9.27 (previous stable release)** as integration baselines. Check the model, running version and variant in the device WebUI before choosing an encoding and capabilities. The M1 sensor controller has its own version.
 
 ## Baselines and encoding
 

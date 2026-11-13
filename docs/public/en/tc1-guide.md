@@ -2,7 +2,7 @@
 
 TC1 provides six outlet controls, metering, child lock, an indicator and schedules. This page covers daily use after installation. For first installation, see the [illustrated OTA guide](tc1-no-disassembly-ethernet-wifi-ap) or [wired flashing and recovery](tc1-flash).
 
-**Use stable v0.9.27 for everyday operation, or v1.0.0-rc.6 for beta testing.** See the [complete candidate release notes](release-log.html?channel=candidate) for version requirements and cumulative changes.
+**Choose the latest compatible stable release for everyday use; RC builds are for beta testing.** See the [release notes](release-log.html) for availability, version requirements and cumulative changes.
 
 ## Outlets and home page
 

@@ -17,7 +17,7 @@ PRODUCT_TITLES = {
     'm1-no-disassembly': '斐讯 M1 原厂配网与免拆刷机：局域网 OTA / DNS 迁移',
     'a1-no-disassembly': '斐讯 A1 原厂配网与免拆刷机：局域网 OTA / DNS 迁移',
     'm1-guide': '斐讯 M1 空气检测仪功能与操作',
-    'daikin-guide': '大金空气质量检测（1/2代）功能与安装',
+    'daikin-guide': '大金空气质量检测（G2）功能与安装',
     'daikin-g3-guide': '大金空气质量检测（3代）屏幕、字库与升级',
     'daikin-g3-flash': '大金 G3 刷机教程：ESP32 免拆与串口、屏幕 WebUI 与 J-Link',
     'a1-guide': '斐讯 A1 空气净化器功能与操作',

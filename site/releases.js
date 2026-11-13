@@ -30,7 +30,7 @@ function reviewedNotes(release, manifest) {
   }
   return note;
 }
-const modelNames = {m1: 'M1', a1: 'A1', tc1: 'TC1', daikin: t('大金空气质量检测（1/2代）', 'Daikin air quality monitor (1st/2nd generation)'), bry88bba15g: t('大金空气质量检测（3代）', 'Daikin air quality monitor (3rd generation)'), s30: 'S30M-V1B / S30M_V1B'};
+const modelNames = {m1: 'M1', a1: 'A1', tc1: 'TC1', daikin: t('大金空气质量检测（G2）', 'Daikin air quality monitor (G2)'), bry88bba15g: t('大金空气质量检测（3代）', 'Daikin air quality monitor (3rd generation)'), s30: 'S30M-V1B / S30M_V1B'};
 const variantDescriptions = {
  full: t('完整本地网页，适合常规使用。', 'Complete local web interface for normal use.'),
  'no-frontend-resources': t('仅保留配网页，节省设备存储；日常管理使用平台。', 'Keeps the Wi-Fi setup page and saves flash; use the platform for daily management.'),

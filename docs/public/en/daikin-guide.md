@@ -1,4 +1,4 @@
-# Daikin air quality monitor (1st/2nd generation)
+# Daikin air quality monitor (G2)
 
 G1 has no formaldehyde expansion port; G2 adds it. G3 adds a display and uses separate firmware; see the [G3 guide](daikin-g3-guide). The default name `DAIKIN G1/G2` is historical; custom names are preserved. The `BRY88AX151K` download target is verified on G2 `BRY88AB151K`. G1 `BRY88AA151K` compatibility remains unconfirmed, so installation is not documented.
 
