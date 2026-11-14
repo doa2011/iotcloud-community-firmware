@@ -12,6 +12,7 @@
 #include "common/mqtt/diagnostics.h"
 static bool maximum,command_alias,fail_diagnostics_alloc;
 static unsigned wire_live,wire_allocations,fail_wire_at;
+bool service_cache_evict(void){return false;}
 void *ph_wire_malloc(size_t n){wire_allocations++;if(fail_wire_at&&wire_allocations==fail_wire_at)return NULL;if(fail_diagnostics_alloc){fail_diagnostics_alloc=false;return NULL;}void *p=malloc(n);if(p)wire_live++;return p;}
 void ph_wire_free(void *p){if(p){assert(wire_live);wire_live--;free(p);}}
 void ph_mqtt_snapshot(ph_mqtt_diagnostics *d){memset(d,maximum?0xff:0,sizeof(*d));if(maximum){d->bytes=d->peak_bytes=d->credit=d->rx_buffer_bytes=d->tx_buffer_bytes=UINT32_MAX;d->last_error=INT32_MIN;d->failure.read.requested=d->failure.read.returned=d->failure.write.requested=d->failure.write.returned=INT32_MIN;}}

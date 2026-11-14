@@ -29,7 +29,7 @@ void service_cache_changed(unsigned mask)
     for(unsigned i=0;i<2;i++)if(mask&(1u<<i))if(!++mp_generation[i])++mp_generation[i];
     mico_rtos_unlock_mutex(&service_lock);
 }
-static bool mp_cache_evict(void)
+bool service_cache_evict(void)
 {
     bool freed=false;
     if(!service_command_enter(true))return false;
