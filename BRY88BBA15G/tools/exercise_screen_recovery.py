@@ -96,11 +96,24 @@ def main():
         assert recovery["mode"] == "fault_recovery" and recovery["boot_exported"] == 0x14000
         record("recovery_survives_normal_window", {"elapsed_seconds": time.monotonic() - held_at,
                                                     "recovery": recovery})
-        subprocess.run([sys.executable, str(Path(__file__).with_name("flash_screen.py")),
+        installer = subprocess.Popen([sys.executable, str(Path(__file__).with_name("flash_screen.py")),
                         "--url", args.url, "--image", str(args.image), "--mode", "install",
-                        "--boot-backup", str(backup), "--log", str(args.output / "install.jsonl")],
-                       check=True)
-        deadline, observed_window = time.monotonic() + 90, False
+                        "--boot-backup", str(backup), "--log", str(args.output / "install.jsonl")])
+        # The installer waits for normal mode, so observe the startup window
+        # while it is still running rather than after it has already closed.
+        observed_window = False
+        while installer.poll() is None:
+            status = device.command("status.get")
+            running = status["screen"]["recovery"]
+            if (running.get("session") != session and running.get("image_md5") == md5
+                    and running.get("mode") == "window"):
+                if not observed_window:
+                    record("startup_window", running)
+                observed_window = True
+            time.sleep(.25)
+        if installer.returncode:
+            raise subprocess.CalledProcessError(installer.returncode, installer.args)
+        deadline = time.monotonic() + 90
         while time.monotonic() < deadline:
             status = device.command("status.get")
             screen = status["screen"]
