@@ -183,7 +183,7 @@ int main(void)
     assert(command_mp(write)==MQTT_SUCCESS&&mutations==1);
     assert(command_mp(write)==MQTT_SUCCESS&&mutations==1);
     ph_buf_free(read);ph_buf_free(write);ph_buf_free(unknown);ph_buf_free(backlog);
-    finish_service_client();clear_receipts();assert(mp_cache_evict());assert(!native_live&&!charged_live);
+    finish_service_client();clear_receipts();assert(service_cache_evict());assert(!native_live&&!charged_live);
     ph_mqtt_owner_end();puts("native service read actual-size credit, borrowed lifetime, write pre-admission/replay PASS");return 0;
 }
 #elif defined(PREFLIGHT_FIXTURE)
