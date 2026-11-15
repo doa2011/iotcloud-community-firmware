@@ -18,9 +18,9 @@ inline bool routeHubLanResult(HubDeviceBus &bus,const std::string &command,
   bus.publish(base+"/availability","online",false,HubDeviceBus::Origin::Local);
   bus.publish(base+"/result",std::string(static_cast<const char*>(bytes),length),false,HubDeviceBus::Origin::Local);
   if(status&&phv_get(&root,"code",&code)&&phv_equal_text(&code,"ok")&&phv_get(&root,"data",&data)&&data.kind==PHV_MAP){
-    ph_writer writer;if(!phw_init(&writer,PH_WIRE_MSGPACK))return false;
-    phw_value(&writer,nullptr,&data);ph_buf *state=phw_take(&writer);if(!state)return false;
-    const bool accepted=bus.publish(base+"/state",std::string(state->buf,state->len),false,HubDeviceBus::Origin::Local);ph_buf_free(state);return accepted;
+    // The complete envelope already validated this MessagePack subtree. Own
+    // its exact bytes without another writer, pool growth or container rewrite.
+    return bus.publish(base+"/state",std::string(reinterpret_cast<const char*>(data.begin),size_t(data.end-data.begin)),false,HubDeviceBus::Origin::Local);
   }
   return true;
 }

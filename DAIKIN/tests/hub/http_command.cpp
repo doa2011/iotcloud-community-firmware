@@ -74,6 +74,7 @@ static size_t hubByteHeap(){return heapReady?byteHeap:0;}static size_t hubByteBl
 #include "lan-gates.inc"
 #include "lan-start.inc"
 #include "lan-failed.inc"
+#include "lan-packet.inc"
 static unsigned localCommands=0;
 static String execute(const String &bytes){++localCommands;ph_value root,id;assert(phv_parse(PH_WIRE_MSGPACK,bytes.data(),bytes.size(),&root)&&phv_get(&root,"request_id",&id));char text[65];assert(phv_text(&id,text,sizeof(text)));DynamicJsonDocument result(256);result["request_id"]=text;result["code"]="ok";result["data"]["local"]=true;String wire;serializeWireMP(result,wire);return wire;}
 #include "http-command.inc"
@@ -86,7 +87,7 @@ static void dispatchHttp(){
 }
 static int serverfd,clientfd;static sockaddr_in serverAddress,clientAddress;
 static lan_v4_server server={};static lan_v4_ops ops={};static uint8_t udpToken[16]={1};
-static unsigned peerCalls=0,sent=0,states=0;static bool drop=false,revokeAtQueue=false,revokeAtResult=false;
+static unsigned peerCalls=0,sent=0,states=0;static bool drop=false,revokeAtQueue=false,revokeAtResult=false,peerSessionValid=true;
 static bool logoutAtQueue=false,logoutAtResult=false,overlapAtQueue=false;static std::string sessionHeader;
 static sockaddr_in bindSocket(int &fd){fd=socket(AF_INET,SOCK_DGRAM,0);assert(fd>=0);sockaddr_in a={};a.sin_family=AF_INET;a.sin_addr.s_addr=htonl(INADDR_LOOPBACK);assert(!bind(fd,reinterpret_cast<sockaddr*>(&a),sizeof(a)));socklen_t n=sizeof(a);assert(!getsockname(fd,reinterpret_cast<sockaddr*>(&a),&n));return a;}
 static bool udp(int fd,const sockaddr_in &a,const void*p,size_t n){return sendto(fd,p,n,0,reinterpret_cast<const sockaddr*>(&a),sizeof(a))==ssize_t(n);}
@@ -106,7 +107,7 @@ static void cycle(){
  char bytes[LAN_V4_FRAME_MAX+1];ssize_t n=recv(serverfd,bytes,sizeof(bytes),MSG_DONTWAIT);
  if(n>0&&!drop){lan_v4_packet p={};assert(lan_v4_decode(bytes,n,&p));char scratch[LAN_V4_FRAME_MAX+1];assert(lan_v4_server_input(&server,&ops,&p,"127.0.0.1",ntohs(clientAddress.sin_port),scratch,sizeof(scratch)));}
  n=recv(clientfd,bytes,sizeof(bytes),MSG_DONTWAIT);
- if(n>0){lan_v4_packet p={};assert(lan_v4_decode(bytes,n,&p));if(logoutAtResult){logoutAtResult=false;assert(ph_auth_http_logout(&localAuth,sessionHeader.c_str()));}if(revokeAtResult){revokeAtResult=false;revoke();}hubLanClient.receive(p,"127.0.0.1",11288,now);}
+ if(n>0){ph_value root;assert(phv_parse(PH_WIRE_MSGPACK,bytes,n,&root));if(logoutAtResult){logoutAtResult=false;assert(ph_auth_http_logout(&localAuth,sessionHeader.c_str()));}if(revokeAtResult){revokeAtResult=false;revoke();}assert(hubLanPacket(&root,"127.0.0.1",11288));}
  hubLanClient.tick(now);pollHubHttpCommand(now);
 }
 static void registerPeer(const char *model,const char *variant){
@@ -122,12 +123,14 @@ static void init(){
  DynamicJsonDocument roomy(16384);roomy.set(config);config=std::move(roomy);
  assert(ph_auth_remote_store(&localAuth,"02c400000001","01010101010101010101010101010101",1,ph_auth_credential_epoch(&localAuth)));
  lanOps.now=[](){return now;};lanOps.epoch=[](){return ph_auth_credential_epoch(&localAuth);};
+ lanOps.load=[](const char*peer,char key[33],unsigned*scopes){return ph_auth_remote_get(&localAuth,peer,key,scopes);};
+ lanOps.random=[](uint8_t nonce[16]){memset(nonce,0x42,16);return true;};
  serverAddress=bindSocket(serverfd);clientAddress=bindSocket(clientfd);
- ops.local="02c400000001";ops.boot=91;ops.now=[](void*){return now;};ops.authorize=[](void*,const char*,const uint8_t*,ph_auth_context*c){memset(c,0,sizeof(*c));return true;};ops.valid=[](void*,const ph_auth_context*){return true;};ops.digest=[](void*,const void*p,size_t n,uint8_t*h){return SHA256(static_cast<const unsigned char*>(p),n,h)!=nullptr;};ops.send=[](void*,const char*,uint16_t,const void*p,size_t n){return udp(serverfd,clientAddress,p,n);};
- ops.dispatch=[](void*,const void*p,size_t n,const ph_auth_context*,bool*admitted){*admitted=true;++peerCalls;ph_value root,action,id;char requestId[65];assert(phv_parse(PH_WIRE_MSGPACK,p,n,&root)&&phv_get(&root,"action",&action)&&phv_get(&root,"request_id",&id)&&phv_text(&id,requestId,sizeof(requestId)));ph_writer w;assert(phw_init(&w,PH_WIRE_MSGPACK));phw_begin(&w,nullptr,false);phw_text(&w,"code","ok");phw_text(&w,"request_id",requestId);phw_begin(&w,"data",false);if(phv_equal_text(&action,"capabilities.get"))phw_text(&w,"capability","fixture-full-contract");else phw_text(&w,"snapshot",std::string(3100,'X').c_str());phw_end(&w);phw_end(&w);return phw_take(&w);};
+ ops.local="02c400000001";ops.boot=91;ops.now=[](void*){return now;};ops.authorize=[](void*,const char*,const uint8_t*,ph_auth_context*c){memset(c,0,sizeof(*c));return peerSessionValid;};ops.valid=[](void*,const ph_auth_context*){return true;};ops.digest=[](void*,const void*p,size_t n,uint8_t*h){return SHA256(static_cast<const unsigned char*>(p),n,h)!=nullptr;};ops.send=[](void*,const char*,uint16_t,const void*p,size_t n){return udp(serverfd,clientAddress,p,n);};
+ ops.dispatch=[](void*,const void*p,size_t n,const ph_auth_context*,bool*admitted){*admitted=true;++peerCalls;ph_value root,action,id;char requestId[65];assert(phv_parse(PH_WIRE_MSGPACK,p,n,&root)&&phv_get(&root,"action",&action)&&phv_get(&root,"request_id",&id)&&phv_text(&id,requestId,sizeof(requestId)));ph_writer w;assert(phw_init(&w,PH_WIRE_MSGPACK));phw_begin(&w,nullptr,false);phw_text(&w,"code","ok");phw_text(&w,"request_id",requestId);phw_begin(&w,"data",false);if(phv_equal_text(&action,"capabilities.get"))phw_text(&w,"capability","fixture-full-contract");else {phw_text(&w,"snapshot",std::string(3100,'X').c_str());const auto &peer=hubLanDiscovery.peers[0];phw_text(&w,"device_id",peer.id.c_str());phw_text(&w,"model",peer.model.c_str());phw_text(&w,"firmware_version","1.0.0-rc.6-status");phw_text(&w,"firmware_variant","full");}phw_end(&w);phw_end(&w);return phw_take(&w);};
 #include "lan-authorize.inc"
  hubLanClient.send=[](const std::string&,uint16_t,const void*p,size_t n){++sent;return udp(clientfd,serverAddress,p,n);};hubLanClient.failed=hubLanFailed;
- hubLanClient.complete=[](const std::string &route,const void*p,size_t n){if(hubHttpCommand.expects(route,hubLanRequestId))hubHttpCommand.complete(route,p,n);iotcloud::routeHubLanResult(hubDeviceBus,route,p,n,hubLanRequestStatus,hubLanRequestId);};
+ hubLanClient.complete=hubLanComplete;
  hubDeviceBus.dispatch=[](const std::string &route,const std::string&,bool,iotcloud::HubDeviceBus::Origin){if(route.size()>6&&route.substr(route.size()-6)=="/state")++states;return true;};pump=cycle;
 }
 static void receiptBounds(){
@@ -158,20 +161,20 @@ static void receiptBounds(){
  puts("128 bounded write receipts survive 300 mixed reads across 35 audited queries; mutations/unknown remain protected, full admission busy, expiry reclaims; NUL/duplicate fields rejected PASS");
 }
 static void heapAdmission(const std::string &bearer){
- const size_t contiguous=PHW_MAX_BYTES+32;
- assert(contiguous>PHW_MAX_BYTES+1&&contiguous>=((PHW_MAX_BYTES+1+15)&~size_t(15)));
+ const size_t contiguous=LAN_V4_RESPONSE_MAX+32;
+ assert(contiguous>LAN_V4_RESPONSE_MAX&&contiguous>=((LAN_V4_RESPONSE_MAX+1+15)&~size_t(15)));
  assert(!hubAllocationReady(size_t(-1),1)); // Addition cannot wrap the reserve.
- byteHeap=40000;byteBlock=16500;
+ byteHeap=40000;byteBlock=11764; // Settled .110 measurement; below the old 16 KiB guard.
  assert(hubAllocationReady(21000,contiguous)&&!hubAllocationReady(21000));
  for(const char *path:{"/api/hub/devices/02c400000002/command","/api/hub/devices/02c400000001/command"}){
   registerPeer("tc1","standard");
   const auto body=command("status.get","fragmented");const size_t budget=body.size()+2*LAN_V4_RESPONSE_MAX+4096;
-  // The production HTTP adapter admits both local and UDP commands under
-  // fragmentation once the full aggregate budget and largest block exist.
-  byteHeap=budget+16384+1;byteBlock=contiguous+1;
+  // The production HTTP adapter admits both local and UDP commands with the
+  // measured 11764-byte block and unchanged aggregate reserve.
+  byteHeap=budget+16384+1;byteBlock=11764;
   auto pass=request(path,HTTP_POST,body,bearer);hubApiHandler(&pass);assert(pass.status=="200 OK");
   for(unsigned boundary=0;boundary<4;++boundary){
-   byteHeap=budget+16384+1;byteBlock=contiguous+1;
+   byteHeap=budget+16384+1;byteBlock=11764;
    if(boundary<2)byteHeap=budget+16384-boundary;else byteBlock=contiguous-(boundary-2);
    const auto peersBefore=peerCalls,localBefore=localCommands,framesBefore=sent;
    auto rejected=request(path,HTTP_POST,body,bearer);hubApiHandler(&rejected);
@@ -180,7 +183,72 @@ static void heapAdmission(const std::string &bearer){
   }
  }
  byteHeap=256000;byteBlock=128000;
- puts("HTTP heap admission PASS: aggregate + 16KiB reserve unchanged, NUL/alignment covered, exact free/block boundaries reject before local/UDP execution; fragmented heap accepted; one-argument guard unchanged");
+ puts("HTTP heap admission PASS: LAN response + 32 largest block, aggregate + 16KiB reserve unchanged, measured 11764-byte block accepts local/UDP, exact free/block boundaries reject before execution");
+}
+static void peerRebootRecovery(const std::string &bearer){
+ registerPeer("daikin","full");const char *path="/api/hub/devices/02c400000001/command";
+ const auto callsBefore=peerCalls;const auto pairsBefore=localAuth.store.remote_count;
+ peerSessionValid=false;
+ auto rejected=request(path,HTTP_POST,command("outlet.set","reboot-write"),bearer);hubApiHandler(&rejected);
+ assert(rejected.status=="403 Forbidden"&&decode(rejected)["code"]=="auth_required"&&peerCalls==callsBefore);
+ lc_job *job=lc_find(&lanClient,"02c400000001",false);assert(job&&job->phase==LC_RESUME);
+ for(auto byte:job->token)assert(!byte);
+ const auto sentBefore=sent;now+=100;cycle();assert(sent==sentBefore&&peerCalls==callsBefore);
+ auto duplicate=request(path,HTTP_POST,command("outlet.set","reboot-write"),bearer);hubApiHandler(&duplicate);
+ assert(duplicate.status=="409 Conflict"&&sent==sentBefore);
+ // Complete the normal, nonce-matched resume. The stored pair remains intact.
+ char bytes[256];uint8_t token[16];memset(token,0x52,sizeof(token));ph_buf buffer;ph_writer writer;
+ assert(phw_init_fixed(&writer,PH_WIRE_MSGPACK,&buffer,bytes,sizeof(bytes)));
+ phw_begin(&writer,nullptr,false);phw_text(&writer,"op","auth_resume");phw_text(&writer,"src",job->peer);phw_text(&writer,"code","ok");phw_bytes_value(&writer,"nonce",job->nonce,16);phw_bytes_value(&writer,"token",token,16);phw_end(&writer);
+ size_t size=phw_finish_fixed(&writer);ph_value root;assert(size&&phv_parse(PH_WIRE_MSGPACK,bytes,size,&root));
+ assert(lc_response(&lanClient,&lanOps,&root,"127.0.0.1")&&job->phase==LC_READY&&!memcmp(job->token,token,16));
+ assert(localAuth.store.remote_count==pairsBefore);peerSessionValid=true;
+ auto read=request(path,HTTP_POST,command("status.get","after-peer-reboot"),bearer);hubApiHandler(&read);
+ assert(read.status=="200 OK"&&decode(read)["data"]["snapshot"].as<std::string>().size()==3100&&peerCalls==callsBefore+1);
+ puts("Peer reboot rejects the old token, resumes the existing pair, and accepts a new read without replaying the rejected write PASS");
+}
+static void pinnedS30(const std::string &auth){
+ registerPeer("s30-v1b","full");hubLanDiscovery.clear();
+ const char *id="02c400000001";auto job=lc_find(&lanClient,id,false);assert(job);
+ job->phase=LC_RESUME;hubLanPinnedS30();assert(!hubLanDiscovery.find(id,now));job->phase=LC_READY;
+ job->scopes=PH_AUTH_SCOPE_SENSOR;hubLanPinnedS30();assert(!hubLanDiscovery.find(id,now));job->scopes=PH_AUTH_SCOPE_CONTROL;
+ ++job->epoch;hubLanPinnedS30();assert(!hubLanDiscovery.find(id,now));--job->epoch;
+ config["lan_peers"][0]["ip"]="127.0.0.2";hubLanPinnedS30();assert(!hubLanDiscovery.find(id,now));config["lan_peers"][0]["ip"]="127.0.0.1";
+ const auto fresh=job->ready;job->ready=now-90000;hubLanPinnedS30();assert(!hubLanDiscovery.find(id,now)&&job->phase==LC_RESUME);job->phase=LC_READY;job->ready=fresh;
+ assert(ph_auth_remote_remove(&localAuth,id));hubLanPinnedS30();assert(!hubLanDiscovery.find(id,now));
+ assert(ph_auth_remote_store(&localAuth,id,"01000000000000000000000000000000",PH_AUTH_SCOPE_CONTROL,ph_auth_credential_epoch(&localAuth)));
+ hubLanPinnedS30();auto peer=hubLanDiscovery.find(id,now);assert(peer&&peer->ip=="127.0.0.1"&&peer->variant.empty()&&peer->firmware.empty());
+ const auto calls=peerCalls;auto read=request("/api/hub/devices/02c400000001/command",HTTP_POST,command("status.get","pinned-s30"),auth);hubApiHandler(&read);
+ assert(read.status=="200 OK"&&decode(read)["data"]["snapshot"].as<std::string>().size()==3100&&peerCalls==calls+1);
+ peer=hubLanDiscovery.find(id,now);assert(peer&&peer->firmware=="1.0.0-rc.6-status"&&peer->variant=="full");
+ const std::string route=hubService.prefix()+"s30-v1b/"+id+"/command";
+ for(const char *bad:{"wrong-rid","wrong-device","wrong-model","empty-version"}){
+  const auto bytes=pack(std::string("{\"code\":\"ok\",\"request_id\":\"")+(std::string(bad)=="wrong-rid"?"other":"pinned-s30")+"\",\"data\":{\"device_id\":\""+(std::string(bad)=="wrong-device"?"02c400000099":id)+"\",\"model\":\""+(std::string(bad)=="wrong-model"?"tc1":"s30-v1b")+"\",\"firmware_version\":\""+(std::string(bad)=="empty-version"?"":"untrusted")+"\",\"firmware_variant\":\"other\"}}");
+  hubLanComplete(route,bytes.data(),bytes.size());
+  assert(peer->firmware=="1.0.0-rc.6-status"&&peer->variant=="full");
+ }
+
+ // A synchronous bus callback may prepare another command after the router
+ // has checked this receipt's ID. It must still deliver this status snapshot.
+ const auto dispatch=hubDeviceBus.dispatch;const auto beforeStates=states;
+ hubDeviceBus.dispatch=[&](const std::string &topic,const std::string &body,bool retain,iotcloud::HubDeviceBus::Origin origin){
+  hubLanRequestId="next-command";hubLanRequestStatus=false;return dispatch(topic,body,retain,origin);
+ };
+ const auto bytes=pack("{\"code\":\"ok\",\"request_id\":\"pinned-s30\",\"data\":{\"device_id\":\"02c400000001\",\"model\":\"s30-v1b\",\"firmware_version\":\"1.0.0-rc.6-status\",\"firmware_variant\":\"full\"}}");
+ hubLanRequestId="pinned-s30";hubLanRequestStatus=true;hubLanComplete(route,bytes.data(),bytes.size());
+ assert(states==beforeStates+1&&hubLanRequestId=="next-command");hubDeviceBus.dispatch=dispatch;
+ // A UDP receipt can be newer than the outer loop timestamp. Keep its
+ // authenticated seen time even after the initial resume is 90 seconds old.
+ now+=100000;hubLanDiscovery.peers[0].seen=now;hubLanPinnedS30();
+ assert(hubLanDiscovery.find(id,now)&&hubLanDiscovery.peers[0].seen==now&&job->phase==LC_READY);
+ // An expired pinned route must reauthenticate before it is online again.
+ now+=90000;hubLanPinnedS30();assert(job->phase==LC_RESUME&&!hubLanDiscovery.find(id,now));
+ job->phase=LC_READY;job->ready=now;hubLanPinnedS30();assert(hubLanDiscovery.find(id,now));
+ // A live changed mDNS address still requires an explicit re-pair.
+ hubLanDiscovery.peers[0].ip="127.0.0.2";hubLanPinnedS30();assert(hubLanDiscovery.find(id,now)->ip=="127.0.0.2");
+ hubLanDiscovery.clear();config["hub"]["devices"][0]["model"]="tc1";hubLanPinnedS30();assert(!hubLanDiscovery.find(id,now));
+ registerPeer("tc1","standard");
+ puts("Authenticated pinned S30 -> real UDP read without mDNS; phase, scope, epoch, pair, route, age and changed-route gates PASS");
 }
 int main(){receiptBounds();init();
  // Empty-password access ignores a stale Bearer without occupying a slot.
@@ -193,6 +261,8 @@ int main(){receiptBounds();init();
  auto basic=request("/api/auth/me",HTTP_GET,"","Basic YWRtaW46ZGV2aWNlLXBhc3N3b3Jk");hubApiHandler(&basic);assert(basic.status=="200 OK");
  auto host=request("/api/auth/me",HTTP_GET,"",bearer);host.headers["Host"]="attacker.invalid";hubApiHandler(&host);assert(host.status=="403 Forbidden");
  heapAdmission(bearer);
+ peerRebootRecovery(bearer);
+ pinnedS30(bearer);
  const auto initialStates=states;
  const char *path="/api/hub/devices/02c400000001/command";
  for(const char *model:{"m1","a1","tc1","s30-v1b"}){

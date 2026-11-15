@@ -11,6 +11,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class HubS30(unittest.TestCase):
+    def test_binary_fresh_air_g3_socket_names_and_metering(self):
+        with tempfile.TemporaryDirectory(prefix='hub-home-devices-') as temporary:
+            binary = Path(temporary) / 'home-devices'
+            subprocess.run([
+                'c++', '-std=c++11', '-g', '-O1', '-Wall', '-Wextra', '-Werror',
+                '-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie',
+                '-I' + str(ROOT / 'include'), '-I' + str(codec_source()),
+                str(ROOT / 'tests/hub/home_devices.cpp'), '-lcrypto', '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True, timeout=30,
+                           env={**os.environ, 'ASAN_OPTIONS': 'detect_leaks=1',
+                                'UBSAN_OPTIONS': 'halt_on_error=1'})
+
     def test_discovery_registration_state_graph_and_relay(self):
         source = (ROOT / 'src/home.inc').read_text()
         graph = 'using Home=iotcloud::HubHome;' + source.split(

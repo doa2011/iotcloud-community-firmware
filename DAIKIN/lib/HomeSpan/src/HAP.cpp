@@ -92,33 +92,39 @@ bool HAPClient::init(){
 
 //////////////////////////////////////
 
-void HAPClient::processRequest(){
+// Release the receive/decrypt arrays before dispatching deeper HAP handlers.
+// Keep this boundary under LTO as well as the normal compiler.
+__attribute__((noinline)) bool HAPClient::receiveRequest(){
 
-  if(!homeSpan.iotcloudStorageHealthy() || inputWindow.expired(millis(),!cPair)){client.stop();return;}
+  if(!homeSpan.iotcloudStorageHealthy() || inputWindow.expired(millis(),!cPair)){client.stop();return false;}
   uint8_t data[512];
   while(client.available()){
     const size_t wanted=cPair?encrypted.remaining():sizeof(data);
     int n=client.read(data,std::min(std::min(size_t(client.available()),sizeof(data)),wanted));
-    if(n<=0)return;
+    if(n<=0)return false;
     inputWindow.received(millis());
     if(!cPair){
-      if(!request.append(data,n)){badRequestError();return;}
+      if(!request.append(data,n)){badRequestError();return false;}
     }else{
-      if(!encrypted.append(data,n)){badRequestError();return;}
+      if(!encrypted.append(data,n)){badRequestError();return false;}
       if(encrypted.complete()){
         uint8_t plain[1024];
         if(crypto_aead_chacha20poly1305_ietf_decrypt(plain,NULL,NULL,
               encrypted.bytes.data()+2,encrypted.length()+16,encrypted.bytes.data(),2,c2aNonce.get(),c2aKey)){
-          client.stop();return;
+          client.stop();return false;
         }
-        if(!c2aNonce.inc()){client.stop();return;}
-        if(!request.append(plain,encrypted.length())){badRequestError();return;}
+        if(!c2aNonce.inc()){client.stop();return false;}
+        if(!request.append(plain,encrypted.length())){badRequestError();return false;}
         encrypted.clear();
       }
     }
     if(request.complete())break;
   }
-  if(!request.complete())return;
+  return request.complete();
+}
+
+void HAPClient::processRequest(){
+  if(!receiveRequest())return;
   const auto contentType=request.type;
   std::string message=std::move(request.bytes);
   request.clear();

@@ -518,6 +518,25 @@ int main(void){
 }
 ''',release=True)
 
+ def test_explicit_cache_eviction_admits_mcu_image_with_allocator_floor(self):
+  self.run_c(r'''
+int main(void){
+ service_init();test_heap_dynamic=true;test_heap_free=64000;status_payload_bytes=4000;
+ ph_buf *out=service_query_mp("status.get");code(out,"ok");ph_buf_free(out);
+ out=service_query_mp("capabilities.get");code(out,"ok");ph_buf_free(out);
+ size_t cached=live_bytes;assert(cached>4000);
+ const size_t image_bytes=26053;
+ test_heap_free=SERVICE_MEMORY_RESERVE+32+image_bytes+cached-2000;
+ assert(!ph_wire_malloc(image_bytes));
+ assert(service_cache_evict());assert(!live_bytes);
+ void *image=ph_wire_malloc(image_bytes);assert(image);
+ assert(!ph_wire_malloc(cached-1999));ph_wire_free(image);assert(!live_bytes);
+ assert(!service_cache_evict());
+ test_heap_free=64000;out=service_query_mp("status.get");code(out,"ok");ph_buf_free(out);
+ assert(captures==2);return 0;
+}
+''',release=True)
+
  def test_cache_eviction_recovers_admission_in_allocator_floor_gap(self):
   self.run_c(r'''
 int main(void){

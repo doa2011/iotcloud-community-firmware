@@ -2,9 +2,9 @@
 
 Start at [Firmware & resources]({{SITE_URL}}en/#releases) and choose the latest compatible release for your device with its matching checksums. Pinned versions below are reproducible examples; stated minimum versions, stock versions and migration-tool requirements still apply.
 
-This project provides open-source firmware for discontinued IoT devices or devices whose cloud service providers have ended support. It supports the Phicomm TC1 power strip, M1 air quality monitor, A1 air purifier, ORVIBO S30M-V1B smart socket and DAIKIN G1/G2 and G3 air quality monitors. It provides local web control, MQTT and Home Assistant integration. Firmware downloads are free; the manufacturer's cloud is not required.
+This project provides open-source firmware for discontinued IoT devices or devices whose cloud service providers have ended support. It supports the Phicomm TC1 power strip, M1 air quality monitor, A1 air purifier, ORVIBO S30M-V1B smart socket and DAIKIN G2 and G3 air quality monitors. It provides local web control, MQTT and Home Assistant integration. Firmware downloads are free; the manufacturer's cloud is not required.
 
-**v0.9.27 is the stable release. v1.0.0-rc.6 is for beta testing and supports TC1, M1, A1, DAIKIN G1/G2, G3 and S30M-V1B / S30M_V1B.** See the [complete cumulative candidate notes](release-log.html?channel=candidate). Downloads also retain the 0.9.x archive. M1 Wi-Fi and sensor-controller firmware update separately; the open-source controller is recommended for stock 11.x. Migration from 17.1.2.3 / 17.x is currently discouraged.
+**Use the latest compatible stable release for everyday operation; check the [release notes](release-log.html) and downloads for availability. RC builds are for beta testing.** v1.0.0 features cover TC1, M1, A1, DAIKIN G2, G3 and S30M-V1B / S30M_V1B; G1 compatibility remains unconfirmed. The 0.9.x archive is retained. M1 Wi-Fi and sensor-controller firmware update separately; the open-source controller is recommended for stock 11.x. Migration from 17.1.2.3 / 17.x is currently discouraged.
 
 ## Identify your device
 
@@ -14,7 +14,7 @@ This project provides open-source firmware for discontinued IoT devices or devic
 | M1 air quality monitor | PM2.5, formaldehyde, temperature, humidity and screen brightness | Original EMW3080B / MK3080B module; retain the ATSAMD20 |
 | A1 air purifier | Fan, light ring, child lock, night mode and environmental-data automation | Original EMW3080B / MK3080B module |
 | ORVIBO S30M-V1B | Relay, voltage, current, power, energy and power-on/off policy | BL2028N / BK7231N, HLW8032 meter |
-| DAIKIN G1/G2 | G1 BRY88AA151K; G2 BRY88AB151K adds a formaldehyde expansion port | Current BRY88AX151K images support G2 ESP32 / 4 MB, not G1 |
+| DAIKIN G1/G2 | G1 BRY88AA151K; G2 BRY88AB151K adds a formaldehyde expansion port | BRY88AX151K is verified on G2 ESP32 / 4 MB; G1 compatibility is unconfirmed and installation is not documented |
 | DAIKIN G3 BRY88BBA15G | Air quality, clock, weather, reminders and custom screens | ESP32 / 8 MB + SWM34S screen MCU, two independent applications |
 
 **`tc1(a1)` means the A1 hardware revision of the TC1 power strip, not the A1 air purifier. They are different products and cannot use each other's firmware.** Check the model before flashing.

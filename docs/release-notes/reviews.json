@@ -3960,6 +3960,950 @@
       ],
       "block_sha256": "e2163bd8de519079b36bbcc7382ff413cca56992360b2908e632b68160129711",
       "release_sha256": "a5d9bc8cb6ad736c24fa5265225d7b597cf127d4cab6db406184fbe10101c2e1"
+    },
+    "v1.0.0:b001": {
+      "status": "excluded",
+      "reason": "Release scope and upgrade conditions; retained in the full notes, not a separate feature.",
+      "basis": [
+        "v1.0.0:b001"
+      ],
+      "change_refs": [],
+      "block_sha256": "dc6c7b52367af2ca8b92cf98aa8cb6ca76987fa5cd949a8b1766e845d430c486",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b002": {
+      "status": "excluded",
+      "reason": "Release scope and upgrade conditions; retained in the full notes, not a separate feature.",
+      "basis": [
+        "v1.0.0:b002"
+      ],
+      "change_refs": [],
+      "block_sha256": "1dc0c5fc84f77359b9117aa12f944ff62c069101866cbf3e70a8e4bd3942b3c0",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b003": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b003"
+      ],
+      "change_refs": [
+        "v1-bundled-i18n@1.0.0"
+      ],
+      "block_sha256": "e4d3144fc6e68c81aa094560b43ceb657a43412068d79c9601452e126a226cc9",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b004": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b004"
+      ],
+      "change_refs": [
+        "v1-platform-i18n@1.0.0"
+      ],
+      "block_sha256": "a1466fddc5d2fcc75d364d3b38c7c09b32e558d65a40405a51e48730a35f4362",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b005": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b005"
+      ],
+      "change_refs": [
+        "v1-device-language@1.0.0"
+      ],
+      "block_sha256": "5cb7da6b2165e76abd4ae358a7c69f34afd1d9f43699ba33f1e0a09cdb8efe12",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b006": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b006"
+      ],
+      "change_refs": [
+        "v1-local-connection-fold@1.0.0"
+      ],
+      "block_sha256": "ae4166ef591b12bfb2b54cf2513f06e5ad96b31b59ee47ba4f3332c978742c5c",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b007": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b007"
+      ],
+      "change_refs": [
+        "v1-platform-short-usernames@1.0.0"
+      ],
+      "block_sha256": "74c2aba68de837227d6be2da451430362c8887d2bca59829f8110f9a5a3d5eb0",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b008": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b008"
+      ],
+      "change_refs": [
+        "v1-m1-mcu-version-ui@1.0.0"
+      ],
+      "block_sha256": "3c359941d2b3b1ba65b53d1d1ad49d81f577291985d9360bf8ccd4804b20e1ef",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b009": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b009"
+      ],
+      "change_refs": [
+        "v1-m1-sensor-pm-smoothing@1.0.0"
+      ],
+      "block_sha256": "19c7a31b64ef939bef0f56e3846f6e31446fce807a902125c46d53df4cd49f2f",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b010": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b010"
+      ],
+      "change_refs": [
+        "v1-m1-optional-sensor-buzzer@1.0.0"
+      ],
+      "block_sha256": "ac0da37234484165b453baf2f59a1cbeb5661a57ed86f0a85efa8dfe5fa855f6",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b011": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b011"
+      ],
+      "change_refs": [
+        "v1-m1-button-actions@1.0.0"
+      ],
+      "block_sha256": "b412d13d9e44eb9fd013c3d980f0a1ab8d3a6f8d22f7000fba0ba46e5a15cb68",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b012": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b012"
+      ],
+      "change_refs": [
+        "v1-m1-segmented-reset@1.0.0"
+      ],
+      "block_sha256": "4869fcc071491026a4c2d863062999730ca1195e3d1efcbf430e244b3354c29a",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b013": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b013"
+      ],
+      "change_refs": [
+        "v1-m1-dual-display-sources@1.0.0"
+      ],
+      "block_sha256": "9ddd979b303aaec85aba50eb5ea56799481e6d86778269345519299a364f523c",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b014": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b014"
+      ],
+      "change_refs": [
+        "v1-tc1-a1-typed-display-producers@1.0.0"
+      ],
+      "block_sha256": "e36ffabe5087981979d20c43347430b11938dc7b7589ff78e1bef144e807e2e6",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b015": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b015"
+      ],
+      "change_refs": [
+        "v1-m1-display-modes-glyphs@1.0.0"
+      ],
+      "block_sha256": "9fa6d8ecece659ed52ef9a908be6a7bb5b70bd1a3d35b163ce46a468269b8693",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b016": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b016"
+      ],
+      "change_refs": [
+        "v1-m1-independent-lamp-segments@1.0.0"
+      ],
+      "block_sha256": "2e802852caddc870535ef273269359f7313d476088d20824e7c5978f26841b8c",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b017": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b017"
+      ],
+      "change_refs": [
+        "v1-m1-raw-display-api@1.0.0"
+      ],
+      "block_sha256": "f82df1931576b65530516533a421121cf77038566a763e367e442a0d571f2063",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b018": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b018"
+      ],
+      "change_refs": [
+        "v1-m1-display-compatibility@1.0.0"
+      ],
+      "block_sha256": "6267dc3b031b24e0d3544dabfdf077193cc3d11a473df2f4d4d55f5aa04035fe",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b019": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b019"
+      ],
+      "change_refs": [
+        "v1-daikin-hub-variant@1.0.0"
+      ],
+      "block_sha256": "7bd444004eb88c953872c4b2895be8159b2d1973386cb4f430d0cbf7ae5fd471",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b020": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b020"
+      ],
+      "change_refs": [
+        "v1-daikin-hub-webui@1.0.0"
+      ],
+      "block_sha256": "01b466feaef14c9bca23ea2d82e9b209582d0444b692d00b68a6c1c1000a644c",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b021": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b021"
+      ],
+      "change_refs": [
+        "v1-daikin-local-broker@1.0.0"
+      ],
+      "block_sha256": "d5c095aa71d16a6e35d22e2390bfb59759a2af5c7b6851bde1a504d9f6f6e237",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b022": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b022"
+      ],
+      "change_refs": [
+        "v1-daikin-broker-client-forwarding@1.0.0"
+      ],
+      "block_sha256": "4dcac2a3743e0a680ed1d0be47292a3585d62fc5a591f463d5bf8f97c8d29fd9",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b023": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b023"
+      ],
+      "change_refs": [
+        "v1-daikin-hap-bridge@1.0.0"
+      ],
+      "block_sha256": "f30b9e9eaa24db04bf6af26e15fc78dfc6c34531d803cb0f1868bb3dff5af30e",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b024": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b024"
+      ],
+      "change_refs": [
+        "v1-daikin-explicit-hub-conversion@1.0.0"
+      ],
+      "block_sha256": "8952078721db71db64c9e17f160411e14e50d6fc7e3669bd4b5611fad36eae5a",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b025": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b025"
+      ],
+      "change_refs": [
+        "v1-authenticated-backup-recovery@1.0.0"
+      ],
+      "block_sha256": "c4b487a8e648afb12c5c1c47e4a2f00248f87f07e11d632f36af5111a3cb3d0b",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b026": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b026"
+      ],
+      "change_refs": [
+        "v1-browser-inline-upgrade-diff@1.0.0"
+      ],
+      "block_sha256": "534cb41c506c71bd395c300a1cc943d712de16e079ca05b398af7409ed5bd9b5",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b027": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b027"
+      ],
+      "change_refs": [
+        "v1-emw3080-release-memory@1.0.0"
+      ],
+      "block_sha256": "af5c9764f3a67b48f6c20b64495b901490eae2c3755d07953d08fd064309719b",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b028": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b028"
+      ],
+      "change_refs": [
+        "v1-open-source-development@1.0.0"
+      ],
+      "block_sha256": "0ed4f397f58132fcb50d94d2d2765a5f53d2b26f35189fa74ca2827581c86bd5",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b029": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b029"
+      ],
+      "change_refs": [
+        "v1-device-guides-protocol-pages@1.0.0"
+      ],
+      "block_sha256": "9de292022c1c79a399b01209693ad85022a18994efb3339606237c24183904ad",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b030": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b030"
+      ],
+      "change_refs": [
+        "v1-m1-display-profile-webui@1.0.0"
+      ],
+      "block_sha256": "584c01711f455c8acdf6ddbca0b11171ce3f97cf7b7f940439dd2b673b461925",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b031": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b031"
+      ],
+      "change_refs": [
+        "v1-m1-sensor-buzzer-webui@1.0.0"
+      ],
+      "block_sha256": "e78e3f77fe454a35dc764f1fd2eb9dcae91782d551f59a4342a3e5689c02e720",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b032": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b032"
+      ],
+      "change_refs": [
+        "v1-daikin-hub-self-device@1.0.0"
+      ],
+      "block_sha256": "4da83497125ce455a7342b6fafb06bb0c437a10d94b0bc4b601f6a3a80303040",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b033": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b033"
+      ],
+      "change_refs": [
+        "v1-daikin-hub-optional-web-password@1.0.0"
+      ],
+      "block_sha256": "896688a4b554fd4c12d0fcadb263b6242ebe316bb02b1c4a78a76459239105c0",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b034": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b034"
+      ],
+      "change_refs": [
+        "v1-daikin-conversion-optional-web-password@1.0.0"
+      ],
+      "block_sha256": "bfeffd0ca41f78b240e4fdb168638e3a52ecc3a650adefd3c4e03962aacafd47",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b035": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b035"
+      ],
+      "change_refs": [
+        "v1-daikin-homekit-status-refresh@1.0.0"
+      ],
+      "block_sha256": "c361100808bb5d22dcf5df093d281171a34fac7ed07a0779c056c31b1d4f549b",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b036": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b036"
+      ],
+      "change_refs": [
+        "v1-generic-number-field-publication@1.0.0"
+      ],
+      "block_sha256": "0f89285a2df485037e5ca3311846d949294cef5d885ebfba444d7636dea1e224",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b037": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b037"
+      ],
+      "change_refs": [
+        "v1-m1-device-field-display-source@1.0.0"
+      ],
+      "block_sha256": "e0c3b62c8d1f5c95ca23f182456a9f3e3d5450841e8c826de10c93ca7cbdc15b",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b038": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b038"
+      ],
+      "change_refs": [
+        "m1-recovery-network-reset-rejection@1.0.0"
+      ],
+      "block_sha256": "5c977a45eb2c8fcdad72491d5c43975c7ec4c49d169a9a4be1fb6bd0bae08402",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b039": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b039"
+      ],
+      "change_refs": [
+        "web-maintenance-page-mount@1.0.0"
+      ],
+      "block_sha256": "70456534c631a7dfeacb037c2b439741875d112170974669de0bad3d31f12b2c",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b040": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b040"
+      ],
+      "change_refs": [
+        "web-config-recovery-refresh@1.0.0"
+      ],
+      "block_sha256": "3590ed89402112195dcd8d67e74879f3b62da084ac40eda7eca94796f994d2ba",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b041": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b041"
+      ],
+      "change_refs": [
+        "a1-short-touch-recovery@1.0.0"
+      ],
+      "block_sha256": "8f35045c9a08a1b0e5ff36976f815be4bd6fde86615d3239a9df874b4ce04b27",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b042": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b042"
+      ],
+      "change_refs": [
+        "openiot-binary-default@1.0.0"
+      ],
+      "block_sha256": "bc4c2348afc06794afe660960162eb00e4c79226cf7e8d01cc5fe380acf79882",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b043": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b043"
+      ],
+      "change_refs": [
+        "business-status-diagnostics-cache@1.0.0"
+      ],
+      "block_sha256": "a9b8920505cfd5bfb6a1e6d914f89284df3da1df2bbf8a76995412c6b7c092ce",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b044": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b044"
+      ],
+      "change_refs": [
+        "web-request-coordination@1.0.0"
+      ],
+      "block_sha256": "9223c5d01a74dd19c5db39f7b6914fe6bd9ccbe0d644051bf54536dcc941f269",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b045": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b045"
+      ],
+      "change_refs": [
+        "mqtt-busy-recovery@1.0.0"
+      ],
+      "block_sha256": "46493717f11ea82e17481ec7e95c41d9ff5272859f92a9e07227662f8fc02bcf",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b046": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b046"
+      ],
+      "change_refs": [
+        "authenticated-lan-v4@1.0.0"
+      ],
+      "block_sha256": "f4ebb13a50e732e53858dde8478d0b5a6ccdd655d860a9ad67269125fd0cab64",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b047": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b047"
+      ],
+      "change_refs": [
+        "hub-mdns-udp-runtime@1.0.0"
+      ],
+      "block_sha256": "f151da7913341c65d46e7ad50cd410edcd26ed551bae7f79442d6524d0b0d385",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b048": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b048"
+      ],
+      "change_refs": [
+        "webui-auth-and-config-recovery@1.0.0"
+      ],
+      "block_sha256": "80021ae1ba29dd18cd35336dd2999382c7fbfd6c8e6408a618653c736337974a",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b049": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b049"
+      ],
+      "change_refs": [
+        "compact-builds-and-hostnames@1.0.0"
+      ],
+      "block_sha256": "ed08d17b54990cce935814e74cd3be5d037c9dbf277e4fc50213fa71d989ab75",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b050": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b050"
+      ],
+      "change_refs": [
+        "s30-v1b-native-support@1.0.0"
+      ],
+      "block_sha256": "d2bca6c199fcc5835d9f2a1997ecca65569611ef50abe22a1aae109cb2275f82",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b051": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b051"
+      ],
+      "change_refs": [
+        "hub-shared-web-auth@1.0.0"
+      ],
+      "block_sha256": "b22ca2f49aea93da8720852101ec9d718327a568b0b610fdb49b60407e2a27bf",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b052": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b052"
+      ],
+      "change_refs": [
+        "hub-device-http-udp-transport@1.0.0"
+      ],
+      "block_sha256": "81439a25de5450812855fbc7726b0e42791309ee8a3f3c9e64339f1e3eaf1020",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b053": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b053"
+      ],
+      "change_refs": [
+        "dispatch-auth-and-control-receipts@1.0.0"
+      ],
+      "block_sha256": "1368570531766e56cea92d6bfccc51e6bec32139d8aa106d59365750a058b2a6",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b054": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b054"
+      ],
+      "change_refs": [
+        "tc1-mqtt-and-s30-lan@1.0.0"
+      ],
+      "block_sha256": "8051ec3b22491488d324089751450a531b8a4d94820fd42f1cdcdbd4bf4d5641",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b055": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b055"
+      ],
+      "change_refs": [
+        "hub-pair-route-atomic@1.0.0"
+      ],
+      "block_sha256": "be5de9874a6a47d8a13d18128df34f625b7c3552f08d11437e621ed5e66a18d3",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b056": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b056"
+      ],
+      "change_refs": [
+        "web-generation-and-utc@1.0.0"
+      ],
+      "block_sha256": "e8f7536a8c3d865f90b3e5ab44ea6d45f471374bf18cf2604446978284c4204c",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b057": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b057"
+      ],
+      "change_refs": [
+        "device-name-homekit-sync@1.0.0"
+      ],
+      "block_sha256": "3980c6c5bfba9bbcfd5ce5cd1931d8600cc36f6103980aefb27f0cf04847addf",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b058": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b058"
+      ],
+      "change_refs": [
+        "hub-homekit-stack-restart@1.0.0"
+      ],
+      "block_sha256": "18e54b2c0f52ebab92388ab1133d06cacf2418c06b965ae6ec1dbad61d82787f",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b059": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b059"
+      ],
+      "change_refs": [
+        "s30-power-and-sensor@1.0.0"
+      ],
+      "block_sha256": "75d9e77d7e63562df172739d23573bd6b66985910a1987503804da3968d01de8",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b060": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b060"
+      ],
+      "change_refs": [
+        "tc1-local-power-rules@1.0.0"
+      ],
+      "block_sha256": "fce05595ca32e72de26c122e2cf333614121746ef17d4bd97ee368f1c96d7e49",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b061": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b061"
+      ],
+      "change_refs": [
+        "s30-wifi-storage-recovery@1.0.0"
+      ],
+      "block_sha256": "d6489a6071305b20e44132363b7a3f0828a07a3eeff2ea6f18fab8621c47cc34",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b062": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b062"
+      ],
+      "change_refs": [
+        "web-ota-availability-guard@1.0.0"
+      ],
+      "block_sha256": "c4036431540bb5b67a663343d8b772df6016b81bfd32c1a8f0aee8abbe48794b",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b063": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b063"
+      ],
+      "change_refs": [
+        "g3-screen-platform@1.0.0"
+      ],
+      "block_sha256": "69281b13847a9107407520dd53580135dcd1650a2c960d77a51e5afcff4a14bf",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b064": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b064"
+      ],
+      "change_refs": [
+        "g3-layout-theme-weather@1.0.0"
+      ],
+      "block_sha256": "2e3147dce8e4bf67ab0eb14de7e9869c84404b3b25dcec84f5134fd11d673aa6",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b065": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b065"
+      ],
+      "change_refs": [
+        "g3-online-update@1.0.0"
+      ],
+      "block_sha256": "4e73c0c7e8d900e560404e90e26a7b2685a950624c0519b8e86500c38f75c465",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b066": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b066"
+      ],
+      "change_refs": [
+        "m1-clock-retry@1.0.0"
+      ],
+      "block_sha256": "4ab9cf1ba111ea59699ac82b79633a57580d2a9151b0efeec4ad7064036f7be3",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b067": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b067"
+      ],
+      "change_refs": [
+        "s30-clock-automation-stock-ota@1.0.0"
+      ],
+      "block_sha256": "e86de3a4791909e88e82dc34425455d37e336101bc217b1c3507f24e7f9352be",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b068": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b068"
+      ],
+      "change_refs": [
+        "shared-power-web-demos@1.0.0"
+      ],
+      "block_sha256": "af3c859fc594f422ddb8957d6c02d2937155bbe7e08b3130a09de266c0837c3e",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b069": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b069"
+      ],
+      "change_refs": [
+        "g3-nor-wallpaper-sensors@1.0.0"
+      ],
+      "block_sha256": "2f4e58e1aaef4cf77e6ed0a023c7c0aa65621295af37f99ed4a654058c541582",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b070": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b070"
+      ],
+      "change_refs": [
+        "g3-stock-weather-linux@1.0.0"
+      ],
+      "block_sha256": "0583bd31606bea8d4bd5808665434b8eda367e78c4ebad7317fb3f44d250d70d",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b071": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b071"
+      ],
+      "change_refs": [
+        "g3-startup-online-power@1.0.0"
+      ],
+      "block_sha256": "c62fddc1537138be429c18de983d87fe771481336df04832edad2d4af1ea7432",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b072": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b072"
+      ],
+      "change_refs": [
+        "g3-charging-network-icons@1.0.0"
+      ],
+      "block_sha256": "98ac771741e58710e2fa338487cb23a72dbb2762a5f71b369d433d6edf4052d3",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b073": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b073"
+      ],
+      "change_refs": [
+        "g3-power-key-shutdown@1.0.0"
+      ],
+      "block_sha256": "958a005af4cdffe7433d2c509d73e8c5ff226c96f1ae7c89c35bbab222e55307",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b074": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b074"
+      ],
+      "change_refs": [
+        "g3-web-direct-install@1.0.0"
+      ],
+      "block_sha256": "7f160ce42c289991cb9cfe1bcd9ed84c86c604f19adc280490649b8357138ed1",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b075": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b075"
+      ],
+      "change_refs": [
+        "g3-cloud-fresh-readings@1.0.0"
+      ],
+      "block_sha256": "57594b78534b6928bfbdea5a490429c39bb55f2e72992739e16b5704badca15b",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b076": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b076"
+      ],
+      "change_refs": [
+        "g3-sensor-calibration@1.0.0"
+      ],
+      "block_sha256": "e2163bd8de519079b36bbcc7382ff413cca56992360b2908e632b68160129711",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b077": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b077"
+      ],
+      "change_refs": [
+        "hub-request-and-homekit-recovery@1.0.0"
+      ],
+      "block_sha256": "a792e465f9ba7a56f6412f145f984d89ba118ed7ea01743fba74db2f4f0b770d",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b078": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b078"
+      ],
+      "change_refs": [
+        "hub-power-energy-display@1.0.0"
+      ],
+      "block_sha256": "e3e81fab44978daa9d8bf8d4aa8a4e657a868c11dfea5d0c84e6571fa9e08429",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0:b079": {
+      "status": "approved",
+      "reason": "Author reviewed the bilingual current stable behavior against its retained candidate revision and current implementation.",
+      "basis": [
+        "v1.0.0:b079"
+      ],
+      "change_refs": [
+        "g3-media-push-display-policy@1.0.0"
+      ],
+      "block_sha256": "d19fefa95346caab822ce87eb8d155ea5beb1e3c31793e98f8ad3ebff126e0e1",
+      "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
     }
   }
 }

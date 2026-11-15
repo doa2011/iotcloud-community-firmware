@@ -95,7 +95,8 @@ static BusinessStatusKey businessStatusKey;
 static DynamicJsonDocument businessStatusDocument(4096);
 #endif
 static HttpReadSnapshot businessReadSnapshot;
-static void invalidateBusinessStatusCache(){businessStatusInvalid=true;businessReadSnapshot.invalidate();}
+static void requestBusinessStatusRefresh(){businessStatusInvalid=true;}
+static void invalidateBusinessStatusCache(){requestBusinessStatusRefresh();businessReadSnapshot.invalidate();}
 static BusinessStatusKey businessStatusSource(uint32_t now){
   BusinessStatusKey key={};
   for(unsigned i=0;i<SENSOR_COUNT;i++){auto &s=key.samples[i];const auto &r=readings[i];s.value=r.value;s.at=r.at;s.received=r.received;s.present=sensorPresent(i);s.valid=r.valid(now);}
@@ -302,7 +303,15 @@ static bool validConfig(JsonObjectConst candidate){
   }
   return true;
 }
+#ifdef IOTCLOUD_BRY88_SCREEN
+static bool publicReadCommand(const String &,String &,bool);
+#endif
 static String execute(const String &body,bool binary=true){
+#ifdef IOTCLOUD_BRY88_SCREEN
+  // UDP and MQTT need the same complete status as HTTP. Reuse its encoded
+  // publication instead of decoding the full G3 tree into another JSON pool.
+  if(binary){String response;if(publicReadCommand(body,response,true))return response;}
+#endif
   size_t requestCapacity=6144,replyCapacity=8192;
 #ifdef IOTCLOUD_BRY88_SCREEN
   // These bounded reads need much less than a general config/command. Leave

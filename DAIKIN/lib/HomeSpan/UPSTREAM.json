@@ -27,7 +27,9 @@
     "Use newlib siscanf for the eleven integer/character-only input formats, sharing the scanner already linked by ESP-IDF; retain the host libc backend for host fixtures.",
     "Parse HAP scalar write envelopes with quote-aware bounded tokenization; count real rows and validate the complete envelope before dispatch.",
     "Decode JSON escapes and UTF-16 surrogate pairs to strict UTF-8 in place; reject NUL, malformed strings and bounded-name overflow before allocating pending values.",
-    "Escape string values in HAP JSON responses; expose adapter-selected ConfiguredName byte limits without changing existing characteristic identities."
+    "Escape string values in HAP JSON responses; expose adapter-selected ConfiguredName byte limits without changing existing characteristic identities.",
+    "Release bounded receive/decrypt stack arrays before dispatching completed HAP requests, retaining the boundary under LTO.",
+    "Allow an explicit persistent configuration-number refresh after batched name changes; retain the structural hash and existing accessory identities."
   ],
   "integration_storage": {
     "layout": "Existing 4 MiB Flash dual-OTA table is retained",
@@ -44,7 +46,9 @@
     "DAIKIN/tests/test_hap_scan.py",
     "DAIKIN/tests/test_home_name_graph.py",
     "DAIKIN/tests/test_device_names.py",
-    "DAIKIN/tests/hub/home_names.cpp"
+    "DAIKIN/tests/hub/home_names.cpp",
+    "DAIKIN/tests/test_hap_receive.py",
+    "DAIKIN/tests/hub/hap_receive.cpp"
   ],
   "scan_backend": {
     "target": "newlib siscanf from the pinned ESP32 GCC 8.4.0 toolchain; no new library copy",

@@ -28,6 +28,8 @@ static bool screenGuardAnnounce(const String &arg) {
              &sequence, &mode, &remaining, &control, &reset, &clock, &status,
              &extra) != 9 || version != 3 || !session || mode > 3 || remaining > 30000)
     return true;
+  bool changed = session != screenGuard.session || mode != screenGuard.mode ||
+                 !screenGuardAvailable();
   if (session != screenGuard.session) {
     screenGuard = {};
     screenGuard.session = session;
@@ -49,7 +51,12 @@ static bool screenGuardAnnounce(const String &arg) {
     if (screenBridge.extended || screenSend("\r\n+screen_link_reset:1\r\n"))
       screenGuard.linkReset = true;
   }
-  invalidateBusinessStatusCache();
+  // The MCU repeats this heartbeat every five seconds. Keep the leased
+  // publication readable unless its session or recovery state changed.
+  if (changed)
+    invalidateBusinessStatusCache();
+  else
+    requestBusinessStatusRefresh();
   return true;
 }
 static bool screenGuardImageAnnounce(const String &arg) {
@@ -60,14 +67,18 @@ static bool screenGuardImageAnnounce(const String &arg) {
       ok = ok && ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
     }
     if (ok) {
+      bool changed = strcmp(screenGuard.imageMd5, arg.c_str() + 2);
       memcpy(screenGuard.imageMd5, arg.c_str() + 2, 32);
       screenGuard.imageMd5[32] = 0;
       if (screenGuardAvailable() &&
           (!strcmp(screenImage.state, "factory_installing") ||
            !strcmp(screenImage.state, "installing")) &&
-          screenHex(screenImage.md5, 16) == screenGuard.imageMd5)
+          screenHex(screenImage.md5, 16) == screenGuard.imageMd5) {
         screenImage.state = "installed";
-      invalidateBusinessStatusCache();
+        changed = true;
+      }
+      if (changed)
+        invalidateBusinessStatusCache();
     }
   }
   return true;
@@ -89,7 +100,7 @@ static bool screenGuardLine(const uint8_t *p, size_t n) {
       screenGuard.diagnosticVersion = reply[1];
       screenGuard.hasDiagnostic = true;
       screenGuard.diagnosticSeen = millis();
-      invalidateBusinessStatusCache();
+      requestBusinessStatusRefresh();
     }
     return true;
   }

@@ -90,6 +90,57 @@ class VersionTests(unittest.TestCase):
         self.git('tag', 'v1.0.0')
         self.assertEqual(version_tool.resolve_version(self.root, 'v1.0.0')['base_version'], '1.0.0')
 
+    def prepare_dry_run_repository(self):
+        self.git('tag', 'v1.0.0-rc.6')
+        (self.root / 'VERSION').write_text('1.0.0\n')
+        self.git('add', 'VERSION')
+        self.git('commit', '-qm', 'prepare stable')
+        self.git('update-ref', 'refs/remotes/origin/main', 'HEAD')
+
+    def test_dry_run_rehearses_stable_build_identity_without_replacing_rc(self):
+        self.prepare_dry_run_repository()
+        self.assertEqual(version_tool.resolve_version(self.root)['base_version'], '1.0.0-rc.6')
+        with patch.dict('os.environ', {'GITHUB_EVENT_NAME': 'workflow_dispatch',
+                                      'GITHUB_REF': 'refs/heads/main', 'RELEASE_DRY_RUN': 'true'}, clear=True):
+            metadata = version_tool.prepare_release_dry_run(self.root)
+            self.assertEqual(version_tool.prepare_release_dry_run(self.root), metadata)
+        self.assertEqual(metadata['git_tag'], 'v1.0.0')
+        self.assertEqual(metadata['base_version'], '1.0.0')
+        self.assertEqual(metadata['git_commit'], self.git('rev-parse', 'HEAD'))
+        self.assertFalse(metadata['dirty'])
+        self.assertEqual(self.git('rev-parse', 'v1.0.0-rc.6'), self.commit)
+
+    def test_dry_run_requires_main_dispatch_and_clean_tree(self):
+        self.prepare_dry_run_repository()
+        context = {'GITHUB_EVENT_NAME': 'workflow_dispatch',
+                   'GITHUB_REF': 'refs/heads/main', 'RELEASE_DRY_RUN': 'true'}
+        for invalid in ({'GITHUB_EVENT_NAME': 'push'}, {'GITHUB_REF': 'refs/heads/dev'},
+                        {'RELEASE_DRY_RUN': 'false'}):
+            with patch.dict('os.environ', {**context, **invalid}, clear=True):
+                with self.assertRaisesRegex(ValueError, 'explicit main'):
+                    version_tool.prepare_release_dry_run(self.root)
+        (self.root / 'source').write_text('uncommitted')
+        with patch.dict('os.environ', context, clear=True):
+            with self.assertRaisesRegex(ValueError, 'clean source'):
+                version_tool.prepare_release_dry_run(self.root)
+        self.assertEqual(self.git('tag', '--list', 'v1.0.0'), '')
+
+    def test_dry_run_rejects_conflicting_tag_and_source_outside_main(self):
+        self.prepare_dry_run_repository()
+        self.git('tag', 'v1.0.0', self.commit)
+        context = {'GITHUB_EVENT_NAME': 'workflow_dispatch',
+                   'GITHUB_REF': 'refs/heads/main', 'RELEASE_DRY_RUN': 'true'}
+        with patch.dict('os.environ', context, clear=True):
+            with self.assertRaisesRegex(ValueError, 'Refuse to replace'):
+                version_tool.prepare_release_dry_run(self.root)
+            self.assertEqual(self.git('rev-parse', 'v1.0.0'), self.commit)
+            self.git('tag', '-d', 'v1.0.0')
+            (self.root / 'source').write_text('outside main')
+            self.git('commit', '-qam', 'outside main')
+            with self.assertRaises(subprocess.CalledProcessError):
+                version_tool.prepare_release_dry_run(self.root)
+        self.assertEqual(self.git('tag', '--list', 'v1.0.0'), '')
+
     def test_release_tag_must_match_target_version(self):
         (self.root / 'VERSION').write_text('1.0.0\n')
         self.git('add', 'VERSION')

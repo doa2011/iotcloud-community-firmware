@@ -12,7 +12,7 @@ class HubHome {
 public:
   static constexpr size_t Capacity = HubService::Devices + 1;
   enum Metric { Temperature, Humidity, PM25, PM10, CO2, TVOC, MetricCount };
-  enum Control { Outlet, FanOn, FanSpeed, LightOn, LightBrightness, Name };
+  enum Control { Outlet, FanOn, FanSpeed, LightOn, LightBrightness, FanMode, Name };
   struct Value {
     double number = 0;
     uint32_t at = 0;
@@ -23,11 +23,14 @@ public:
   };
   struct Device {
     std::string model, mac, base, name, query;
-    uint32_t aid = 0, at = 0, sequence = 0, queriedAt = 0, nameCapabilitiesAt = 0;
+    uint32_t aid = 0, at = 0, sequence = 0, queriedAt = 0, namesAt = 0, nameCapabilitiesAt = 0;
     bool seen = false, online = false, offline = false, controls = false;
+    bool queried = false, namesKnown = false, queryPower = false, automatic = false;
     bool nameCapabilitiesKnown = false, queryCapabilities = false;
     uint8_t nameMax = 0;
     bool outlets[6] = {}, fan = false, light = false, freshAir = false;
+    std::array<std::string, 6> outletNames;
+    Value power, energy;
     unsigned speed = 0, brightness = 0;
     std::array<Value, MetricCount> values;
     unsigned outletCount() const {
@@ -53,6 +56,7 @@ public:
       d = Device();
     size = 0;
     pending = Pending();
+    queryCursor = 0;
     if (!add("daikin", ownMac, prefix))
       return false;
     for (JsonObjectConst d : saved) {
@@ -67,21 +71,25 @@ public:
   }
   void tick(uint32_t now) { clock = now; }
   void observe(const std::string &topic, const std::string &body) {
+    const auto end = topic.rfind('/');
+    if (end == std::string::npos) return;
+    const bool availability = topic.compare(end, std::string::npos, "/availability") == 0;
+    const bool result = topic.compare(end, std::string::npos, "/result") == 0;
+    if (!availability && !result && topic.compare(end, std::string::npos, "/state") != 0) return;
     for (size_t i = 0; i < size; i++) {
       auto &d = devices[i];
-      if (topic == d.base + "/availability") {
+      if (end != d.base.size() || topic.compare(0, end, d.base) != 0) continue;
+      if (availability) {
         d.online = body == "online";
         d.offline = !d.online;
         if (!d.online) {
           d.seen = false;
           for (auto &v : d.values)
             v.valid = false;
+          d.power.valid = d.energy.valid = false;
         }
         return;
       }
-      bool result = topic == d.base + "/result";
-      if (topic != d.base + "/state" && !result)
-        continue;
       if (body.size() > HubDeviceBus::Packet)
         return;
       size_t capacity = std::min(size_t(8192), body.size() * 2 + 512);
@@ -125,8 +133,10 @@ public:
               for (JsonVariantConst action : data["actions"].as<JsonArrayConst>())
                 if (action == "name.set") d.nameMax = data["name_max_bytes"];
             }
-          } else if (doc["code"] == "ok" && doc["data"].is<JsonObject>())
-            state(d, doc["data"]);
+          } else if (doc["code"] == "ok" && doc["data"].is<JsonObject>()) {
+            if (d.queryPower) meter(d, doc["data"]);
+            else state(d, doc["data"]);
+          }
         } else
           state(d, doc.as<JsonObjectConst>());
         return;
@@ -138,24 +148,30 @@ public:
   void refresh() {
     for (size_t n = 0; n < size; n++) {
       auto &d = devices[queryCursor++ % size];
-      if (uint32_t(clock - d.queriedAt) < 10000)
+      if (d.queried && uint32_t(clock - d.queriedAt) < 10000)
         continue;
       const bool capabilities = d.reachable(clock) &&
           (!d.nameCapabilitiesKnown || uint32_t(clock - d.nameCapabilitiesAt) >= 60000);
-      if (!capabilities && d.seen && uint32_t(clock - d.at) < 5000)
+      const bool namesDue = d.outletCount() &&
+          (!d.namesKnown || uint32_t(clock - d.namesAt) >= 60000);
+      const bool powerDue = d.model == "tc1" && d.reachable(clock) &&
+          (!d.power.valid || uint32_t(clock - d.power.at) >= 10000);
+      if (!capabilities && !namesDue && !powerDue && d.seen && uint32_t(clock - d.at) < 5000)
         continue;
-      query(d, capabilities);
+      query(d, capabilities, powerDue && !capabilities && !namesDue && uint32_t(clock - d.at) < 10000);
       break;
     }
   }
   // A level and an optional power change share one TMCP mutation. Explicit
   // power-off wins over a nonzero level in the same HomeKit update.
   bool begin(size_t index, Control control, unsigned channel, double desired,
-             bool powerUpdated = false, bool power = false) {
+             bool powerUpdated = false, bool power = false,
+             bool modeUpdated = false, bool automatic = false) {
     if (pending.used || index >= size || !std::isfinite(desired))
       return false;
-    if (control < Outlet || control > LightBrightness ||
-        (powerUpdated && control != FanSpeed && control != LightBrightness))
+    if (control < Outlet || control > FanMode ||
+        (powerUpdated && control != FanSpeed && control != LightBrightness && control != FanMode) ||
+        (modeUpdated && control != FanSpeed))
       return false;
     const auto &d = devices[index];
     if (!d.reachable(clock) || !d.controls)
@@ -171,10 +187,14 @@ public:
     } else {
       if (d.model != "a1" || channel != 0)
         return false;
-      request["action"] = control == FanOn || control == FanSpeed
+      request["action"] = control == FanOn || control == FanSpeed || control == FanMode
                               ? (d.freshAir ? "fresh_air.set" : "fan.set")
                               : "light.set";
-      if (control == FanOn || control == LightOn) {
+      if (control == FanMode) {
+        if (desired != 0 && desired != 1) return false;
+        params["mode"] = desired ? "auto" : "manual";
+        if (powerUpdated) params["on"] = power;
+      } else if (control == FanOn || control == LightOn) {
         if (desired != 0 && desired != 1)
           return false;
         params[control == FanOn ? "on" : "enabled"] = desired != 0;
@@ -184,7 +204,7 @@ public:
         params[control == FanSpeed ? "on" : "enabled"] =
             desired > 0 && (!powerUpdated || power);
         if (control == FanSpeed) {
-          params["mode"] = "manual";
+          params["mode"] = modeUpdated && automatic ? "auto" : "manual";
           params["speed"] = unsigned(desired);
         } else
           params["brightness"] = unsigned(desired);
@@ -199,7 +219,9 @@ public:
     pending.control = control;
     pending.channel = channel;
     pending.desired = desired;
-    pending.power = desired > 0 && (!powerUpdated || power);
+    pending.power = control == FanMode ? power : desired > 0 && (!powerUpdated || power);
+    pending.powerUpdated = powerUpdated;
+    pending.automatic = modeUpdated && automatic;
     pending.sequence = d.sequence;
     request["request_id"] = pending.id;
     std::string body;
@@ -247,6 +269,7 @@ private:
   size_t queryCursor = 0;
   struct Pending {
     bool used = false, acked = false, failed = false, power = false;
+    bool powerUpdated = false, automatic = false;
     size_t device = 0;
     Control control = Outlet;
     unsigned channel = 0;
@@ -272,18 +295,22 @@ private:
     d.model = model;
     d.mac = mac;
     d.base = prefix + model + "/" + mac;
-    d.name = model + " " + mac.substr(6);
+    d.name = (model == "s30-v1b" ? "S30M-V1B" : model) + " " + mac.substr(6);
+    for (unsigned i = 0; i < d.outletCount(); ++i)
+      d.outletNames[i] = "Outlet " + std::to_string(i + 1);
     return true;
   }
   std::string identifier() {
     auto id = randomHex ? randomHex(12) : "";
     return id.size() == 24 ? "hub_home_" + id : "";
   }
-  void query(Device &d, bool capabilities = false) {
+  void query(Device &d, bool capabilities = false, bool power = false) {
     d.queriedAt = clock;
+    d.queried = true;
+    d.queryPower = power;
     d.queryCapabilities = capabilities;
     d.query = identifier();
-    const char *action = capabilities ? "capabilities.get" : "status.get";
+    const char *action = capabilities ? "capabilities.get" : power ? "power.get" : "status.get";
     std::string body;
     if(hubWire.binary(d.base)){
       body="\x83\xa6" "action";body.push_back(char(0xa0|strlen(action)));body+=action;body+="\xaa" "request_id";
@@ -297,12 +324,17 @@ private:
   }
   void value(Device &d, Metric key, JsonVariantConst v, bool valid,
              double minimum, double maximum, uint32_t age = 0) {
-    auto &out = d.values[key];
-    out.valid = valid && v.is<double>() && std::isfinite(v.as<double>()) &&
-                v.as<double>() >= minimum && v.as<double>() <= maximum &&
-                age < 20000;
+    value(d.values[key], v, valid, minimum, maximum, age);
+  }
+  // Share numeric validation across sensor and meter fields instead of
+  // expanding the same JSON conversion at every field and receipt path.
+  void __attribute__((noinline)) value(Value &out, JsonVariantConst v, bool valid,
+             double minimum, double maximum, uint32_t age = 0) {
+    const double number = v.as<double>();
+    out.valid = valid && v.is<double>() && std::isfinite(number) &&
+                number >= minimum && number <= maximum && age < 20000;
     if (out.valid) {
-      out.number = v;
+      out.number = number;
       out.at = clock - age;
     }
   }
@@ -314,7 +346,7 @@ private:
     return std::isfinite(age) && age >= 0 && age < 20000 &&
                    age == double(uint32_t(age)) ? uint32_t(age) : 20000;
   }
-  void state(Device &d, JsonObjectConst doc) {
+  void __attribute__((noinline)) state(Device &d, JsonObjectConst doc) {
     if (d.offline || (!doc["model"].isNull() && doc["model"] != d.model) ||
         (!doc["device_id"].isNull() && canonicalMac(doc["device_id"]) != d.mac))
       return;
@@ -323,11 +355,20 @@ private:
       auto outlets = doc["socket_states"].as<JsonArrayConst>();
       valid = outlets.size() == d.outletCount();
       for (JsonVariantConst v : outlets)
-        valid &= d.model == "s30-v1b" ? v.is<bool>()
-                                    : v.is<unsigned>() && v.as<unsigned>() <= 1;
-      if (valid)
+        valid &= d.model == "s30-v1b" ? v.is<bool>() : v.is<unsigned>() && v.as<unsigned>() <= 1;
+      if (valid) {
         for (size_t i = 0; i < d.outletCount(); i++)
           d.outlets[i] = outlets[i].as<bool>();
+        auto names = doc["socket_names"].as<JsonArrayConst>();
+        bool namesValid = names.size() == d.outletCount();
+        for (JsonVariantConst name : names)
+          namesValid &= HubService::string(name, 63, 1);
+        if (namesValid) {
+          for (size_t i = 0; i < names.size(); ++i) d.outletNames[i] = names[i].as<std::string>();
+          d.namesKnown = true; d.namesAt = clock;
+        }
+        if (d.model == "s30-v1b") meter(d, doc);
+      }
       d.controls = valid;
     } else if (d.model == "a1") {
       // New-air variants report the independent fan's applied output. Its
@@ -347,6 +388,7 @@ private:
         d.speed = speed;
         d.light = doc["led_visible"];
         d.brightness = doc["brightness"];
+        d.automatic = doc[fresh ? "fresh_air_mode" : "fan_mode"] == "auto";
       }
       d.controls = valid;
     } else if (d.model == "m1") {
@@ -395,7 +437,11 @@ private:
     case Outlet: return d.outlets[pending.channel] == bool(pending.desired);
     case FanOn: return d.fan == bool(pending.desired);
     case FanSpeed:
-      return !pending.power ? !d.fan : d.fan && d.speed == pending.desired;
+      return d.automatic == pending.automatic &&
+          (!pending.power ? !d.fan : d.fan && (pending.automatic || d.speed == pending.desired));
+    case FanMode:
+      return d.automatic == bool(pending.desired) &&
+          (!pending.powerUpdated || d.fan == pending.power);
     case LightOn: return d.light == bool(pending.desired);
     case LightBrightness:
       return !pending.power ? !d.light
@@ -403,6 +449,17 @@ private:
     case Name: return d.name == pending.name;
     }
     return false;
+  }
+  void meter(Device &d, JsonObjectConst doc) {
+    if (d.offline || (!doc["model"].isNull() && doc["model"] != d.model) ||
+        (!doc["device_id"].isNull() && canonicalMac(doc["device_id"]) != d.mac))
+      return;
+    const bool s30 = d.model == "s30-v1b";
+    auto data = s30 ? doc["metering"].as<JsonObjectConst>() : doc;
+    const bool valid = !s30 || (data["valid_fields"].is<unsigned>() &&
+        (data["valid_fields"].as<unsigned>() & 4));
+    value(d.power, data[s30 ? "active_power" : "power_watts"], valid, 0, 100000);
+    value(d.energy, data["energy_kwh"], !data.isNull(), 0, 1e9);
   }
   static std::string canonicalMac(JsonVariantConst value) {
     if (!value.is<const char *>())

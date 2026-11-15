@@ -11,9 +11,7 @@ def body(manifest, locale):
 
     overview_source = Path(__file__).resolve().parents[1] / 'docs/release-notes' / f'v1-overview.{locale}.md'
     overview = markdown.markdown(overview_source.read_text(), extensions=['tables', 'fenced_code'])
-    beta = f'''<section class="notes-history-version" data-notes-channel="candidate" id="v1.0.0-rc.5">
-<h2><time datetime="2026-10-31">2026-10-31</time></h2><h3>v1.0.0-rc.5 · Beta</h3>
-<details class="notes-overview" id="v1-overview" open><summary>{t('v1 Beta 累计功能（相对 v0.9.27）', 'v1 Beta cumulative changes since v0.9.27')}</summary>{overview}</details></section>'''
+    overview_block = f'''<details class="notes-overview" id="v1-overview" open><summary>{t('v1.0.0 累计功能（相对 v0.9.27）', 'Cumulative v1.0.0 features since v0.9.27')}</summary>{overview}</details>'''
 
     return f'''<div class="notes-app" data-release-notes data-locale="{locale}">
 <p class="eyebrow">{t('发布与升级', 'RELEASES & UPGRADES')}</p>
@@ -54,6 +52,6 @@ def body(manifest, locale):
 <div id="notes-result" aria-live="polite"></div>
 <noscript><p>{t('升级区间计算需要 JavaScript；下方版本历史仍可直接阅读。', 'Upgrade comparisons require JavaScript; the release history below remains readable.')}</p></noscript>
 </section>
-<section id="notes-history" role="tabpanel" aria-labelledby="notes-history-tab">{beta}<div data-notes-channel="stable">{history_html(manifest, locale)}</div></section>
+<section id="notes-history" role="tabpanel" aria-labelledby="notes-history-tab">{overview_block}<div data-notes-channel="stable">{history_html(manifest, locale)}</div></section>
 <noscript><p>{t('稳定版历史仍可直接阅读。候选版下载与升级比较需启用 JavaScript。', 'Stable release history remains readable. Enable JavaScript for candidate downloads and upgrade comparisons.')}</p></noscript>
 </div>'''

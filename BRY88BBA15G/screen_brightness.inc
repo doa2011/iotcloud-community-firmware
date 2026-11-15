@@ -16,7 +16,7 @@ static bool screenBrightnessReceive(const uint8_t *p, size_t n) {
   screenBacklightAt = millis();
   screenBacklightSession = screenBridge.session;
   screenBacklightReceived = true;
-  invalidateBusinessStatusCache();
+  requestBusinessStatusRefresh();
   return true;
 }
 static void screenBrightnessStatus(JsonObject out) {
@@ -65,7 +65,7 @@ static void screenResourceReceive(const uint8_t *p, size_t n) {
      (p[2]!=2 && (count || bytes || scene_u32(p+12))))return;
   screenResourceState=p[2];screenResourceCount=count;screenResourceBytes=bytes;
   screenResourceCrc=scene_u32(p+12);screenResourceSession=screenBridge.session;screenResourceAt=millis();
-  screenResourceReceived=true;invalidateBusinessStatusCache();
+  screenResourceReceived=true;requestBusinessStatusRefresh();
   screenResourceAdvanced=true;screenResourceIo=p[6];
   screenResourceLoadMs=scene_u32(p+16);screenResourceLoaded=scene_u32(p+20);
 }

@@ -10,6 +10,9 @@ void service_control_end(void);
 /* Admission only, before command/control dispatch: may evict expendable caches
  * under the command mutex. Never call while holding a service_control lease. */
 unsigned service_memory_claim(size_t input_bytes);
+/* Before a large transport buffer: discard expendable snapshots, retaining
+ * mutation receipts and the allocator's network/RTOS floor. No control lease. */
+bool service_cache_evict(void);
 /* LAN owner never waits for cache eviction/another command as admission. */
 unsigned service_memory_try_claim(size_t input_bytes);
 void service_memory_release(unsigned claim);

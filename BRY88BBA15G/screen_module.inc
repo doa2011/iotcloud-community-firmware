@@ -5,7 +5,9 @@
 static std::atomic<bool> screenPowerWanted{false}, screenPowerReady{false},
                          screenPowerFailed{false};
 static bool screenPowerLeased;
-static uint32_t screenPowerSession, screenPowerRequest, screenPowerRenewAt;
+static bool screenPowerRetried;
+static uint32_t screenPowerSession, screenPowerRequest, screenPowerRenewAt,
+                screenPowerExpiresAt;
 static struct {
   uint32_t session, at, request, deadline, remaining, frames, transitions;
   uint8_t flags;
@@ -38,6 +40,7 @@ static void screenModulePowerPoll(uint32_t now) {
       screenPowerLeased = false;
     }
     screenPowerRequest = 0;
+    screenPowerRetried = false;
     return;
   }
   /* Recovery owns PD12 in internal SRAM and already keeps it low. Its
@@ -64,12 +67,25 @@ static void screenModulePowerPoll(uint32_t now) {
   if (screenPowerLeased && screenPowerSession != screenBridge.session) {
     screenPowerReady = false; screenPowerFailed = true; return;
   }
+  if (screenPowerReady.load() && ((screenModule.flags & 7) != 5 ||
+      (int32_t)(millis() - screenPowerExpiresAt) >= 0)) {
+    screenPowerReady = false; screenPowerFailed = true; return;
+  }
   if (screenPowerRequest) {
     if (screenModule.request != screenPowerRequest ||
-        !strcmp(screenModule.state, "mcu_rejected") ||
-        (strcmp(screenModule.state, "complete") &&
-         (int32_t)(now - screenModule.deadline) >= 0)) {
+        !strcmp(screenModule.state, "mcu_rejected")) {
       screenPowerReady = false; screenPowerFailed = true; return;
+    }
+    if (strcmp(screenModule.state, "complete") &&
+        (int32_t)(now - screenModule.deadline) >= 0) {
+      // Flash can lose a renewal reply. Retry once while the previously
+      // acknowledged SET-low lease still holds; only an ACK extends it.
+      if (!screenPowerReady.load() || screenPowerRetried ||
+          !screenModuleWrite(false, SCREEN_MODULE_MAX_MS)) {
+        screenPowerReady = false; screenPowerFailed = true; return;
+      }
+      screenPowerRetried = true; screenPowerRequest = screenModule.request;
+      return;
     }
     if (!strcmp(screenModule.state, "complete")) {
       if ((screenModule.flags & 7) != 5 ||
@@ -78,6 +94,8 @@ static void screenModulePowerPoll(uint32_t now) {
       }
       screenPowerReady = true;
       screenPowerRequest = 0; screenPowerRenewAt = now + 15000;
+      screenPowerExpiresAt = screenModule.at + screenModule.remaining;
+      screenPowerRetried = false;
     }
     return;
   }
@@ -122,7 +140,7 @@ static void screenModuleReceive(const uint8_t *p, size_t n) {
   screenModule.received = true;
   if (request && request == screenModule.request)
     screenModule.state = p[2] ? "mcu_rejected" : "complete";
-  invalidateBusinessStatusCache();
+  requestBusinessStatusRefresh();
 }
 static void screenModuleStatus(JsonObject out) {
   bool supported = screenBridge.extended &&

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate reviewed notes against staged signed assets before any publication."""
+"""Validate reviewed notes against staged signed and native assets before publication."""
 import argparse
 import json
 import shutil
@@ -44,7 +44,7 @@ def verify_staged(release_dir, retained):
         if row['history_status'] != 'reviewed' or not row['baseline_confirmed'] or any(
                 c['status'] != 'complete' or set(c['locales']) != {'zh-CN', 'en'} for c in row['coverage']):
             raise ValueError('Staged release notes are not completely reviewed in both languages')
-        print('Reviewed notes match all staged signed firmware targets:', release['tag'])
+        print('Reviewed notes match all staged firmware targets:', release['tag'])
 
 
 if __name__ == '__main__':

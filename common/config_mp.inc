@@ -78,15 +78,15 @@ static const mp_field_t mp_sleep_fields[] = {mp_U(feature_sleep_t, days, 1, 127)
 #define mp_COUNT(a) (sizeof(a) / sizeof((a)[0]))
 /* Value copies are borrowed views, never owned DOM nodes. Callers decode into
  * a working configuration and commit only after all fields pass validation. */
-static ph_value mp_get(ph_value o,const char *k){ph_value v={.kind=PHV_MISSING};phv_get(&o,k,&v);return v;}
-static ph_value mp_at(ph_value o,unsigned i){ph_value v={.kind=PHV_MISSING};phv_at(&o,i,&v);return v;}
+static ph_value mp_get(const ph_value *o,const char *k){ph_value v={.kind=PHV_MISSING};phv_get(o,k,&v);return v;}
+static ph_value mp_at(const ph_value *o,unsigned i){ph_value v={.kind=PHV_MISSING};phv_at(o,i,&v);return v;}
 static bool mp_has(ph_value v){return phv_exists(&v);}
 static bool mp_is(ph_value v,unsigned k){return v.kind==k;}
 static bool mp_integer(ph_value v){return v.kind==PHV_UINT||v.kind==PHV_NEG;}
 static int64_t cfg_mp_integer_value(ph_value v){int64_t n=0;phv_int(&v,&n);return n;}
 static double mp_num(ph_value v){double n=0;if(v.kind==PHV_TRUE)return 1;if(v.kind!=PHV_FALSE)phv_number(&v,&n);return n;}
-static bool mp_decode_fields(ph_value o,void *data,const mp_field_t *f,unsigned n){
- if(o.kind!=PHV_MAP)return false;
+static bool mp_decode_fields(const ph_value *o,void *data,const mp_field_t *f,unsigned n){
+ if(o->kind!=PHV_MAP)return false;
  for(unsigned i=0;i<n;i++){
   ph_value v=mp_get(o,f[i].key);if(!mp_has(v))continue;
   bool flag=v.kind==PHV_TRUE||v.kind==PHV_FALSE;
@@ -99,13 +99,13 @@ static bool mp_decode_fields(ph_value o,void *data,const mp_field_t *f,unsigned 
  }
  return true;
 }
-static bool mp_string_field(ph_value o,const char *key,char *dst,size_t n){
+static bool mp_string_field(const ph_value *o,const char *key,char *dst,size_t n){
  ph_value v=mp_get(o,key);if(!mp_has(v))return true;
  if(v.kind!=PHV_TEXT || v.size>=n || memchr(v.text,0,v.size)||memchr(v.text,'\r',v.size)||memchr(v.text,'\n',v.size))return false;
  return phv_text(&v,dst,n);
 }
 static unsigned mp_length(ph_value v){return (unsigned)v.count;}
-static bool mp_linkage_decode(feature_linkage_t *l, feature_co2_config_t *co2, uint8_t *fallback, ph_value o) {
+static bool mp_linkage_decode(feature_linkage_t *l, feature_co2_config_t *co2, uint8_t *fallback, const ph_value *o) {
     if (!mp_decode_fields(o, l, mp_linkage_fields, mp_COUNT(mp_linkage_fields)))
       return false;
     if (mp_has(mp_get(o, "metrics"))) {
@@ -123,8 +123,8 @@ static bool mp_linkage_decode(feature_linkage_t *l, feature_co2_config_t *co2, u
             ((!(l->metrics & 1) || l->on_pm > l->target_pm) &&
              (!(l->metrics & 2) || l->on_hcho > l->target_hcho)));
 }
-static bool config_decode_mp_value(feature_config_t *c, const char *d, ph_value o) {
-  if (!mp_is(o, PHV_MAP))
+static bool config_decode_mp_value(feature_config_t *c, const char *d, const ph_value *o) {
+  if (o->kind != PHV_MAP)
     return false;
   if (!strcmp(d, "linkage")) {
     return mp_linkage_decode(&c->linkage,&c->co2,&c->automatic.fallback_speed,o);
@@ -140,23 +140,23 @@ static bool config_decode_mp_value(feature_config_t *c, const char *d, ph_value 
           mp_length(a) > 4)
         return false;
       for (unsigned i = 0; i < (unsigned)mp_length(a); i++) {
-        ph_value s = mp_at(a, i);
+        ph_value s = mp_at(&a, i);
         feature_segment_t *t = &c->light.segment[i];
-        if (!mp_decode_fields(s, t, mp_segment_fields, mp_COUNT(mp_segment_fields)) ||
+        if (!mp_decode_fields(&s, t, mp_segment_fields, mp_COUNT(mp_segment_fields)) ||
             t->minimum >= t->maximum || t->suitable_low > t->suitable_high)
           return false;
-        ph_value colors = mp_get(s, "colors");
+        ph_value colors = mp_get(&s, "colors");
         if (mp_has(colors)) {
           if (!mp_is(colors, PHV_ARRAY) ||
               mp_length(colors) != 3)
             return false;
           for (unsigned j = 0; j < 3; j++) {
-            ph_value rgb = mp_at(colors, j);
+            ph_value rgb = mp_at(&colors, j);
             if (!mp_is(rgb, PHV_ARRAY) ||
                 mp_length(rgb) != 3)
               return false;
             for (unsigned k = 0; k < 3; k++) {
-              ph_value v = mp_at(rgb, k);
+              ph_value v = mp_at(&rgb, k);
               int x = cfg_mp_integer_value(v);
               if (!mp_integer(v) || x < 0 || x > 255)
                 return false;
@@ -176,21 +176,22 @@ static bool config_decode_mp_value(feature_config_t *c, const char *d, ph_value 
       return false;
     unsigned n = mp_length(a);
     for (unsigned i = 0; i < n; i++) {
+      ph_value entry = mp_at(&a, i);
       if (s) {
         feature_sleep_t w = {127, 1, 1, 30, 0, 1, 1320, 420};
-        if (!mp_decode_fields(mp_at(a, i), &w, mp_sleep_fields,
+        if (!mp_decode_fields(&entry, &w, mp_sleep_fields,
                            mp_COUNT(mp_sleep_fields)) ||
             w.start == w.end)
           return false;
         feature_auto_night_t night = {0,30};
         static const mp_field_t night_fields[] = {mp_U(feature_auto_night_t,min_speed,0,100),mp_U(feature_auto_night_t,fallback_speed,0,100)};
-        if (!mp_decode_fields(mp_at(a, i), &night, night_fields, mp_COUNT(night_fields))) return false;
+        if (!mp_decode_fields(&entry, &night, night_fields, mp_COUNT(night_fields))) return false;
         if (night.min_speed > w.max_speed) return false;
         c->automatic.night[i] = night;
         c->sleeps[i] = w;
       } else {
         feature_event_t e = {127, 1, 60, 0, 480};
-        if (!mp_decode_fields(mp_at(a, i), &e, mp_event_fields,
+        if (!mp_decode_fields(&entry, &e, mp_event_fields,
                            mp_COUNT(mp_event_fields)))
           return false;
         c->events[i] = e;
@@ -237,7 +238,7 @@ static bool config_decode_mp_value(feature_config_t *c, const char *d, ph_value 
       unsigned oldn = c->peer_count < FEATURE_MAX_PEERS ? c->peer_count : FEATURE_MAX_PEERS;
       c->peer_count = mp_length(a);
       for (unsigned i = 0; i < c->peer_count; i++) {
-        ph_value v = mp_at(a, i);
+        ph_value v = mp_at(&a, i);
         feature_peer_t *p = &c->peers[i];
         memset(p, 0, sizeof(*p));
         p->timeout_ms = 1000;
@@ -248,7 +249,7 @@ static bool config_decode_mp_value(feature_config_t *c, const char *d, ph_value 
         p->kind = FEATURE_A1;
 #endif
         char mac[18] = {0};
-        if (!mp_string_field(v, "mac", mac, sizeof(mac)) ||
+        if (!mp_string_field(&v, "mac", mac, sizeof(mac)) ||
             !feature_mac(mac, p->id))
           return false;
         for (unsigned j = 0; j < i; j++)
@@ -259,15 +260,15 @@ static bool config_decode_mp_value(feature_config_t *c, const char *d, ph_value 
             *p = old[j];
             break;
           }
-        if (!mp_string_field(v, "ip", p->ip, sizeof(p->ip)) ||
-            !mp_string_field(v, "group", p->group, sizeof(p->group)))
+        if (!mp_string_field(&v, "ip", p->ip, sizeof(p->ip)) ||
+            !mp_string_field(&v, "group", p->group, sizeof(p->group)))
           return false;
         const mp_field_t pf[] = {mp_U(feature_peer_t, kind, 1, 3),
                               mp_U(feature_peer_t, force_mqtt, 0, 1),
                               mp_U(feature_peer_t, recovery, 0, 1),
                               mp_W(feature_peer_t, timeout_ms, 100, 10000),
                               mp_W(feature_peer_t, recovery_seconds, 5, 3600)};
-        if (!mp_decode_fields(v, p, pf, mp_COUNT(pf)) ||
+        if (!mp_decode_fields(&v, p, pf, mp_COUNT(pf)) ||
             (p->group[0] && !feature_group_valid(p->group)))
           return false;
         if (p->ip[0] &&
@@ -282,11 +283,11 @@ static bool config_decode_mp_value(feature_config_t *c, const char *d, ph_value 
         return false;
       c->member_count = mp_length(a);
       for (unsigned i = 0; i < c->member_count; i++) {
-        ph_value v = mp_at(a, i);
+        ph_value v = mp_at(&a, i);
         char mac[18] = {0};
-        if (!mp_string_field(v, "mac", mac, sizeof(mac)) ||
+        if (!mp_string_field(&v, "mac", mac, sizeof(mac)) ||
             !feature_mac(mac, c->members[i].id) ||
-            !mp_string_field(v, "ip", c->members[i].ip, 16))
+            !mp_string_field(&v, "ip", c->members[i].ip, 16))
           return false;
         for (unsigned j = 0; j < i; j++)
           if (!strcmp(c->members[i].id, c->members[j].id))
@@ -298,7 +299,7 @@ static bool config_decode_mp_value(feature_config_t *c, const char *d, ph_value 
   return false;
 }
 
-bool feature_config_decode_mp(feature_config_t *c,const char *d,const ph_value *v){return v && config_decode_mp_value(c,d,*v);}
+bool feature_config_decode_mp(feature_config_t *c,const char *d,const ph_value *v){return v && config_decode_mp_value(c,d,v);}
 static void encode_fields_mp(ph_writer *w,const void *data,const mp_field_t *f,unsigned n){
  for(unsigned i=0;i<n;i++){
   const unsigned char *p=(const unsigned char*)data+f[i].offset;

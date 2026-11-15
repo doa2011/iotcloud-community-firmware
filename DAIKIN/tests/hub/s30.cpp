@@ -138,6 +138,8 @@ struct HomeOutlet : GraphObject { HomeOutlet(size_t d, unsigned c) { graphOutlet
 struct HomeSensor : GraphObject { HomeSensor(size_t, Home::Metric) { ++graphSensors; graphObjects.push_back(this); } };
 struct HomeFan : GraphObject { explicit HomeFan(size_t) { ++graphFans; graphObjects.push_back(this); } };
 struct HomeLight : GraphObject { explicit HomeLight(size_t) { ++graphLights; graphObjects.push_back(this); } };
+struct HomeSpanStub { void resetIID(uint32_t) {} };
+static HomeSpanStub homeSpan;
 static void homeAccessory(uint32_t, const char *, const char *, const char *, size_t) {}
 static void buildGraph(const Home &hubHome) {
 #include "home-device-graph.inc"

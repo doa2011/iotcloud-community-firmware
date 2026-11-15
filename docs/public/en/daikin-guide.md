@@ -1,15 +1,15 @@
-# Daikin air quality monitor (1st/2nd generation)
+# Daikin air quality monitor (G2)
 
-G1 has no formaldehyde expansion port; G2 adds this port. G3 adds a display and uses separate firmware; see the [G3 guide](daikin-g3-guide). The default name is `DAIKIN G1/G2`; custom names are preserved. `BRY88AX151K` is the wildcard family name for `BRY88AA151K / BRY88AB151K`; X in download filenames does not identify a separate product.
+G1 has no formaldehyde expansion port; G2 adds it. G3 adds a display and uses separate firmware; see the [G3 guide](daikin-g3-guide). The default name `DAIKIN G1/G2` is historical; custom names are preserved. The `BRY88AX151K` download target is verified on G2 `BRY88AB151K`. G1 `BRY88AA151K` compatibility remains unconfirmed, so installation is not documented.
 
-The ESP32 / 4 MB Flash board uses one universal image that detects PM2005 / PM2105 and the optional formaldehyde module. Its web interface shares M1 reading cards, comfort scales and linked-device information, with local access, IoTCloud and Home Assistant support.
+The verified G2 ESP32 / 4 MB Flash board uses BRY88AX151K firmware that detects PM2005 / PM2105 and the optional formaldehyde module. Its web interface shares M1 reading cards, comfort scales and linked-device information, with local access, IoTCloud and Home Assistant support.
 
-**Use stable v0.9.27 for everyday operation, or v1.0.0-rc.6 for beta testing.** See the [complete candidate release notes](release-log.html?channel=candidate) for version requirements and cumulative changes.
+**Choose the latest compatible stable release for everyday use; RC builds are for beta testing.** See the [release notes](release-log.html) for availability, version requirements and cumulative changes.
 
 
 | Generation | Model | Current image compatibility |
 | --- | --- | --- |
-| G1 | BRY88AA151K | Universal BRY88AX151K target; no G1 hardware validation in this run |
+| G1 | BRY88AA151K | Compatibility unconfirmed; installation is not documented |
 | G2 | BRY88AB151K | Verified ESP32 / 4 MB board using the universal BRY88AX151K target |
 | G3 | BRY88BBA15G | Display-equipped; separate ESP32 and screen MCU images |
 
@@ -34,7 +34,7 @@ The Wi-Fi lamp indicates system status: three long and three short pulses when u
 
 ## First installation
 
-Choose a release that **explicitly includes DAIKIN** on the [downloads page](../../index.html#releases). Do not substitute another model's image when an older archive lists only Phicomm devices. Existing 0.9.x archives provide the full image only. The current v1.0.0-rc.6 also provides a separate `hub` variant as a beta prerelease.
+Choose a release that **explicitly includes DAIKIN** on the [downloads page](../../index.html#releases). Do not substitute another model's image when an older archive lists only Phicomm devices. Existing 0.9.x archives provide the full image only. v1.0.0 also provides a separate `hub` variant.
 
 1. Confirm the ESP32 / 4 MB Flash board and wiring, then back up the entire original Flash. Keep that backup private because it contains network credentials.
 2. Hold GPIO0 / BOOT0 low while powering on to enter the ESP32 bootloader. Use ESPTool to write `daikin_BRY88AX151K.all.bin` at **0x0**. Never upload the factory image through web OTA.
@@ -61,7 +61,7 @@ A1 offers automation sources according to currently valid data, independently of
 
 ## Hub edition
 
-**The hub is a beta feature provided in a separate `hub` image.** See the [release notes](release-log.html?channel=candidate) for matching versions. Update source devices, M1 receivers and the frontend together; the old sensor interface is incompatible.
+**The hub uses a separate `hub` image.** v1.0.0 name synchronization, metering and model support require matching frontend and target-device versions; see the [release notes](release-log.html). The old sensor interface is incompatible; use matching source-device and M1 receiver versions.
 
 The hub discovers devices through mDNS, communicates over paired UDP, and forwards upstream MQTT and Bemfa messages. Local Home Assistant and MQTT clients use an external broker. The full edition remains a sensor device.
 
@@ -69,13 +69,22 @@ Select **Hub management** on the device page, or open `http://DEVICE-IP/iotcloud
 
 After upgrading to rc.5, the separate hub password is retired. The existing hub username, device list, forwarding and pairing settings are retained. The hub username remains the topic namespace. Configure UDP device-pairing passwords and external MQTT broker credentials separately.
 
-The DAIKIN itself appears automatically in the hub device list. Paired-device parameters and controls use the hub UDP transport, so the browser only needs to reach the hub. TC1 cards show power and hide expired meter readings. Remote pages expose supported controls and diagnostics. Open the target device’s local page for network settings, administration passwords, automation, upgrades and backups.
+The DAIKIN itself appears automatically in the hub device list. Paired-device parameters and controls use the hub UDP transport, so the browser only needs to reach the hub. TC1 / S30 cards show power and hide expired meter readings. Remote pages expose supported controls and diagnostics. Open the target device’s local page for network settings, administration passwords, automation, upgrades and backups.
 
 In Hub management, select a discovered LAN device, check its model, ID and IP, and pair using that device's management password. Confirm and pair again if its IP changes. Move devices previously connected to the hub's embedded broker to an external broker.
 
+You can also register S30M-V1B through the management API and pair it at a specified IP across subnets where mDNS is unavailable. The hub uses that address after authenticating the session.
+
 Apple Home uses experimental HAP bridging, off by default. Enable it under **Apple Home** to obtain the pairing code. Matter is unavailable.
 
-Device names synchronize to HomeKit. A client that writes ConfiguredName can rename the device through the hub, with persistence and readback confirmation. Upgrade both the hub and target device to rc.5. Names follow each device’s UTF-8 byte limit: 31 bytes for TC1, 63 for A1, M1, DAIKIN and S30. Pairings and device identities are retained. Ordinary Apple Home renames are client-local aliases; use device settings when you want to change the shared device name.
+After receiving new device and socket names, the hub notifies the home controller to refresh its configuration. Existing pairings are retained.
+
+Each TC1 / S30 switch synchronizes its device-side socket name. Change socket names in device settings; the hub refreshes them automatically. Socket ConfiguredName is read-only; renaming in Apple Home remains a client-local alias. Device names synchronize to HomeKit. A1, M1 and DAIKIN also accept ConfiguredName writes through the hub, with persistence and readback confirmation. These name and metering features require hub v1.0.0 or newer and target devices running rc.6 or a newer compatible release. Names follow each device’s UTF-8 byte limit: 31 bytes for TC1, 63 for A1, M1, DAIKIN and S30. Pairings and device identities are retained. Use device settings when you want to change the shared device name.
+
+A1 purifiers and fresh-air variants use the standard AirPurifier service for power, speed and automatic/manual mode. Upgrades assign this service a separate identity from the former Fan service while preserving pairing and existing control characteristic identities. The first TC1 / S30 switch also exposes whole-device power (W) and cumulative energy (kWh) using Eve custom characteristics. Apple Home does not display these custom power / energy characteristics. Third-party clients supporting Eve characteristics can read them. HAP provides the data but cannot add a reading card to Apple Home. Device and hub web pages show power; S30 also shows voltage, current and cumulative energy.
+
+A1 uses an air-purifier icon when displayed separately. When grouped with a light, Apple Home may select the light as the primary service; Apple Home controls the grouped tile icon. Display the services separately to keep the air-purifier tile. G3 exposes valid sensors through the hub.
+
 
 ### Switch from full to hub
 

@@ -90,6 +90,10 @@ char *dtostrf(double,int,unsigned int,char*);
             obj=temp/(name+'.o');objects.append(str(obj))
             subprocess.run(['cc','-std=gnu99','-g','-O1','-fsanitize=address,undefined','-fno-pie',
                 '-c',str(ROOT/'common'/(name+'.c')),'-o',str(obj)],check=True)
+        scene=temp/'screen-scene.o';objects.append(str(scene))
+        subprocess.run(['cc','-std=gnu99','-g','-O1','-ffunction-sections','-fdata-sections',
+            '-fsanitize=address,undefined','-fno-pie','-c',
+            str(ROOT/'BRY88BBA15G/protocol/scene.c'),'-o',str(scene)],check=True)
         compile_command = [
             'c++', '-std=c++11', '-g', '-O1', '-Wall', '-Wextra', '-Werror',
             '-Wno-deprecated-copy', '-Wno-unused-function', '-Wno-sign-compare',

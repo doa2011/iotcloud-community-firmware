@@ -136,6 +136,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Prepare local release tag for dry-run
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_dry_run
+        env:
+          RELEASE_DRY_RUN: 'true'
+        run: python3 tools/check_version.py --prepare-dry-run-tag
       - uses: actions/download-artifact@v4
         with:
           name: verified-frontend
@@ -284,6 +289,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Prepare local release tag for dry-run
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_dry_run
+        env:
+          RELEASE_DRY_RUN: 'true'
+        run: python3 tools/check_version.py --prepare-dry-run-tag
       - uses: actions/download-artifact@v4
         with:
           name: verified-frontend
@@ -466,6 +476,11 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Prepare local release tag for dry-run
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_dry_run
+        env:
+          RELEASE_DRY_RUN: 'true'
+        run: python3 tools/check_version.py --prepare-dry-run-tag
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -583,10 +598,8 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.release_dry_run
         run: |
           tag="v$(cat VERSION)"
-          printf '%s\n' 'Release validation only; not published.' > release-dry-run.md
-          if [ "$tag" = "$(python3 -c 'import json;print(json.load(open("screen-release.lock.json"))["release"])')" ]; then
-            python3 tools/release/screen_assets.py "$tag" release
-          fi
+          python3 tools/release/notes.py "$tag" --output release-dry-run.md
+          python3 tools/release/screen_assets.py "$tag" release
           python3 tools/release/catalog.py "$tag" "$(git rev-parse HEAD)" release release-dry-run.md
           (cd release && shopt -s nullglob && sha256sum *.bin *.rbl *.bin.raw *.bin.signed *.json *.msgpack *.iotfnt *.tar.gz notes.md index.html > SHA256SUMS && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@v4

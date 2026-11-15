@@ -26,7 +26,11 @@ public:
   bool publish(String &&data,String &&envelope,uint32_t now,uint32_t freshFor=0){
     // A normal refresh prepares its replacement before acquiring this lock.
     // Contention must leave the previous complete publication readable.
+    String previousData,previousEnvelope;
     if(!mutex_||xSemaphoreTake(mutex_,0)!=pdTRUE)return false;
+    // Arduino String move assignment can copy and free a reusable buffer.
+    // Retire the old strings first so all heap releases happen after unlock.
+    previousData=std::move(data_);previousEnvelope=std::move(envelope_);
     data_=std::move(data);envelope_=std::move(envelope);hasDeadline_=freshFor!=0;validUntil_=now+freshFor;refresh(now);
     valid_.store(true,std::memory_order_release);xSemaphoreGive(mutex_);return true;
   }

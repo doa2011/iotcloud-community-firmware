@@ -11,12 +11,13 @@ static struct { bool extended=true; uint32_t capabilities=SCREEN_CAP_MODULE_CONT
 static struct { bool active=false; } screenImage;
 static struct { unsigned mode=0; } screenGuard;
 static bool screenRecovering=false, guardAvailable=true, sendOk=true;
-static uint32_t ms;
+static uint32_t ms, invalidations, refreshes;
 static std::vector<uint8_t> sent;
 static uint32_t millis() { return ms; }
 static void delay(unsigned);
 static bool screenGuardAvailable() { return guardAvailable; }
-static void invalidateBusinessStatusCache() {}
+static void invalidateBusinessStatusCache() { ++invalidations; }
+static void requestBusinessStatusRefresh() { ++refreshes; }
 static bool screenFields(JsonObjectConst o,const char *) {
   for (auto p:o) if(strcmp(p.key().c_str(),"set_high") && strcmp(p.key().c_str(),"duration_ms")) return false;
   return true;
@@ -42,10 +43,12 @@ int main() {
   auto p=request.to<JsonObject>();p["set_high"]=false;p["duration_ms"]=10000;
   auto call=[&](){reply.clear();return screenModuleSet(p,reply.to<JsonObject>());};
   assert(!strcmp(call(),"accepted") && screenModule.request==1);
+  assert(invalidations==1 && refreshes==0);
   assert(sent.size()==12 && sent[2]==SCREEN_MODULE_LOW && scene_u32(sent.data()+8)==10000);
   uint8_t response[20]={SCREEN_MSG_MODULE_STATUS,1,0,5};
   scene_put32(response+4,1);scene_put32(response+8,10000);scene_put32(response+12,40);
   screenModuleReceive(response,20);assert(!strcmp(screenModule.state,"complete"));
+  assert(invalidations==1 && refreshes==1);
   ms=100;reply.clear();screenModuleStatus(reply.to<JsonObject>());
   assert(reply["available"]==true && reply["set_high"]==false && reply["remaining_ms"]==9900);
   response[3]=3;scene_put32(response+4,0);scene_put32(response+8,0);
@@ -83,7 +86,15 @@ int main() {
    * past its ACK deadline and periodic guard announcements are missed. */
   delay(15000);guardAvailable=false;ms+=3500;screenModulePowerPoll(ms);
   assert(screenModulePowerHealthy() && !screenPowerRequest);
+  acknowledge=false;delay(15000);auto renewal=screenPowerRequest;delay(3000);
+  assert(screenModulePowerHealthy() && screenPowerRetried &&
+         screenPowerRequest==renewal+1);
+  acknowledge=true;delay(1);delay(1);
+  assert(screenModulePowerHealthy() && !screenPowerRequest && !screenPowerRetried);
+  /* A second missing renewal reply still aborts, within the old lease. */
   acknowledge=false;delay(15000);delay(3000);
+  assert(screenModulePowerHealthy() && screenPowerRetried);
+  delay(3000);
   assert(!screenModulePowerHealthy() && screenPowerFailed);
   guardAvailable=true;
   screenModulePowerEnd(); delay(1);
@@ -96,6 +107,18 @@ int main() {
   /* An expired SET-low status cannot stand in for a renewal ACK. */
   assert(screenModulePowerBegin());delay(15000);
   ms+=SCREEN_MODULE_MAX_MS;screenModulePowerPoll(ms);
+  assert(!screenModulePowerHealthy() && screenPowerFailed);
+  screenModulePowerEnd();delay(1);
+  /* Retrying must not extend the last acknowledged lease. */
+  assert(screenModulePowerBegin());acknowledge=false;
+  ms=screenPowerExpiresAt-100;screenModulePowerPoll(ms);
+  ms+=100;screenModulePowerPoll(ms);
+  assert(!screenModulePowerHealthy() && screenPowerFailed);
+  screenModulePowerEnd();delay(1);acknowledge=true;
+  /* A periodic report of SET high aborts even before renewal is due. */
+  assert(screenModulePowerBegin());
+  response[3]=3;scene_put32(response+4,0);scene_put32(response+8,0);
+  screenModuleReceive(response,sizeof(response));screenModulePowerPoll(ms);
   assert(!screenModulePowerHealthy() && screenPowerFailed);
   screenModulePowerEnd();delay(1);
   assert(screenModulePowerBegin());

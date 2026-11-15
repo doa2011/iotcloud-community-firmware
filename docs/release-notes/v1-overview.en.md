@@ -1,8 +1,8 @@
-**v0.9.27 is the stable release; v1.0.0-rc.5 is the current beta.** This page summarizes current features; see the release notes for version history. Wi-Fi firmware, the M1 sensor controller, frontend and cloud platform are released separately. Updating one does not update the others.
+This page describes **cumulative v1.0.0 features since v0.9.27**; check Downloads for available releases. Wi-Fi firmware, the M1 sensor controller, frontend and cloud platform are released separately. Updating one does not update the others. RC builds are for beta testing.
 
-[Candidate downloads and release notes](release-log.html?channel=candidate) · [Choose an update image](firmware-update.html)
+[Releases and update notes](release-log.html) · [Choose an update image](firmware-update.html)
 
-#### RC5: communication, web interface and S30-V1B
+#### v1.0.0: communication, web interface and S30-V1B
 
 - **Binary business interfaces.** HTTP, device MQTT and UDP default to MessagePack. Legacy JSON business paths are removed; compact JSON remains for Home Assistant. Use the matching frontend and a cloud platform supporting device discovery. Existing JSON scripts require changes.
 - **Separate business state and diagnostics.** Coalesce changes before encoding, reuse unchanged snapshots, and fetch shared numeric diagnostic fields on demand with `diagnostics.get`. MQTT and HA track delivery independently; command receipts are separate.
@@ -50,20 +50,29 @@ A1 publishes the main fan's effective **0–100%** output, including the fresh-a
 
 - **Independent hub image and console.** Adds device discovery, pairing, management and hub settings alongside sensor functions. The embedded `/iotcloud/#/` console configures upstream MQTT, Bemfa and HomeKit, without cloud email registration or GitHub login.
 - **mDNS and UDP replace the embedded Broker.** The hub does not host MQTT TCP 1883 or a WebSocket Broker. The hub discovers devices through mDNS, uses paired UDP communication and forwards upstream MQTT and Bemfa messages. Local Home Assistant and MQTT clients must use an external Broker; change old embedded-Broker connections.
-- **Optional HomeKit HAP bridge.** Off by default, this experimental feature provides TC1's six Switches, A1 fan / light, and valid M1 / DAIKIN sensors. The hub’s own sensors are included automatically. **Matter is not included.**
+- **Optional HomeKit HAP bridge.** Off by default, this experimental feature provides TC1's six switches, S30 switches, A1 purifiers / fresh-air variants and lights, and valid M1 / DAIKIN G2 / G3 sensors. Socket names synchronize while retaining pairings; standalone purifiers use the standard service. Apple Home controls grouped icons and does not display Eve custom power / energy readings; the hub web interface shows metering. The hub’s own sensors are included automatically. **Matter is not included.**
 - **Explicit conversion to hub.** Supporting `full` firmware accepts a signed `hub` image that fits the installed slot, with explicit confirmation and retained network settings. Device Web passwords are optional; configured passwords require authentication. Ordinary OTA preserves variants; direct `hub → full` OTA is unsupported. Conversion does not enlarge OTA partitions: check the actual slot capacity.
 
 [DAIKIN operation, installation and hub settings](daikin-guide.html)
+
+
+#### DAIKIN G3: screen and independent updates
+
+- Matching v1.0.0 ESP32, screen MCU and WebUI provide custom layouts, pages and widgets, clocks, notifications and screen controls.
+- JPEG / MJPEG media supports configured URL sources and upload / push workflows, queues, expiry and display policies.
+- ESP32 firmware, screen application, recovery image and external font have distinct update paths. Use files from the same release and verify checksums; preserve the stock boot region.
+
+[G3 installation and operation](daikin-g3-guide.html) · [Screen layouts](daikin-g3-layout.html) · [Media protocol](https://phicomm-io.github.io/iotcloud-community-protocols/en/daikin-g3-media/)
 
 #### Documentation and development
 
 Installation, updates, use and recovery guides remain grouped by M1 / A1 / TC1 / DAIKIN / S30-V1B. Bilingual [developer documentation](https://phicomm-io.github.io/iotcloud-community-protocols/en/) centralizes interfaces, protocols, configuration compatibility and examples. The v0.9.x artifacts and notes remain archived. CI, issue / PR templates, contribution rules and pinned cross-repository dependencies have been organized. Maintained code uses GPL-3.0; third-party notices remain applicable.
 
-#### RC5 local power rules and recovery
+#### Local power rules and recovery
 
 - TC1 and S30-V1B can switch after power stays strictly above / below a threshold for a configured duration. Rules run locally using fresh measurements.
 - S30-V1B supports off, on and restore power-on policies; restore uses the saved output state.
 - A1 supports two short Wi-Fi taps followed by a hold-and-release to reset networking, or three short taps followed by a hold-and-release to factory reset. See [A1 recovery gestures](a1-guide.html#recovery-gestures).
 - M1 protects unsupported configuration layouts. Explicitly confirm clearing in the web recovery flow, then reboot and configure Wi-Fi again.
 
-See [device interfaces and protocols](device-api.html) for protocol versions and code examples for RC5 and stable 0.9.27.
+See [device interfaces and protocols](device-api.html) for protocol versions and code examples for v1.0.0 and historical stable 0.9.27.
