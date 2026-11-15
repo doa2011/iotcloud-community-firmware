@@ -136,6 +136,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Prepare local release tag for dry-run
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_dry_run
+        env:
+          RELEASE_DRY_RUN: 'true'
+        run: python3 tools/check_version.py --prepare-dry-run-tag
       - uses: actions/download-artifact@v4
         with:
           name: verified-frontend
@@ -284,6 +289,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Prepare local release tag for dry-run
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_dry_run
+        env:
+          RELEASE_DRY_RUN: 'true'
+        run: python3 tools/check_version.py --prepare-dry-run-tag
       - uses: actions/download-artifact@v4
         with:
           name: verified-frontend
@@ -466,6 +476,11 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Prepare local release tag for dry-run
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_dry_run
+        env:
+          RELEASE_DRY_RUN: 'true'
+        run: python3 tools/check_version.py --prepare-dry-run-tag
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'

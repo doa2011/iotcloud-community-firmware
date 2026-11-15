@@ -63,6 +63,28 @@ def resolve_version(root=ROOT, tag=None):
             'base_version': base, 'git_commit': commit, 'git_tag': tag, 'dirty': dirty}
 
 
+def prepare_release_dry_run(root=ROOT):
+    """Rehearse the target tag in the disposable main workflow checkout only."""
+    if (os.environ.get('GITHUB_EVENT_NAME') != 'workflow_dispatch' or
+            os.environ.get('GITHUB_REF') != 'refs/heads/main' or
+            os.environ.get('RELEASE_DRY_RUN') != 'true'):
+        raise ValueError('Release dry-run tag requires the explicit main workflow dispatch')
+    root = Path(root).resolve()
+    metadata = resolve_version(root)
+    if metadata['dirty']:
+        raise ValueError('Release dry-run requires a clean source tree')
+    git(root, 'merge-base', '--is-ancestor', metadata['git_commit'], 'origin/main')
+    tag = 'v' + (root / 'VERSION').read_text().strip()
+    try:
+        target = git(root, 'rev-parse', f'refs/tags/{tag}^{{commit}}')
+    except subprocess.CalledProcessError:
+        git(root, 'tag', tag)
+    else:
+        if target != metadata['git_commit']:
+            raise ValueError(f'Refuse to replace existing release tag {tag}')
+    return resolve_version(root, tag)
+
+
 def ota_config(metadata=None):
     lines = ['/* Generated build-time OTA sources. */', '#pragma once']
     # Select a channel from release provenance at build time. Never let a
@@ -109,10 +131,13 @@ def project_version():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--tag', help='Validate the exact CI release tag against HEAD')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--tag', help='Validate the exact CI release tag against HEAD')
+    mode.add_argument('--prepare-dry-run-tag', action='store_true',
+                      help='Prepare a local target tag for an explicit main CI release dry-run')
     args = parser.parse_args()
     try:
-        metadata = resolve_version(tag=args.tag)
+        metadata = prepare_release_dry_run() if args.prepare_dry_run_tag else resolve_version(tag=args.tag)
         generate(metadata)
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         parser.error(str(error))
