@@ -91,19 +91,19 @@ python3 -m venv .venv
 .venv/bin/python -m pip install paho-mqtt==2.1.0
 ```
 
-Download the matching RBL and `SHA256SUMS-S30`, verify them, and replace every placeholder:
+Download the matching RBL and `SHA256SUMS-S30`, verify them, replace `<VERSION>` with the version in the downloaded RBL filename, and replace the remaining placeholders:
 
 ```sh
 mkdir -p tools
 curl --fail --location https://raw.githubusercontent.com/phicomm-io/iotcloud-community-firmware/main/tools/s30_stock_ota.py -o tools/s30_stock_ota.py
 chmod 600 wifi.private.json mqtt.private.json
-grep "  BL2028N_OTA_1.0.0-rc.6.rbl$" SHA256SUMS-S30 | sha256sum -c -
+grep "  BL2028N_OTA_<VERSION>.rbl$" SHA256SUMS-S30 | sha256sum -c -
 sudo .venv/bin/python tools/s30_stock_ota.py \
   --device <stock-device-IP> --device-id <this-unit-12-digit-factory-MAC> \
   --host <computer-LAN-IP> \
   --wifi-file wifi.private.json --mqtt-file mqtt.private.json \
   --mqtt-ca gateway-cert.pem --cert gateway-cert.pem --key gateway-key.pem \
-  --rbl 'BL2028N_OTA_1.0.0-rc.6.rbl' --sha256 <published-file-SHA256>
+  --rbl 'BL2028N_OTA_<VERSION>.rbl' --sha256 <published-file-SHA256>
 ```
 
 For an unconfigured stock unit, enter its `CMQLINK-590513-XXXX` AP. Reserve a target LAN IP for its factory **STA MAC** on the router and use that IP for `--device`. Connect the computer Wi-Fi to the stock AP while another interface keeps `--host` reachable on the target LAN; add `--provision-address 192.168.188.1`. The factory STA MAC differs from the AP BSSID. Set `wifi.private.json` to the 2.4 GHz network on this LAN.

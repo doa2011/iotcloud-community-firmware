@@ -300,7 +300,7 @@ Expected computer events are:
 3. `/m1-native.bin?deviceMAC` and `download_complete`: the complete image was sent. Query strings and Range requests are supported.
 4. `wifiSoftware.ifSuccess: true` inside `cloud_tcp`: the stock application reports update success. Then check the community version as described in the next section.
 
-Manifest version `14.2.4.2` satisfies the stock `14.2.4.1` version comparison; the installed community version is 0.9.27. If requests are absent, check connectivity, DNS-rule counters, server ports and the controller, rather than repeatedly rebooting or forcing different files.
+Manifest version `14.2.4.2` satisfies the stock `14.2.4.1` version comparison without changing the downloaded image's community version. If requests are absent, check connectivity, DNS-rule counters, server ports and the controller, rather than repeatedly rebooting or forcing different files.
 
 ### Step 4: verify community firmware and set up Wi-Fi
 
@@ -334,7 +334,7 @@ First migration may require Wi-Fi setup again. If the old IP is unreachable afte
 1. Join the `M1-AP-XXXXXX` matching your device's MAC suffix. Stay connected even if your computer reports no Internet.
 2. Open `http://192.168.0.1/` and save your 2.4 GHz Wi-Fi settings in the initial setup page. Allow time to connect.
 3. Rejoin the router and find M1 by its label MAC. The new IP may match the factory IP or change. Open `http://device-IP/` using port 80, rather than the factory port 8000.
-4. Confirm model M1, version **0.9.21 or newer**, updating temperature/humidity and PM2.5 readings, and normal display and device communication.
+4. Confirm model M1, a running version matching the selected download, updating temperature/humidity and PM2.5 readings, and normal display and device communication.
 5. After installation and connectivity are confirmed, a normal power cycle can check boot, automatic reconnection and retained settings.
 
 For a read-only status check, update the address in the same terminal:
