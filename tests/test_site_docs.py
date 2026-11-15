@@ -50,6 +50,7 @@ class ManifestTests(unittest.TestCase):
         self.assertTrue(pages)
         for name, text in pages.items():
             self.assertNotRegex(text, r'\{\{[A-Z_]+\}\}', name)
+            self.assertNotIn('](../assets/', text, name)
 
     def test_group_shape(self):
         for group in GROUPS:

@@ -4,9 +4,13 @@ Start at [Firmware & resources]({{SITE_URL}}en/#releases) and choose the latest 
 
 This page covers web OTA after community firmware is installed. Factory devices need their model-specific procedure, including [M1 factory Wi-Fi setup and installation](m1-no-disassembly) or [A1 factory Wi-Fi setup and installation](a1-no-disassembly). M1 first migration requires the full native OTA image from 0.9.21 or newer. Factory interfaces do not accept the community signature wrapper.
 
-**Use stable v0.9.27 for everyday operation, or v1.0.0-rc.6 for beta testing.** Before testing it, read the [complete cumulative notes](release-log.html?channel=candidate) and check the tag, model and variant. RC6 supports candidate-channel checks and installation. Download manually when older firmware lacks that entry. Candidates do not replace the stable channel.
+**Choose the latest compatible stable release for everyday use; RC builds are for beta testing.** Read the [release notes](release-log.html) and check the tag, model and variant. Supporting firmware checks and installs RC releases through a separate candidate channel. Download manually when older firmware lacks that entry. Candidates do not replace the stable channel.
 
 **M1 has two MCUs.** This page updates the EMW3080 Wi-Fi module, not the ATSAMD20G18A sensor controller. Dual-region user readings and double-click actions require the companion open-source controller v1.0.0-rc. See [controller features](m1-mcu-firmware) for older features’ minimum versions and follow the separate [controller update steps](m1-mcu-update).
+
+## Update after installing a migration snapshot
+
+The TC1 `mico_ota.bin` and the old Daikin `daikin-bry88ab.application.bin` attachments are fixed migration snapshots. After Wi-Fi setup, continue to the version listed in Downloads: TC1 uses `phicomm_tc1_a1.ota.bin.signed`; the old Daikin `0.9.21-2cfd89-dirty` first needs a local WebUI upload of the full `daikin_BRY88AX151K.ota.bin.raw`. Once running a version supporting signatures, use `.ota.bin.signed`. Obtain firmware and SHA-256 from the same release and verify the installed version after reboot.
 
 ## Check for updates on the device
 

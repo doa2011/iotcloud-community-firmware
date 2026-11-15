@@ -1,6 +1,6 @@
 # 大金 BRY88AB151K：通过原厂 OTA 刷入社区固件
 
-下载时先到[固件与资源下载]({{SITE_URL}}#releases)选择该设备的最新兼容版本，并使用同版本校验清单。文中的固定版本用于可复现的操作示例；明确标出的最低版本、原厂版本和迁移工具条件仍需满足。
+从[固件与资源下载]({{SITE_URL}}#releases)选择“大金空气质量检测（1/2代）”的最新兼容稳定版、`full` 普通版和“原生 OTA”文件。原厂发送器可直接发送符合下述格式与容量要求的新版镜像，无需先安装旧的 `0.9.21-dirty` 过渡镜像。RC 仅用于 Beta 测试。
 
 先选择电脑的操作系统，后面的文件检查和上传步骤会一起切换命令。Windows 使用 PowerShell，macOS / Linux 使用终端；浏览器未启用 JavaScript 时会显示全部系统的命令。
 
@@ -23,17 +23,12 @@
 
 ## 2. 下载配套文件
 
-- [下载 Python 发送器](assets/tools/daikin-stock-ota/daikin_stock_ota.py)
-- [下载实测 BRY88AB151K 应用镜像](assets/tools/daikin-stock-ota/daikin-bry88ab.application.bin)
-- [下载 SHA256SUMS](assets/tools/daikin-stock-ota/SHA256SUMS)
+- [Python 发送器](assets/tools/daikin-stock-ota/daikin_stock_ota.py)。
+- 在[固件与资源下载]({{SITE_URL}}#releases)选择大金 1/2 代、最新兼容稳定版、`full` 普通版，下载 `daikin_BRY88AX151K.ota.bin.raw` 和同版本 `SHA256SUMS`。文件名以所选发布为准；下文按此名称操作。
 
-把两个文件保存在同一个文件夹。镜像大小应为 **1,027,296 字节**，SHA-256 为：
+将三份文件放在同一文件夹。**原厂安装使用原生应用镜像，不使用 `.all.bin`、整片 Flash 备份、`.ota.bin.signed`、`hub` 变体或 G3 镜像。** 原厂每个应用槽只有 **1,572,864 字节（1.5 MiB）**，此限制在首次迁移后仍然保留。发送器会检查镜像 SHA-256、ESP32 格式和大小。
 
-```text
-649a7b81b35e19510f9f7edb8488157418117849361bc62c6f4e13c61a5fb19e
-```
-
-使用的是普通 `application.bin`，本次没有重编译或修改它。不要改用 `factory.bin`、整片 Flash 备份、带签名外壳的升级包或其他机型的镜像。原厂每个应用槽只有 **1,572,864 字节（1.5MiB）**，此限制在首次迁移后仍然保留。
+在下面的命令中，将 `SHA256_FROM_MANIFEST` 替换为所下载 `SHA256SUMS` 中 `daikin_BRY88AX151K.ota.bin.raw` 对应行的 **64 位 SHA-256**。不要沿用旧教程镜像的校验值。
 
 先打开文件所在目录的终端，仅校验文件，不连接设备：
 
@@ -42,7 +37,7 @@
 Windows PowerShell：
 
 ```powershell
-py -3 .\daikin_stock_ota.py .\daikin-bry88ab.application.bin --sha256 649a7b81b35e19510f9f7edb8488157418117849361bc62c6f4e13c61a5fb19e --check-only
+py -3 .\daikin_stock_ota.py .\daikin_BRY88AX151K.ota.bin.raw --sha256 SHA256_FROM_MANIFEST --check-only
 ```
 
 <!-- /os -->
@@ -52,12 +47,12 @@ py -3 .\daikin_stock_ota.py .\daikin-bry88ab.application.bin --sha256 649a7b81b3
 macOS / Linux：
 
 ```sh
-python3 ./daikin_stock_ota.py ./daikin-bry88ab.application.bin --sha256 649a7b81b35e19510f9f7edb8488157418117849361bc62c6f4e13c61a5fb19e --check-only
+python3 ./daikin_stock_ota.py ./daikin_BRY88AX151K.ota.bin.raw --sha256 SHA256_FROM_MANIFEST --check-only
 ```
 
 <!-- /os -->
 
-如果提示找不到 Python，先安装 Python 3；如果哈希或镜像格式不匹配，停止并重新下载，不要跳过检查。
+如果提示找不到 Python，先安装 Python 3；如果哈希、格式或大小不匹配，停止并核对下载型号、变体和校验清单。
 
 ## 3. 用按键进入原厂 OTA
 
@@ -132,7 +127,7 @@ python3 ./daikin_stock_ota.py --probe-versions SV.02.00.01.16 SV.02.00.01.32
 Windows PowerShell：
 
 ```powershell
-py -3 .\daikin_stock_ota.py .\daikin-bry88ab.application.bin --sha256 649a7b81b35e19510f9f7edb8488157418117849361bc62c6f4e13c61a5fb19e --version SV.02.00.01.21
+py -3 .\daikin_stock_ota.py .\daikin_BRY88AX151K.ota.bin.raw --sha256 SHA256_FROM_MANIFEST --version SV.02.00.01.21
 ```
 
 <!-- /os -->
@@ -142,7 +137,7 @@ py -3 .\daikin_stock_ota.py .\daikin-bry88ab.application.bin --sha256 649a7b81b3
 macOS / Linux：
 
 ```sh
-python3 ./daikin_stock_ota.py ./daikin-bry88ab.application.bin --sha256 649a7b81b35e19510f9f7edb8488157418117849361bc62c6f4e13c61a5fb19e --version SV.02.00.01.21
+python3 ./daikin_stock_ota.py ./daikin_BRY88AX151K.ota.bin.raw --sha256 SHA256_FROM_MANIFEST --version SV.02.00.01.21
 ```
 
 <!-- /os -->
@@ -154,7 +149,7 @@ python3 ./daikin_stock_ota.py ./daikin-bry88ab.application.bin --sha256 649a7b81
 ```text
 Kit2 Version Up -> Okey
 SV.02.00.01.21 -> ToDo
-ACK .../1027296 (...%)
+ACK .../<image bytes> (...%)
 Final response: b'OK'
 ```
 
@@ -162,15 +157,17 @@ Final response: b'OK'
 
 ## 7. 连接社区热点并验证
 
-重启后，电脑连接新的开放热点 **`DAIKIN-XXXXXX`**，后缀为设备 MAC 的末六位。本次是 `DAIKIN-f76748`。旧热点可能短时间仍出现在系统缓存里，以新连接成功为准。
-
-浏览器打开 **http://192.168.4.1**。检查页面中的设备型号、ID 和固件版本；本次实测返回 `BRY88AB151K`、`9c9c1ff76748`、`0.9.21-2cfd89-dirty`。然后按需要配置路由器 Wi-Fi、管理密码和 MQTT。
-
-本文附带的过渡镜像使用上述旧热点名称和地址。升级到 v0.9.25 后，恢复热点使用 `BRY88AX151K-AP-<MAC末六位大写>`，地址为 `http://192.168.0.1/`。已配置路由器 Wi-Fi 时，日常仍通过路由器分配的 IP 访问。
+新版启动后，连接开放热点 **`BRY88AX151K-AP-<MAC末六位大写>`**，在浏览器打开 **http://192.168.0.1/**。核对型号、设备 ID，以及版本号与所选下载版本一致，再配置路由器 Wi-Fi、管理密码和 MQTT。已配网时通过路由器分配的 IP 访问。
 
 等待传感器预热后检查读数；CO₂ 预热可能较慢，未安装甲醛传感器的设备没有 HCHO 读数。
 
 此流程保留原厂 bootloader 和分区表，社区应用从第二槽 `0x190000` 启动。首次启动需重新配网；后续镜像仍须适配原厂 1.5 MiB 应用槽。
+
+### 已经按旧教程刷入 0.9.21-dirty
+
+旧附件 `daikin-bry88ab.application.bin` 是固定的 `0.9.21-2cfd89-dirty` 快照，不是当前版本。若已安装它，连接 `DAIKIN-<MAC末六位>` 热点并打开 `http://192.168.4.1/`，先完成 Wi-Fi 配置。
+
+然后从[下载区]({{SITE_URL}}#releases)下载大金 1/2 代最新兼容稳定版 `full` 的 `daikin_BRY88AX151K.ota.bin.raw` 及同版本校验清单，校验后通过旧版网页的本地固件上传安装。这个旧版本使用原生应用镜像；升级到支持签名的新版本后，日常更新改用 `.ota.bin.signed`，见[固件更新](firmware-update)。保持供电，重启后重新核对版本、传感器读数和网络设置；新版恢复热点及地址使用本节开头的形式。
 
 ## 8. 常见问题与恢复
 
