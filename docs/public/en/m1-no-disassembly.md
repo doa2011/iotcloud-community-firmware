@@ -4,7 +4,7 @@ Start at [Firmware & resources]({{SITE_URL}}en/#releases) and choose the latest 
 
 This guide updates only the M1 Wi-Fi module and retains the sensor controller. It covers two factory provisioning methods and two OTA methods. Prefer the official app for provisioning if available.
 
-Use the **full native M1 OTA image**, version **0.9.21 or newer**. The commands below use stable **v0.9.27**. Keep power connected throughout.
+Use the **full native M1 OTA image** from the latest compatible stable release in Downloads, version **0.9.21 or newer**. Keep power connected throughout.
 
 <!-- os-picker -->
 
@@ -151,10 +151,12 @@ Match the response name and MAC suffix against the device label and router recor
 
 ## 3. Method A: upload through the factory LAN OTA interface
 
-Download these two **0.9.27** files into an empty folder and open a terminal there:
+In [Firmware & resources]({{SITE_URL}}en/#releases), select **M1 → latest compatible stable release → Full → Native OTA**. Download these two files from that same release into an empty folder and open a terminal there:
 
-- [Full M1 native OTA image]({{SITE_URL}}releases/v0.9.27/phicomm_m1.ota.bin.raw)
-- [SHA256SUMS]({{SITE_URL}}releases/v0.9.27/SHA256SUMS)
+- `phicomm_m1.ota.bin.raw`
+- `SHA256SUMS`
+
+Use the version currently listed in Downloads; installing the old v0.9.27 example first is unnecessary. RC builds are for beta testing.
 
 **Check that the model is M1 and the version is at least 0.9.21.** Use the full image specified here for first migration, rather than `no-frontend-resources`. A full Flash backup or `.all.bin` is for other recovery procedures; `.ota.bin.signed` is for devices already running community firmware. None is the factory upload body. Renaming a file to `.raw` does not convert it.
 

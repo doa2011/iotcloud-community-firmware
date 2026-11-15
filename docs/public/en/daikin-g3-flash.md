@@ -19,7 +19,7 @@ Windows runs the wireless process over SSH on a Bluetooth Linux host on the same
 
 ## Download files
 
-Select **Daikin air quality detector (G3)** in [Firmware & resources]({{SITE_URL}}en/#releases). This guide uses the current **v1.0.0-rc.6**. A newer compatible release is also suitable; get tools and firmware from the same release.
+Select the latest compatible stable **Daikin air quality detector (G3)** release in [Firmware & resources]({{SITE_URL}}en/#releases), with tools and firmware from the same release. If this model has no stable release, read the candidate notes before choosing a beta. Do not use Daikin G1/G2 firmware.
 
 | Purpose | File | Installation |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ Select **Daikin air quality detector (G3)** in [Firmware & resources]({{SITE_URL
 | Optional high-resolution font | `daikin_G3_zh32.iotfnt` | Screen resource page |
 | Checksums | `SHA256SUMS` | Compare downloaded SHA-256 values |
 
-Download the required files and `SHA256SUMS` from the [current RC6 release](https://github.com/phicomm-io/iotcloud-community-firmware/releases/tag/v1.0.0-rc.6). Check the files used for your method:
+Download the required files and `SHA256SUMS` from the [selected release in Downloads]({{SITE_URL}}en/#releases). Check the files used for your method:
 
 <!-- os:windows -->
 ### Windows: verify downloads
@@ -220,7 +220,7 @@ python3 trigger.py --device AABBCCDDEEFF --host 192.168.1.10 \
 docker compose -f ./lab/compose.json logs -f https
 ```
 
-`V99.00.00` is the stock OTA target label for this operation; the community application reports its actual RC6 version after reboot. Wait for an `artifact` HTTP 200 log with the full transfer length, followed by automatic restart. This step updates ESP32 while preserving the stock screen.
+`V99.00.00` is the stock OTA target label for this operation; the community application reports its actual firmware version after reboot. Wait for an `artifact` HTTP 200 log with the full transfer length, followed by automatic restart. This step updates ESP32 while preserving the stock screen.
 
 ### 4. Verify and clean up
 
@@ -426,7 +426,7 @@ verifybin daikin_G3_screen.bin 0x14000
 savebin g3-mcu-installed.bin 0x14000 0x67000
 ```
 
-The current RC6 application contains **421888 bytes**, covering `0x14000` through `0x7afff`. The readback SHA-256 must match the downloaded image. **Do not run a full-chip erase or write the application at `0x0`.** Preserve the first 80 KiB boot region and the configuration region starting at `0x7e000`.
+The v1.0.0 screen application contains **421888 bytes**, covering `0x14000` through `0x7afff`. The readback SHA-256 must match the downloaded image. **Do not run a full-chip erase or write the application at `0x0`.** Preserve the first 80 KiB boot region and the configuration region starting at `0x7e000`.
 
 After verification, enter `r`, `g`, then `exit`. Power off, remove debugging wires and restore normal power. Hold the front key about 2 seconds to start. Open the WebUI and check the MCU version and readings. Install the optional high-resolution font separately through the WebUI.
 

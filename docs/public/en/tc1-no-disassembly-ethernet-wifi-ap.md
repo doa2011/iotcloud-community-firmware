@@ -1,6 +1,6 @@
 # TC1 illustrated OTA guide
 
-Start at [Firmware & resources]({{SITE_URL}}en/#releases) and choose the latest compatible release for your device with its matching checksums. Pinned versions below are reproducible examples; stated minimum versions, stock versions and migration-tool requirements still apply.
+The `mico_ota.bin` in this guide is a fixed **0.9.6-ed4474 migration image** for stock installation. It does not track current releases. After migration, follow the steps below to install the latest compatible stable TC1 release from [Downloads]({{SITE_URL}}en/#releases).
 
 The computer serves firmware over **Ethernet** and sends the trigger over **Wi-Fi**, while a router or AP supplies the OTA network. No case opening, soldering or Python installation is needed. Supports Windows, macOS and Linux.
 
@@ -16,7 +16,7 @@ Create a `tc1-flash` folder. Download the firmware and **one trigger file matchi
 
 | Download | Purpose |
 | --- | --- |
-| [mico_ota.bin](assets/tools/tc1-no-disassembly/mico_ota.bin) | Prepared firmware for the TFTP directory; keep this filename |
+| [mico_ota.bin](assets/tools/tc1-no-disassembly/mico_ota.bin) | 0.9.6-ed4474 migration image for the TFTP directory; keep this filename |
 | [tftp-trigger.bin (payload, 1.0.0.26)](assets/tools/tc1-no-disassembly/tftp-trigger.bin) | Trigger sent to the stock OTA endpoint; for 1.0.0.26 |
 | [tftp-trigger-1.0.0.24.bin (payload, 1.0.0.24)](assets/tools/tc1-no-disassembly/tftp-trigger-1.0.0.24.bin) | Same trigger with the address shifted for 1.0.0.24 |
 | [tftp-trigger-1.0.0.21.bin (payload, 1.0.0.21)](assets/tools/tc1-no-disassembly/tftp-trigger-1.0.0.21.bin) | Same trigger with the address shifted for 1.0.0.21 |
@@ -308,7 +308,7 @@ The new open hotspot should be **`TC1_A1-AP-<last six MAC characters in uppercas
 
 Join it from a computer or phone, open **`http://192.168.0.1/`**, and confirm the community WebUI loads. Configure your normal Wi-Fi there. See [TC1 operation](tc1-guide) for controls and pairing.
 
-Join the new hotspot and check the model and version in the local WebUI to complete installation.
+Configure normal Wi-Fi, then select **TC1 → latest compatible stable release → Full → Signed OTA** in [Firmware & resources]({{SITE_URL}}en/#releases). Download `phicomm_tc1_a1.ota.bin.signed` and that release's `SHA256SUMS`. Verify the digest, upload through the device's firmware update page and keep power connected. After reboot, reopen the WebUI and check the new version, six outlet names and settings. See [Firmware updates](firmware-update); do not send the stock trigger again.
 
 ## 8. Stop temporary services and restore networking
 
