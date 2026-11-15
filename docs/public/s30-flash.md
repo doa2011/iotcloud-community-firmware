@@ -91,19 +91,19 @@ python3 -m venv .venv
 .venv/bin/python -m pip install paho-mqtt==2.1.0
 ```
 
-取得对应 `.rbl` 与 `SHA256SUMS-S30`，先校验，随后运行；替换全部占位符：
+取得对应 `.rbl` 与 `SHA256SUMS-S30`，先校验，随后运行；将 `<VERSION>` 替换为所下载 RBL 文件名中的版本，并替换其余占位符：
 
 ```sh
 mkdir -p tools
 curl --fail --location https://raw.githubusercontent.com/phicomm-io/iotcloud-community-firmware/main/tools/s30_stock_ota.py -o tools/s30_stock_ota.py
 chmod 600 wifi.private.json mqtt.private.json
-grep "  BL2028N_OTA_1.0.0-rc.6.rbl$" SHA256SUMS-S30 | sha256sum -c -
+grep "  BL2028N_OTA_<VERSION>.rbl$" SHA256SUMS-S30 | sha256sum -c -
 sudo .venv/bin/python tools/s30_stock_ota.py \
   --device <原厂设备IP> --device-id <本机12位工厂MAC> \
   --host <电脑局域网IP> \
   --wifi-file wifi.private.json --mqtt-file mqtt.private.json \
   --mqtt-ca gateway-cert.pem --cert gateway-cert.pem --key gateway-key.pem \
-  --rbl 'BL2028N_OTA_1.0.0-rc.6.rbl' --sha256 <该文件公布的SHA256>
+  --rbl 'BL2028N_OTA_<VERSION>.rbl' --sha256 <该文件公布的SHA256>
 ```
 
 原厂尚未配网时，先进入 `CMQLINK-590513-XXXX` 热点。为该设备的工厂 **STA MAC** 在目标路由器预留 IP，将其填入 `--device`；电脑用 Wi-Fi 连接原厂热点，同时通过另一网口保持 `--host` 地址可达，并在命令中加 `--provision-address 192.168.188.1`。工厂 STA MAC 与热点 BSSID 不同，不能直接照抄 BSSID。`wifi.private.json` 填安装时要使用的同一局域网 2.4 GHz 网络。
