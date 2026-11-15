@@ -103,7 +103,8 @@ struct HomeOutlet:Service::Switch{
   }
   boolean update()override{return !on->updated()||homeControl(device,iotcloud::HubHome::Outlet,channel,on->getNewVal());}
   void loop()override{
-    const auto &d=hubHome.devices[device];bool live=d.controls&&d.reachable(millis())&&!homePaused;
+    const auto &d=hubHome.devices[device];const auto now=millis();
+    const bool reachable=d.reachable(now)&&!homePaused,live=d.controls&&reachable;
     on->iotcloudAvailable=live;
     if(live&&on->getVal()!=d.outlets[channel])on->setVal(d.outlets[channel]);
     if(d.namesKnown&&!configuredName->updated()&&strcmp(configuredName->getString(),d.outletNames[channel].c_str())){
@@ -112,9 +113,8 @@ struct HomeOutlet:Service::Switch{
       homeNamesChanged();
     }
     if(power){
-      const bool reachable=d.reachable(millis())&&!homePaused;
-      power->iotcloudAvailable=reachable&&d.power.fresh(millis());
-      energy->iotcloudAvailable=reachable&&d.energy.fresh(millis());
+      power->iotcloudAvailable=reachable&&d.power.fresh(now);
+      energy->iotcloudAvailable=reachable&&d.energy.fresh(now);
       if(power->iotcloudAvailable&&power->getVal<double>()!=d.power.number)power->setVal(d.power.number);
       if(energy->iotcloudAvailable&&energy->getVal<double>()!=d.energy.number)energy->setVal(d.energy.number);
     }
