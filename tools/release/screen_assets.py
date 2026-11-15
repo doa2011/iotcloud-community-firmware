@@ -7,7 +7,8 @@ ROOT=Path(__file__).resolve().parents[2]
 def assets(tag,directory,lock=None):
     lock=lock or json.loads((ROOT/'screen-release.lock.json').read_text())
     if lock['repository']!='phicomm-io/iotcloud-bry88bba15g-screenmcu' or not re.fullmatch('[0-9a-f]{40}',lock['commit']):raise ValueError('invalid screen source')
-    if lock['release']!=tag:raise ValueError('screen release must match firmware release')
+    if not re.fullmatch('[A-Za-z0-9][A-Za-z0-9._-]*',lock['release']):raise ValueError('invalid screen release')
+    if lock['release'].startswith('screen-') and lock['release']!='screen-'+lock['commit']:raise ValueError('screen release commit mismatch')
     result={'target':'BRY88BBA15G-screen','version':tag[1:],'source':{k:lock[k] for k in ('repository','commit','release')}}
     directory=Path(directory);directory.mkdir(parents=True,exist_ok=True)
     cache=Path(os.environ.get('XDG_CACHE_HOME',str(Path.home()/'.cache')))/'phicomm/screen-assets';cache.mkdir(parents=True,exist_ok=True)
@@ -15,7 +16,7 @@ def assets(tag,directory,lock=None):
         if kind not in ('firmware','font','bootstrap') or not re.fullmatch('[A-Za-z0-9_.-]+',item['asset']) or not re.fullmatch('[0-9a-f]{64}',item['sha256']):raise ValueError('invalid screen asset')
         file=cache/item['sha256'];body=file.read_bytes() if file.exists() else b''
         if hashlib.sha256(body).hexdigest()!=item['sha256']:
-            url=f"https://github.com/{lock['repository']}/releases/download/{tag}/{item['asset']}"
+            url=f"https://github.com/{lock['repository']}/releases/download/{lock['release']}/{item['asset']}"
             with urllib.request.urlopen(url,timeout=90) as response:body=response.read(item['size']+1)
         if len(body)!=item['size'] or hashlib.sha256(body).hexdigest()!=item['sha256']:raise ValueError('screen asset digest mismatch')
         file.write_bytes(body)
