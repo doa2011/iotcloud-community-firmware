@@ -1,4 +1,4 @@
-import hashlib,importlib.util,json,sys,tempfile,unittest
+import hashlib,importlib.util,io,json,os,sys,tempfile,unittest
 from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric import ec
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools/release'))
@@ -6,6 +6,51 @@ from notes import extract
 from catalog import make
 from products import asset_stem, targets
 import verify
+import screen_assets
+from unittest.mock import patch
+
+class ScreenAssetTests(unittest.TestCase):
+ def test_independent_screen_release_is_downloaded_and_staged_under_system_version(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp)
+   commit='b'*40
+   bodies={'firmware':b'app'.ljust(421888,b'\xff'),
+           'font':b'IOTFNT02font',
+           'bootstrap':b'install=factory-uart;mode=recovery;'.ljust(421888,b'\xff')}
+   lock=dict(repository='phicomm-io/iotcloud-bry88bba15g-screenmcu',commit=commit,
+             release='screen-'+commit,assets={kind:dict(asset=kind+'.bin',size=len(body),
+             sha256=hashlib.sha256(body).hexdigest()) for kind,body in bodies.items()})
+   requests=[]
+   def response(url,**kwargs):
+    requests.append(url)
+    kind=Path(url).stem
+    return io.BytesIO(bodies[kind])
+   with patch.dict(os.environ,{'XDG_CACHE_HOME':str(root/'cache')}),patch.object(screen_assets.urllib.request,'urlopen',side_effect=response):
+    result=screen_assets.assets('v1.0.0',root/'release',lock)
+    self.assertEqual(screen_assets.validate(result,root/'release','v1.0.0'),result)
+    self.assertEqual(result['source']['release'],lock['release'])
+    self.assertEqual(result['version'],'1.0.0')
+    self.assertEqual(len(requests),3)
+    self.assertTrue(all('/releases/download/'+lock['release']+'/' in url for url in requests))
+    self.assertTrue(all(item['path'].startswith('/releases/v1.0.0/') for kind,item in result.items() if kind in (*bodies,'migration')))
+    screen_assets.assets('v1.0.0',root/'cached',lock)
+    self.assertEqual(len(requests),3)
+
+ def test_download_digest_and_release_identity_are_required(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp)
+   lock=dict(repository='phicomm-io/iotcloud-bry88bba15g-screenmcu',commit='c'*40,
+             release='screen-'+'c'*40,assets={'firmware':dict(asset='screen.bin',size=5,
+             sha256=hashlib.sha256(b'clean').hexdigest())})
+   with patch.dict(os.environ,{'XDG_CACHE_HOME':str(root/'cache')}),patch.object(screen_assets.urllib.request,'urlopen',return_value=io.BytesIO(b'wrong')) as opened:
+    with self.assertRaisesRegex(ValueError,'digest mismatch'):
+     screen_assets.assets('v1.0.0',root/'release',lock)
+    self.assertFalse((root/'release/daikin_G3_screen.bin').exists())
+    for release in ('../v1.0.0','screen-'+'d'*40):
+     with self.subTest(release=release),self.assertRaisesRegex(ValueError,'screen release'):
+      screen_assets.assets('v1.0.0',root/'release',dict(lock,release=release))
+    self.assertEqual(opened.call_count,1)
+
 class ReleaseTests(unittest.TestCase):
  def current_assets(self,root):
   key=ec.generate_private_key(ec.SECP256R1())
