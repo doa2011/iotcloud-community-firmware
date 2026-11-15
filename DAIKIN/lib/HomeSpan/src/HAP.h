@@ -147,6 +147,7 @@ struct HAPClient {
 
   // define member methods
 
+  bool receiveRequest();  // Bounded input frame; released before handler dispatch.
   void processRequest();                                      // process HAP request  
   int postPairSetupURL(uint8_t *content, size_t len);         // POST /pair-setup (HAP Section 5.6)
   int postPairVerifyURL(uint8_t *content, size_t len);        // POST /pair-verify (HAP Section 5.7)

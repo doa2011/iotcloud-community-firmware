@@ -18,7 +18,7 @@ See the [G1/G2 guide](daikin-guide) for installation and board selection. G1/G2 
 
 Select the latest compatible G3 release from [Firmware & resources]({{SITE_URL}}en/#releases). Get its ESP32 image, screen MCU image and `daikin_G3_migration.tar.gz` together. The bundle includes Linux and macOS provisioners and optional screen installation scripts.
 
-This guide uses the current RC6 release, paired with screen MCU `1.0.0-rc.6-55e52f`. Use the complete current tool bundle and firmware from the download page, or a newer compatible release. Check the release source revision and `SHA256SUMS`, and back up configuration.
+New media, notifications and display policies require matching **v1.0.0 ESP32 firmware, screen MCU and WebUI**. Get the complete tool bundle and firmware from one release on the download page. Check source revisions and `SHA256SUMS`, and back up configuration.
 
 ## Wireless migration from stock firmware
 

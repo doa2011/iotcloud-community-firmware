@@ -14,9 +14,11 @@ Its JSON report includes both capacities and both compatibility results, the
 selected gate, the measured binary/ELF hashes and the static RAM budget. Failed
 size gates also produce a report; CI preserves that report and stops signing.
 
-The ten current build combinations are TC1 full/slim, M1 full/slim, A1
-full/slim/fresh-air/fresh-air-slim, and DAIKIN full/hub. `products.py --targets`
-is the shared enumeration for building the signing/catalog matrix. DAIKIN v1
+The eleven PHI-signed build combinations are TC1 full/slim, M1 full/slim, A1
+full/slim/fresh-air/fresh-air-slim, DAIKIN full/hub, and G3 full. S30 full adds
+a twelfth combination using native RBL/STOCK_UA images without a PHI envelope.
+`products.py --targets` enumerates the eleven signing/catalog targets; S30 is
+built and validated separately. DAIKIN v1
 catalog entries authenticate each signed payload's exact full/hub image label
 and require the downloadable raw application to be the same payload.
 
@@ -68,8 +70,8 @@ publisher does not publish the candidate pointer.
 New catalogs produce `<asset-stem>.latest.json` and
 `<asset-stem>.latest.msgpack` together in the immutable release directory.
 `release.json.device_manifests["<model>/<variant>"]` indexes both files by
-`path`, byte `size`, and `sha256`. The ten firmware variants, signed firmware
-layout, and firmware signature verification are unchanged. `SHA256SUMS` includes
+`path`, byte `size`, and `sha256`. All twelve firmware combinations have these
+metadata files; PHI signatures and S30's native format remain separate. `SHA256SUMS` includes
 both metadata formats; metadata is not itself a new signed firmware envelope.
 Retries reject different manifest bytes under the same immutable name.
 Historical immutable release directories are not regenerated or modified.

@@ -44,6 +44,7 @@ static std::string lastReply;
 static void initLanClient() {}
 static bool hubReady() { return ready; }
 static bool hubAllocationReady(size_t) { return heapReady; }
+static bool hubAllocationReady(size_t, size_t) { return heapReady; }
 #include "hub-s30-gates.inc"
 
 static bool sendPacket(const void *bytes, size_t length) {

@@ -315,7 +315,7 @@
     "web/page.js": {
       "source": "frontend/S30/web/page.js",
       "upstream_sha256": "2ac47b0f85931cabbdfe4130e9b8a2edcba8937d0adeff8e6663231e6da86aed",
-      "sha256": "722134a9a3721dc928731a2dcd4e4828a026f7dab314dbbf98c2e4310a07ab47"
+      "sha256": "86d87e5ba456facfd7d170c3f22b461a2e536ae086ed561a3b757dda13c5b89a"
     },
     "protocol/udp/packet.h": {
       "source": "common/feature_wire.inc",

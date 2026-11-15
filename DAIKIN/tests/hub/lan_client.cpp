@@ -5,18 +5,44 @@
 #include "hub_lan_result.h"
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
+#include <algorithm>
 #include <vector>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <openssl/sha.h>
+static bool trackWireAllocations=false;static size_t wireAllocationLimit=SIZE_MAX,largestWireAllocation=0;static unsigned wireAllocations=0,wireAllocationDenials=0;
+extern "C" void *ph_wire_malloc(size_t n){if(trackWireAllocations){++wireAllocations;largestWireAllocation=std::max(largestWireAllocation,n);if(n>wireAllocationLimit){++wireAllocationDenials;return nullptr;}}return std::malloc(n);}
+extern "C" void ph_wire_free(void*p){std::free(p);}
 static uint32_t now=10;static unsigned calls=0;static bool authorized=true,clientAuthorized=true;
 static const char *hub="02c400000002",*device="02c400000001";
 static uint8_t token[16]={1};static int serverfd,clientfd;static sockaddr_in serverAddress,clientAddress;
 static bool udp(int fd,const sockaddr_in &address,const void *bytes,size_t length){return sendto(fd,bytes,length,0,reinterpret_cast<const sockaddr*>(&address),sizeof(address))==ssize_t(length);}
 static sockaddr_in bindSocket(int &fd){fd=socket(AF_INET,SOCK_DGRAM,0);assert(fd>=0);sockaddr_in address={};address.sin_family=AF_INET;address.sin_addr.s_addr=htonl(INADDR_LOOPBACK);assert(!bind(fd,reinterpret_cast<sockaddr*>(&address),sizeof(address)));socklen_t length=sizeof(address);assert(!getsockname(fd,reinterpret_cast<sockaddr*>(&address),&length));return address;}
 static ph_buf *response(){ph_writer w;assert(phw_init(&w,PH_WIRE_MSGPACK));phw_begin(&w,nullptr,false);phw_text(&w,"code","ok");phw_text(&w,"request_id","fixture");phw_begin(&w,"data",false);std::string payload(3100,'X');phw_text_n(&w,"payload",payload.data(),payload.size());phw_end(&w);phw_end(&w);return phw_take(&w);}
+static void msgpackString(std::string &out,const char *value,size_t size){assert(size<32);out.push_back(char(0xa0|size));out.append(value,size);}
+static std::string detailedResponse(size_t blobLength){
+ std::string data;data.push_back(char(0x83));
+ msgpackString(data,"nested",6);data.push_back(char(0x81));msgpackString(data,"level1",6);data.push_back(char(0x81));msgpackString(data,"level2",6);data.push_back(char(0x81));msgpackString(data,"value",5);data.push_back(char(0xcc));data.push_back(char(1)); // Valid non-minimal uint encoding detects re-encoding.
+ msgpackString(data,"utf8",4);const char utf8[]={char(0xe7),char(0x94),char(0xb5),char(0xe8),char(0xa1),char(0xa8)};data.push_back(char(0xa0|sizeof(utf8)));data.append(utf8,sizeof(utf8));
+ msgpackString(data,"binary",6);data.push_back(char(0xc5));data.push_back(char(blobLength>>8));data.push_back(char(blobLength));
+ for(size_t i=0;i<blobLength;i++)data.push_back(i%257==0?char(0):char('B'));
+ std::string out;out.push_back(char(0x83));msgpackString(out,"code",4);msgpackString(out,"ok",2);msgpackString(out,"request_id",10);msgpackString(out,"fixture",7);msgpackString(out,"data",4);out+=data;return out;
+}
+static std::string nearMaxResponse(){
+ for(size_t n=LAN_V4_RESPONSE_MAX;n>LAN_V4_RESPONSE_MAX-256;--n){auto bytes=detailedResponse(n);if(bytes.size()<=LAN_V4_RESPONSE_MAX){assert(bytes.size()>LAN_V4_RESPONSE_MAX-128);return bytes;}}
+ assert(false);return {};
+}
+static void assertDetailedState(const std::string &bytes,bool wrapped=true){
+ ph_value root,data,nested,level1,level2,value,text,binary;
+ assert(phv_parse(PH_WIRE_MSGPACK,bytes.data(),bytes.size(),&root)&&root.kind==PHV_MAP);
+ if(wrapped)assert(phv_get(&root,"data",&data)&&data.kind==PHV_MAP);else data=root;
+ assert(phv_get(&data,"nested",&nested)&&phv_get(&nested,"level1",&level1)&&phv_get(&level1,"level2",&level2)&&phv_get(&level2,"value",&value));int64_t number=0;assert(phv_int(&value,&number)&&number==1);
+ assert(phv_get(&data,"utf8",&text));char decoded[16]={};assert(phv_text(&text,decoded,sizeof(decoded)));const char expected[]={char(0xe7),char(0x94),char(0xb5),char(0xe8),char(0xa1),char(0xa8),0};assert(!memcmp(decoded,expected,sizeof(expected)));
+ assert(phv_get(&data,"binary",&binary));const void *payload=nullptr;size_t length=0;assert(phv_bytes(&binary,&payload,&length)&&length>LAN_V4_RESPONSE_MAX-256);const auto *raw=static_cast<const unsigned char*>(payload);assert(raw[0]==0&&raw[1]=='B'&&raw[257]==0);
+}
 static void queueTests(){
  iotcloud::HubLanQueue q;std::string source="owned";unsigned starts=0,failures=0;
  assert(q.push("route",source,UINT32_MAX-10));source="mutated";
@@ -61,6 +87,16 @@ int main(){queueTests();
  ph_buf *snapshot=response();assert(snapshot);assert(iotcloud::routeHubLanResult(bus,"route/command",snapshot->buf,snapshot->len,true,"fixture"));assert(states==1&&results==1&&available==1);
  assert(iotcloud::routeHubLanResult(bus,"route/command",snapshot->buf,snapshot->len,false,"fixture"));assert(states==1&&results==2);
  assert(!iotcloud::routeHubLanResult(bus,"route/command",snapshot->buf,snapshot->len,true,"wrong"));assert(states==1&&results==2);ph_buf_free(snapshot);
+ // A near-limit, still-valid response carries nested maps, UTF-8, binary NUL
+ // bytes, and a non-minimal integer. The exact validated data subtree is
+ // published without a ph_wire_malloc scratch writer, even with an 8 KiB cap.
+ const std::string rawResponse=nearMaxResponse();assertDetailedState(rawResponse);ph_value root,data;assert(phv_parse(PH_WIRE_MSGPACK,rawResponse.data(),rawResponse.size(),&root)&&phv_get(&root,"data",&data));
+ const std::string rawState(reinterpret_cast<const char*>(data.begin),size_t(data.end-data.begin));assert(rawResponse.size()<=LAN_V4_RESPONSE_MAX&&rawResponse.size()>LAN_V4_RESPONSE_MAX-128&&rawState.size()<=LAN_V4_RESPONSE_MAX);
+ iotcloud::HubDeviceBus exactBus;unsigned exactStates=0,exactResults=0,exactAvailability=0;
+ exactBus.dispatch=[&](const std::string &route,const std::string &body,bool retain,iotcloud::HubDeviceBus::Origin origin){assert(!retain&&origin==iotcloud::HubDeviceBus::Origin::Local);if(route=="route/state"){assert(body==rawState);assertDetailedState(body,false);++exactStates;}else if(route=="route/result"){assert(body==rawResponse);++exactResults;}else if(route=="route/availability"){assert(body=="online");++exactAvailability;}else assert(false);return true;};
+ trackWireAllocations=true;wireAllocationLimit=LAN_V4_RESPONSE_MAX;wireAllocations=wireAllocationDenials=0;largestWireAllocation=0;
+ assert(iotcloud::routeHubLanResult(exactBus,"route/command",rawResponse.data(),rawResponse.size(),true,"fixture"));
+ trackWireAllocations=false;assert(exactStates==1&&exactResults==1&&exactAvailability==1&&wireAllocations==0&&wireAllocationDenials==0&&largestWireAllocation==0);
  // Timeout reports the owned original request exactly once, with no new ID.
  drain();unsigned failures=0;
  client.failed=[&](const std::string&r,const std::string&b,const char*c){assert(r=="route"&&b==body&&!strcmp(c,"timeout"));++failures;};

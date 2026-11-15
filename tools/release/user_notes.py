@@ -171,6 +171,14 @@ def verify_archive(catalog, identities, archive, data=DATA):
                 if (frontend['kind'] != 'lock' or lock.returncode or
                         digest(lock.stdout) != frontend['sha256'] or json.loads(lock.stdout) != frontend['lock']):
                     raise ValueError('Frontend lock mismatch: ' + tag + ' source ' + source[:12])
+            if model == 's30':
+                from native_pages import collect_release
+                folder = archive / 'releases' / tag
+                native = collect_release(tag, archive, lambda url: (folder / url.rsplit('/', 1)[1]).read_bytes(), source)
+                expected = {kind: dict(asset, path=f'/releases/{tag}/' + asset['path'].rsplit('/', 1)[1])
+                            for kind, asset in native['models']['s30']['downloads'].items()}
+                if variant != 'full' or entry['downloads'] != expected:
+                    raise ValueError('Native S30 catalog differs from verified build: ' + tag)
             for kind, asset in entry['downloads'].items():
                 if asset['path'] in checked:
                     continue
@@ -240,7 +248,8 @@ def compile_manifest(data=DATA, archive=None, formal=False, include_candidates=F
                 raise ValueError('New release identities require a formal build and actual archive')
             target_proofs = {}
             for model, variant, entry in targets(release):
-                if 'signed' not in entry['downloads']:
+                native_s30 = model == 's30' and variant == 'full' and set(entry['downloads']) == {'rbl', 'stock_ua'}
+                if 'signed' not in entry['downloads'] and not native_s30:
                     raise ValueError('New releases require signed firmware for every target')
                 source = entry.get('source_commit', release['models'][model].get('source_commit', release['commit']))
                 lock = subprocess.run(['git', 'show', source + ':frontend.lock.json'], cwd=ROOT, capture_output=True)
@@ -307,7 +316,7 @@ def compile_manifest(data=DATA, archive=None, formal=False, include_candidates=F
             if source in sources and sources[source] != source_row:
                 raise ValueError('Conflicting frontend source proof')
             sources[source] = source_row
-            kind = 'signed' if 'signed' in entry['downloads'] else 'raw'
+            kind = 'signed' if 'signed' in entry['downloads'] else 'rbl' if model == 's30' else 'raw'
             asset = entry['downloads'][kind]
             target_rows.append(dict(model=model, variant=variant, hardware='*', kind=kind,
                                     tag_commit=release['commit'], source_commit=source,

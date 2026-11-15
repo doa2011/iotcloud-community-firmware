@@ -142,7 +142,9 @@ static void screenMediaSnapshot(const uint8_t *p, size_t n) {
   } else {
     return;
   }
-  invalidateBusinessStatusCache();
+  // Media PONGs carry this status every two seconds. Publish the update
+  // without withdrawing the complete sensor snapshot during encoding.
+  requestBusinessStatusRefresh();
 }
 static void screenMediaPacket(void *, unsigned channel, uint32_t session,
                               uint32_t sequence, const uint8_t *p, size_t n) {

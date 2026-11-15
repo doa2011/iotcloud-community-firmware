@@ -4,7 +4,20 @@ static esp_err_t jsonResponse(httpd_req_t *req,const char *status,const String &
   if(body.startsWith("{")||body.startsWith("[")){
     String wire;
     if(body.length()<384){StaticJsonDocument<768> doc;if(deserializeJson(doc,body.c_str(),body.length()))return ESP_FAIL;if(!serializeWireMP(doc,wire)){httpd_resp_set_status(req,"503 Service Unavailable");return httpd_resp_send(req,"\x81\xa4" "code" "\xa4" "busy",11);}}
-    else {DynamicJsonDocument doc(12288);if(deserializeJson(doc,body.c_str(),body.length())){httpd_resp_set_status(req,"503 Service Unavailable");return httpd_resp_send(req,"\x81\xa4" "code" "\xa4" "busy",11);}if(!serializeWireMP(doc,wire)){httpd_resp_set_status(req,"503 Service Unavailable");return httpd_resp_send(req,"\x81\xa4" "code" "\xa4" "busy",11);}}
+    else {
+      size_t capacity=12288;
+#ifdef IOTCLOUD_HUB
+      // Most replies fit below the maximum pool. Release each failed pool
+      // before growing so HAP's fragmented heap can still serve inventory.
+      capacity=std::min<size_t>(capacity,body.length()+512);
+#endif
+      for(;;){
+        DynamicJsonDocument doc(capacity);auto error=deserializeJson(doc,body.c_str(),body.length());
+        if(error==DeserializationError::NoMemory&&capacity<12288){capacity=std::min<size_t>(12288,capacity+1024);continue;}
+        if(error||!serializeWireMP(doc,wire)){httpd_resp_set_status(req,"503 Service Unavailable");return httpd_resp_send(req,"\x81\xa4" "code" "\xa4" "busy",11);}
+        break;
+      }
+    }
     return httpd_resp_send(req,wire.c_str(),wire.length());
   }
   return httpd_resp_send(req,body.c_str(),body.length());
@@ -59,7 +72,7 @@ static esp_err_t rootHandler(httpd_req_t *req){
 }
 // A strict borrowed parameter view selects only two public, side-effect-free
 // reads. The owned response is complete before the request buffer can expire.
-static bool publicReadCommand(const String &body,String &response){
+static bool publicReadCommand(const String &body,String &response,bool binaryErrors=false){
   ph_value root,action,params,id;char requestId[65]={};
   if(!phv_parse(PH_WIRE_MSGPACK,body.c_str(),body.length(),&root)||
      !phv_keys(&root,"|request_id||action||params|")||
@@ -67,7 +80,7 @@ static bool publicReadCommand(const String &body,String &response){
      (!phv_equal_text(&action,"status.get")&&!phv_equal_text(&action,"config.get"))||
      !phv_get(&root,"params",&params)||params.kind!=PHV_MAP||!phv_keys(&params,""))return false;
   if(phv_get(&root,"request_id",&id)&&(!phv_text(&id,requestId,sizeof(requestId))||!requestId[0]))return false;
-  auto busy=[&](){StaticJsonDocument<256> error;error["code"]="busy";if(*requestId)error["request_id"]=requestId;response="";serializeJson(error,response);};
+  auto busy=[&](){StaticJsonDocument<256> error;error["code"]="busy";if(*requestId)error["request_id"]=requestId;response="";if(binaryErrors)serializeWireMP(error,response);else serializeJson(error,response);};
   String data;
   if(!businessReadSnapshot.copy(data,false,millis())){busy();return true;}
   ph_writer writer;
@@ -168,7 +181,15 @@ static bool otaErase(void *context){
   // reached sectors instead of blocking the HTTP task on a whole-image erase.
   return esp_ota_begin(f->partition,OTA_WITH_SEQUENTIAL_WRITES,&f->handle)==ESP_OK;
 }
-static void otaYield(OtaFlash *f,size_t n){if((f->work+=n)>=16384){f->work=0;delay(1);}}
+static void otaYield(OtaFlash *f,size_t n){
+#ifdef IOTCLOUD_BRY88_SCREEN
+  // The UART owner must service the MCU power-lease ACK while flash writes
+  // keep the higher-priority HTTP task runnable. Yield after each sector.
+  if((f->work+=n)>=4096){f->work=0;delay(10);}
+#else
+  if((f->work+=n)>=16384){f->work=0;delay(1);}
+#endif
+}
 static bool otaWrite(void *context,uint32_t offset,const uint8_t *data,size_t n){
   (void)offset;auto *f=(OtaFlash*)context;
   if(esp_ota_write(f->handle,data,n)!=ESP_OK)return false;
@@ -193,6 +214,9 @@ static esp_err_t uploadFirmware(httpd_req_t *req,bool signedImage,const daikin::
   otaActive=true;uint8_t buffer[1024];int left=req->content_len-envelope;
   static_assert(sizeof(buffer)>=OTA_ENVELOPE_SIZE+daikin::firmwarePrefixSize,"OTA prefix buffer too small");
   OtaFlash flash={partition,0,0};signed_ota verifier;
+#ifdef IOTCLOUD_BRY88_SCREEN
+  bool modulePowerLost=false;
+#endif
   // Buffer the bounded envelope and prefix before the verifier can erase the
   // inactive slot. This is only an identity prefilter; signature and complete
   // staged-payload digest validation remain mandatory for every signed image.
@@ -207,7 +231,7 @@ static esp_err_t uploadFirmware(httpd_req_t *req,bool signedImage,const daikin::
   if(ok){ok=signedImage?signed_ota_write(&verifier,buffer+envelope,prefix):otaWrite(&flash,0,buffer,prefix);left-=prefix;}
   while(ok&&left>0){
 #ifdef IOTCLOUD_BRY88_SCREEN
-    if(!screenModulePowerHealthy()){ok=false;break;}
+    if(!screenModulePowerHealthy()){modulePowerLost=true;ok=false;break;}
 #endif
     int n=httpd_req_recv(req,(char*)buffer,min(left,512));if(n<=0){ok=false;break;}ok=signedImage?signed_ota_write(&verifier,buffer,n):otaWrite(&flash,0,buffer,n);left-=n;}
   if(ok&&signedImage)ok=signed_ota_finish(&verifier);
@@ -219,6 +243,7 @@ static esp_err_t uploadFirmware(httpd_req_t *req,bool signedImage,const daikin::
   otaActive=false;
 #ifdef IOTCLOUD_BRY88_SCREEN
   if(!ok)screenModulePowerEnd(); // On success keep SET low until the restart.
+  if(modulePowerLost)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\",\"message\":\"MCU update power lease lost; retry after device is ready\"}");
 #endif
   if(!ok)return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_image\",\"message\":\"Signature, target, digest or flash validation failed\"}");
   prefs.putBool("ota_signed",signedImage);
@@ -293,7 +318,12 @@ static esp_err_t hubApiHandler(httpd_req_t *req){
   // Device commands retain the exact binary contract, including binary values
   // and duplicate-field rejection by the common typed-wire parser.
   if(body.length()&&!deviceCommand){
-    DynamicJsonDocument decoded(24576);if(deserializeMsgPack(decoded,body.c_str(),body.length())||!decoded.is<JsonObject>())return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
+    // Small configuration edits must work with HAP's fragmented byte heap.
+    // Keep the existing cap for large bodies, without reserving it for all.
+    DynamicJsonDocument decoded(std::min<size_t>(24576,body.length()*8+512));
+    auto error=deserializeMsgPack(decoded,body.c_str(),body.length());
+    if(error==DeserializationError::NoMemory)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
+    if(error||!decoded.is<JsonObject>())return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
     String internal;serializeJson(decoded,internal);body=std::move(internal);
   }
   if(!captureWebAuthorization(req))return ESP_OK;

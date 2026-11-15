@@ -43,11 +43,13 @@ public:
     block(256);
     if (model == TC1 || model == S30V1B) {
       for (unsigned i = 0; i < (model == TC1 ? 6u : 1u); ++i) {
-        service(sizes.outlet, i ? 2 : 3, 2);
-        text(8); // "Outlet 1" through "Outlet 6".
+        service(sizes.outlet, i ? 3 : 5, 3);
+        text(63); text(63); // Service Name and ConfiguredName.
+        block(64); // Device-side socket name cache.
+        if (!i) { block(16); block(20); } // Meter descriptions.
       }
     } else if (model == A1) {
-      service(sizes.fan, 3, 8);
+      service(sizes.fan, 5, 8, 3);
       service(sizes.light, 2, 8);
     } else {
       service(sizes.sensor, 4, 3); // Temperature + ConfiguredName.
@@ -56,7 +58,8 @@ public:
       service(sizes.sensor, 4, 4); // PM2.5.
       if (model == Daikin) service(sizes.sensor, 4, 4); // PM10.
     }
-    text(63); // Primary-service ConfiguredName: value and pending newValue.
+    if (model != TC1 && model != S30V1B)
+      text(63); // Primary-service ConfiguredName: value and pending newValue.
     return valid;
   }
   bool fits(size_t available, size_t blockSize) {
@@ -104,11 +107,11 @@ private:
     vector(6); vector(1); vector(7); // Information characteristics/req/opt.
     text(nameLength); text(8); text(modelLength); text(12); text(5);
   }
-  void service(size_t object, size_t chars, size_t optional) {
+  void service(size_t object, size_t chars, size_t optional, size_t required = 1) {
     ++services; ++loops; characteristics += chars;
     block(object);
     block(sizes.characteristic, chars);
-    vector(chars); vector(1); vector(optional);
+    vector(chars); vector(required); vector(optional);
   }
 };
 } // namespace iotcloud

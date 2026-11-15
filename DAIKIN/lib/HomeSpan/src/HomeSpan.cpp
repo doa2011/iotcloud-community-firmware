@@ -627,14 +627,14 @@ Span& Span::resetIID(uint32_t newIID){
 
 ///////////////////////////////
 
-boolean Span::updateDatabase(boolean updateMDNS){
+boolean Span::updateDatabase(boolean updateMDNS, boolean force){
 
   printfAttributes(GET_META|GET_PERMS|GET_TYPE|GET_DESC);   // stream attributes database, which automtically produces a SHA-384 hash
   hapOut.flush();  
 
   boolean changed=false;
 
-  if(memcmp(hapOut.getHash(),hapConfig.hashCode,48)){       // if hash code of current HAP database does not match stored hash code
+  if(force || memcmp(hapOut.getHash(),hapConfig.hashCode,48)){ // Names can change without changing the structural hash.
     memcpy(hapConfig.hashCode,hapOut.getHash(),48);         // update stored hash code
     hapConfig.configNumber++;                               // increment configuration number
     if(hapConfig.configNumber==65536)                       // reached max value

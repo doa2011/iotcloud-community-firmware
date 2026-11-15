@@ -19,18 +19,18 @@ typedef struct {
 static display_cache_t display_cache[M1_DISPLAY_LANES];
 
 /* Views only borrow the request for the duration of a synchronous call. */
-static ph_value display_get(ph_value o,const char *key)
-{ph_value v={.kind=PHV_MISSING};phv_get(&o,key,&v);return v;}
-static ph_value display_at(ph_value o,unsigned i)
-{ph_value v={.kind=PHV_MISSING};phv_at(&o,i,&v);return v;}
+static ph_value display_get(const ph_value *o,const char *key)
+{ph_value v={.kind=PHV_MISSING};phv_get(o,key,&v);return v;}
+static ph_value display_at(const ph_value *o,unsigned i)
+{ph_value v={.kind=PHV_MISSING};phv_at(o,i,&v);return v;}
 static bool display_text(ph_value o,const char *s){return phv_equal_text(&o,s);}
 static bool display_float(ph_value o,float *out)
 {double n;if(!phv_number(&o,&n))return false;*out=(float)n;return isfinite(n)&&isfinite(*out);}
 #define display_number display_float
-static bool display_int(ph_value o,const char *key,int low,int high,unsigned *out)
+static bool display_int(const ph_value *o,const char *key,int low,int high,unsigned *out)
 {ph_value v=display_get(o,key);int64_t n;if(!phv_int(&v,&n)||n<low||n>high)return false;*out=(unsigned)n;return true;}
-static bool display_keys(ph_value o,const char *const *keys,unsigned count)
-{if(o.kind!=PHV_MAP)return false;ph_iterator it;ph_value v;char key[128];phv_iter(&o,&it);while(phv_next(&it,key,&v)){bool found=false;for(unsigned i=0;i<count;i++)if(!strcmp(key,keys[i]))found=true;if(!found)return false;}return true;}
+static bool display_keys(const ph_value *o,const char *const *keys,unsigned count)
+{if(o->kind!=PHV_MAP)return false;ph_iterator it;ph_value v;char key[128];phv_iter(o,&it);while(phv_next(&it,key,&v)){bool found=false;for(unsigned i=0;i<count;i++)if(!strcmp(key,keys[i]))found=true;if(!found)return false;}return true;}
 static int display_enum(ph_value o,const char *const *names,unsigned count)
 {for(unsigned i=0;i<count;i++)if(display_text(o,names[i]))return (int)i;return -1;}
 #define metric_names m1_display_metric_names
@@ -214,10 +214,10 @@ static bool display_lamps_parse(ph_value array,uint16_t *out)
     if(array.kind!=PHV_ARRAY || array.count!=3)return false;
     unsigned lamps=0;
     for(unsigned position=0;position<3;position++){
-        ph_value o=display_at(array,position);
-        if(!display_keys(o,keys,3))return false;
+        ph_value o=display_at(&array,position);
+        if(!display_keys(&o,keys,3))return false;
         for(unsigned color=0;color<3;color++){
-            ph_value v=display_get(o,keys[color]);
+            ph_value v=display_get(&o,keys[color]);
             if((v.kind!=PHV_TRUE&&v.kind!=PHV_FALSE))return false;
             if(v.kind==PHV_TRUE)lamps|=1u<<(position+3*color);
         }
@@ -270,37 +270,37 @@ static bool display_lane_parse(ph_value o,unsigned slot,m1_display_lane_config_t
 {
     static const char *const local_keys[]={"slot","source","device_id","metric","unit","display","ttl_seconds","color"};
     static const char *const mqtt_keys[]={"slot","source","device_id","field_id","type","unit","display","ttl_seconds","color"};
-    unsigned n;int source=display_enum(display_get(o,"source"),source_names,4);
-    if(source<0 || !display_keys(o,source==M1_DISPLAY_MQTT?mqtt_keys:local_keys,source==M1_DISPLAY_MQTT?9:8) ||
-       !display_int(o,"slot",slot,slot,&n))return false;
-    ph_value id=display_get(o,"device_id");char device_id[18];
+    unsigned n;int source=display_enum(display_get(&o,"source"),source_names,4);
+    if(source<0 || !display_keys(&o,source==M1_DISPLAY_MQTT?mqtt_keys:local_keys,source==M1_DISPLAY_MQTT?9:8) ||
+       !display_int(&o,"slot",slot,slot,&n))return false;
+    ph_value id=display_get(&o,"device_id");char device_id[18];
     if(id.kind!=PHV_TEXT || id.size>17)return false;
     *l=(m1_display_lane_config_t){.source=source,.metric=M1_DISPLAY_CUSTOM,.unit=M1_DISPLAY_UNITLESS,.scale=1};
     if(source==M1_DISPLAY_MQTT){
-        if(!phv_text(&id,device_id,sizeof(device_id)) || !m1_display_device_id(device_id,l->device_id) || !display_text(display_get(o,"type"),"number") ||
-           !display_binding_string(display_get(o,"field_id"),remote->field_id,true) ||
-           !display_binding_string(display_get(o,"unit"),remote->unit,false))return false;
+        if(!phv_text(&id,device_id,sizeof(device_id)) || !m1_display_device_id(device_id,l->device_id) || !display_text(display_get(&o,"type"),"number") ||
+           !display_binding_string(display_get(&o,"field_id"),remote->field_id,true) ||
+           !display_binding_string(display_get(&o,"unit"),remote->unit,false))return false;
     }else{
-        int metric=display_enum(display_get(o,"metric"),metric_names,M1_DISPLAY_METRIC_COUNT);
-        int unit=display_enum(display_get(o,"unit"),unit_names,M1_DISPLAY_UNIT_COUNT);
+        int metric=display_enum(display_get(&o,"metric"),metric_names,M1_DISPLAY_METRIC_COUNT);
+        int unit=display_enum(display_get(&o,"unit"),unit_names,M1_DISPLAY_UNIT_COUNT);
         if(id.size || metric<0 || unit<0)return false;
         l->metric=metric;l->unit=unit;
     }
     static const char *const display_fields[]={"mode","show_label","show_unit"};
-    ph_value display=display_get(o,"display"),label=display_get(display,"show_label"),unit_flag=display_get(display,"show_unit");
-    int mode=display_enum(display_get(display,"mode"),mode_names,M1_DISPLAY_MODE_COUNT);
-    if(!display_keys(display,display_fields,3) || mode<0 || (slot==1 && mode!=M1_DISPLAY_INTEGER) ||
+    ph_value display=display_get(&o,"display"),label=display_get(&display,"show_label"),unit_flag=display_get(&display,"show_unit");
+    int mode=display_enum(display_get(&display,"mode"),mode_names,M1_DISPLAY_MODE_COUNT);
+    if(!display_keys(&display,display_fields,3) || mode<0 || (slot==1 && mode!=M1_DISPLAY_INTEGER) ||
        (label.kind!=PHV_TRUE&&label.kind!=PHV_FALSE) || (unit_flag.kind!=PHV_TRUE&&unit_flag.kind!=PHV_FALSE))return false;
     *style=(m1_display_style_t){.mode=mode,.show_label=label.kind==PHV_TRUE,.show_unit=unit_flag.kind==PHV_TRUE};
-    if(!display_int(o,"ttl_seconds",1,60,&n))return false;l->ttl_seconds=n;
-    ph_value color=display_get(o,"color");
-    if(display_text(display_get(color,"mode"),"fixed")){
+    if(!display_int(&o,"ttl_seconds",1,60,&n))return false;l->ttl_seconds=n;
+    ph_value color=display_get(&o,"color");
+    if(display_text(display_get(&color,"mode"),"fixed")){
         static const char *const fixed_keys[]={"mode","lamps"};
-        if(!display_keys(color,fixed_keys,2) || !display_lamps_parse(display_get(color,"lamps"),&style->lamps))return false;
-    }else if(display_text(display_get(color,"mode"),"thresholds")){
+        if(!display_keys(&color,fixed_keys,2) || !display_lamps_parse(display_get(&color,"lamps"),&style->lamps))return false;
+    }else if(display_text(display_get(&color,"mode"),"thresholds")){
         static const char *const threshold_keys[]={"mode","low","high"};
-        if(!display_keys(color,threshold_keys,3) || !display_float(display_get(color,"low"),&l->low) ||
-           !display_float(display_get(color,"high"),&l->high) || l->low>=l->high)return false;
+        if(!display_keys(&color,threshold_keys,3) || !display_float(display_get(&color,"low"),&l->low) ||
+           !display_float(display_get(&color,"high"),&l->high) || l->low>=l->high)return false;
         l->color_mode=M1_DISPLAY_COLOR_THRESHOLDS;
     }else return false;
     return true;
@@ -310,16 +310,16 @@ static bool display_profile_set(ph_value p,const char **code)
     static const char *const keys[]={"revision","selected_source","double_click","lanes"};
     static const char *const selected[]={"original","user"},*const button[]={"none","switch_display"};
     *code="invalid_params";unsigned revision;
-    if(!display_keys(p,keys,4) || !display_int(p,"revision",0,INT32_MAX,&revision))return false;
-    int choice=display_enum(display_get(p,"selected_source"),selected,2);
-    int action=display_enum(display_get(p,"double_click"),button,2);
-    ph_value lanes=display_get(p,"lanes");
+    if(!display_keys(&p,keys,4) || !display_int(&p,"revision",0,INT32_MAX,&revision))return false;
+    int choice=display_enum(display_get(&p,"selected_source"),selected,2);
+    int action=display_enum(display_get(&p,"double_click"),button,2);
+    ph_value lanes=display_get(&p,"lanes");
     if(choice<0 || action<0 || lanes.kind!=PHV_ARRAY || lanes.count!=M1_DISPLAY_LANES)return false;
     m1_display_config_t c={.magic=M1_DISPLAY_MAGIC,.revision=revision,.configured=1,.selected=choice,.double_click=action,.reserved=M1_DISPLAY_FORMATTED};
     bool used[M1_DISPLAY_LANES]={false};
     for(unsigned i=0;i<M1_DISPLAY_LANES;i++){
-        ph_value lane=display_at(lanes,i);unsigned slot;
-        if(!display_int(lane,"slot",0,M1_DISPLAY_LANES-1,&slot) || used[slot] ||
+        ph_value lane=display_at(&lanes,i);unsigned slot;
+        if(!display_int(&lane,"slot",0,M1_DISPLAY_LANES-1,&slot) || used[slot] ||
            !display_lane_parse(lane,slot,&c.lanes[slot],&c.style[slot],&c.remote[slot]))return false;
         used[slot]=true;
     }
@@ -330,17 +330,17 @@ static bool display_data_set(ph_value p,const char **code)
 {
     static const char *const keys[]={"revision","slot","value","unit","ttl_seconds","color"};
     *code="invalid_params";unsigned revision,slot,ttl;
-    if(!display_keys(p,keys,6) || !display_int(p,"revision",0,INT32_MAX,&revision) ||
-       !display_int(p,"slot",0,M1_DISPLAY_LANES-1,&slot) || !display_int(p,"ttl_seconds",0,60,&ttl))return false;
+    if(!display_keys(&p,keys,6) || !display_int(&p,"revision",0,INT32_MAX,&revision) ||
+       !display_int(&p,"slot",0,M1_DISPLAY_LANES-1,&slot) || !display_int(&p,"ttl_seconds",0,60,&ttl))return false;
     float value=0;int unit=0,color=-1;
     if(!ttl){
         static const char *const clear_keys[]={"revision","slot","ttl_seconds"};
-        if(!display_keys(p,clear_keys,3))return false;
+        if(!display_keys(&p,clear_keys,3))return false;
         m1_display_lane_config_t lane;uint32_t current;m1_display_lane_get(slot,&lane,NULL,&current);unit=lane.unit;
     }else{
-        unit=display_enum(display_get(p,"unit"),unit_names,M1_DISPLAY_UNIT_COUNT);
-        if(unit<0 || !display_number(display_get(p,"value"),&value))return false;
-        ph_value v=display_get(p,"color");
+        unit=display_enum(display_get(&p,"unit"),unit_names,M1_DISPLAY_UNIT_COUNT);
+        if(unit<0 || !display_number(display_get(&p,"value"),&value))return false;
+        ph_value v=display_get(&p,"color");
         if(phv_exists(&v)){color=display_enum(v,color_names,4);if(color<0)return false;}
     }
     *code=m1_display_data_save(slot,revision,value,unit,ttl,color);
@@ -351,15 +351,15 @@ static bool display_value_set(ph_value p,const char **code)
     static const char *const keys[]={"revision","slot","number","decimal","show_label","show_unit","ttl_seconds","lamps"};
     static const char *const clear_keys[]={"revision","slot","ttl_seconds"};
     *code="invalid_params";unsigned revision,slot,ttl,number=0,format=0;uint16_t lamps=0;
-    if(!display_keys(p,keys,8) || !display_int(p,"revision",0,INT32_MAX,&revision) ||
-       !display_int(p,"slot",0,M1_DISPLAY_LANES-1,&slot) || !display_int(p,"ttl_seconds",0,60,&ttl))return false;
+    if(!display_keys(&p,keys,8) || !display_int(&p,"revision",0,INT32_MAX,&revision) ||
+       !display_int(&p,"slot",0,M1_DISPLAY_LANES-1,&slot) || !display_int(&p,"ttl_seconds",0,60,&ttl))return false;
     if(!ttl){
-        if(!display_keys(p,clear_keys,3))return false;
+        if(!display_keys(&p,clear_keys,3))return false;
     }else{
         static const char *const flags[]={"decimal","show_label","show_unit"};
-        if(!display_int(p,"number",0,999,&number) || !display_lamps_parse(display_get(p,"lamps"),&lamps))return false;
+        if(!display_int(&p,"number",0,999,&number) || !display_lamps_parse(display_get(&p,"lamps"),&lamps))return false;
         for(unsigned i=0;i<3;i++){
-            ph_value v=display_get(p,flags[i]);
+            ph_value v=display_get(&p,flags[i]);
             if((v.kind!=PHV_TRUE&&v.kind!=PHV_FALSE))return false;
             if(v.kind==PHV_TRUE)format|=1u<<i;
         }

@@ -113,16 +113,23 @@ static void startMqtt(){
   mqttRoot="phicomm/v2/"+userKey+"/daikin/"+deviceId;
   sensorRoot="phicomm/v2/"+userKey+"/sensor/"+deviceId;
   if(!*host)return;
+  // Both adapters assemble fragmented input and the SDK streams large output.
+  // A hub must leave byte heap available for its HAP graph and UDP receipts.
+#ifdef IOTCLOUD_HUB
+  constexpr int bufferSize=1024;
+#else
+  constexpr int bufferSize=4608;
+#endif
   esp_mqtt_client_config_t c={};
   String clientId="daikin-"+deviceId,availability=mqttRoot+"/availability";
 #if ESP_IDF_VERSION_MAJOR >= 5
   c.broker.address.hostname=host;c.broker.address.port=config["mqtt"]["port"]|1883;c.broker.address.transport=MQTT_TRANSPORT_OVER_TCP;
   c.credentials.username=config["mqtt"]["user"]|"";c.credentials.authentication.password=config["mqtt"]["password"]|"";c.credentials.client_id=clientId.c_str();
   c.session.last_will.topic=availability.c_str();c.session.last_will.msg="offline";c.session.last_will.qos=1;c.session.last_will.retain=1;
-  c.buffer.size=4608;c.buffer.out_size=4608;c.session.keepalive=30;
+  c.buffer.size=bufferSize;c.buffer.out_size=bufferSize;c.session.keepalive=30;
 #else
   c.host=host;c.port=config["mqtt"]["port"]|1883;c.username=config["mqtt"]["user"]|"";c.password=config["mqtt"]["password"]|"";
-  c.client_id=clientId.c_str();c.lwt_topic=availability.c_str();c.lwt_msg="offline";c.lwt_qos=1;c.lwt_retain=1;c.buffer_size=4608;c.out_buffer_size=4608;c.keepalive=30;
+  c.client_id=clientId.c_str();c.lwt_topic=availability.c_str();c.lwt_msg="offline";c.lwt_qos=1;c.lwt_retain=1;c.buffer_size=bufferSize;c.out_buffer_size=bufferSize;c.keepalive=30;
 #endif
   mqtt=esp_mqtt_client_init(&c);if(mqtt){esp_mqtt_client_register_event(mqtt,MQTT_EVENT_ANY,mqttEvent,nullptr);esp_mqtt_client_start(mqtt);}
 }

@@ -10,5 +10,5 @@ bool feature_fresh_decode_mp(fresh_config_t *f,const ph_value *o) {
   for(unsigned i=0;i<sizeof(mp_co2_fields)/sizeof(mp_co2_fields[0]);i++)if(!strcmp(key,mp_co2_fields[i].key))known=true;
   if(!known)return false;
  }
- bool ok=mp_linkage_decode(&f->linkage,&f->co2,&f->fallback_speed,*o);if(ok)f->linkage.enabled=1;return ok;
+ bool ok=mp_linkage_decode(&f->linkage,&f->co2,&f->fallback_speed,o);if(ok)f->linkage.enabled=1;return ok;
 }

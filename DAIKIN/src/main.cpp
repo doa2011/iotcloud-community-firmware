@@ -160,6 +160,7 @@ static ph_auth_state localAuth;
 static ph_auth_store loadedAuthStore;
 static SemaphoreHandle_t localAuthMutex;
 static bool localAuthReady=false;
+static void requestBusinessStatusRefresh();
 static void invalidateBusinessStatusCache();
 static bool pollBusinessStatusCache(uint32_t);
 static bool lanBusinessPacket(const ph_value *,const char *,uint16_t);
@@ -418,6 +419,9 @@ void loop(){
   #ifdef IOTCLOUD_BRY88_SCREEN
   g3OnlinePoll();
   screenPoll(millis());
+  // UART publications invalidate status near the end of this iteration.
+  // Publish their replacement before tickless idle exposes a busy window.
+  if(businessStatusInvalid)pollBusinessStatusCache(millis());
   screenPowerPoll(millis(),otaActive||screenUploadBusy||screenOtaActive()||g3OnlineBusy);
   // Active stop-and-wait traffic needs prompt credit/ACK service. Keep the
   // longer tickless idle interval when no media transfer owns the UART.

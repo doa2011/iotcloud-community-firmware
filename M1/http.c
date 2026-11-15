@@ -75,6 +75,7 @@ static ph_http_action prepare(ph_http_exchange *x)
         http_auth_reply(&product,x,401,"unauthorized",NULL);return PH_HTTP_REPLY;
     }
     if(operation==MCU_BULK) {
+        service_cache_evict();
         product.capacity=x->request->length;
         product.body=ph_wire_malloc(product.capacity+1);
         if(!product.body){ph_http_busy(x);return PH_HTTP_REPLY;}

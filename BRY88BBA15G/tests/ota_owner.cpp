@@ -74,7 +74,9 @@ static uint32_t testMillis = 100;
 static bool slowNor;
 static uint32_t millis() { return testMillis; }
 static void delay(unsigned) {}
-static void invalidateBusinessStatusCache() {}
+static unsigned invalidations, refreshes;
+static void invalidateBusinessStatusCache() { invalidations++; }
+static void requestBusinessStatusRefresh() { refreshes++; }
 static struct {
   void println(const char *) {}
   void printf(const char *, ...) {}
@@ -133,23 +135,47 @@ static String screenBase64(const uint8_t *p, size_t n) {
 #include "../screen_guard.inc"
 static void testLinkReset() {
   const char *normal = "3 12345678 0 0 30000 00000403 00001400 00003001 00000000";
+  unsigned invalidated = invalidations, refreshed = refreshes;
   screenImage.active = true;
   assert(screenGuardAnnounce(normal) && !screenGuard.linkReset && toMcu.empty());
+  assert(invalidations == ++invalidated && refreshes == refreshed);
   screenImage.active = false;
   assert(screenGuardAnnounce(normal) && screenGuard.linkReset);
+  assert(invalidations == invalidated && refreshes == ++refreshed);
   assert(toMcu == "\r\n+screen_link_reset:1\r\n");
   toMcu.clear();
   assert(screenGuardAnnounce(normal) && toMcu.empty());
+  assert(invalidations == invalidated && refreshes == ++refreshed);
+  testMillis += 15000;
+  assert(screenGuardAnnounce(normal) && toMcu.empty());
+  assert(invalidations == ++invalidated && refreshes == refreshed);
   screenGuard = {};
   screenBridge.extended = true;
   assert(screenGuardAnnounce(normal) && screenGuard.linkReset && toMcu.empty());
+  assert(invalidations == ++invalidated && refreshes == refreshed);
   screenGuard = {};
   screenBridge.extended = false;
   assert(screenGuardAnnounce("3 12345678 0 1 30000 00000403 00001400 00003001 00000000"));
+  assert(invalidations == ++invalidated && refreshes == refreshed);
   assert(!screenGuard.linkReset && toMcu.empty());
   assert(screenGuardAnnounce(normal) && screenGuard.linkReset);
+  assert(invalidations == ++invalidated && refreshes == refreshed);
+  const char *image = "1 00000000000000000000000000000000";
+  assert(screenGuardImageAnnounce(image));
+  assert(invalidations == ++invalidated);
+  assert(screenGuardImageAnnounce(image));
+  assert(invalidations == invalidated);
+  screenImage.state = "installing";
+  assert(screenGuardImageAnnounce(image));
+  assert(invalidations == ++invalidated && !strcmp(screenImage.state, "installed"));
+  assert(screenGuardImageAnnounce("1 10000000000000000000000000000000"));
+  assert(invalidations == ++invalidated);
+  assert(screenGuardAnnounce("3 98765432 0 0 30000 00000403 00001400 00003001 00000000"));
+  assert(invalidations == ++invalidated && !screenGuard.imageMd5[0]);
   toMcu.clear();
   screenGuard = {};
+  screenImage.state = "empty";
+  testMillis -= 15000;
 }
 static unsigned screenHead, screenTail;
 static struct { String wire; } screenQueue[12];
@@ -447,7 +473,9 @@ int main(int argc, char **argv) {
   scene_put32(memory + 78, 15);
   notice_size = screen_link_encode(notice, sizeof(notice), guard.session, 1,
                                   memory, sizeof(memory));
+  unsigned invalidated = invalidations, refreshed = refreshes;
   assert(notice_size && acceptDiagnostic(notice_size));
+  assert(invalidations == invalidated && refreshes == refreshed + 1);
   assert(!strcmp(screenGuard.state, "pending"));
   screenGuardStatus(status.to<JsonObject>(), false);
   assert(status["diagnostic"]["version"] == 3 &&
