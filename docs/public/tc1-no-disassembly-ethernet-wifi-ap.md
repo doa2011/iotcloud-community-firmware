@@ -1,6 +1,6 @@
 # TC1 免拆刷机图文教程
 
-下载时先到[固件与资源下载]({{SITE_URL}}#releases)选择该设备的最新兼容版本，并使用同版本校验清单。文中的固定版本用于可复现的操作示例；明确标出的最低版本、原厂版本和迁移工具条件仍需满足。
+本教程的 `mico_ota.bin` 是固定的 **0.9.6-ed4474 免拆过渡包**，用于原厂迁移，不随正式版更新。迁移成功后还需按本页末尾步骤升级到[下载区]({{SITE_URL}}#releases)中的 TC1 最新兼容稳定版。
 
 用电脑的**有线网卡传固件、无线网卡发送触发请求**，另用路由器或 AP 提供刷机热点。无需拆机、焊接或安装 Python。支持 Windows、macOS 和 Linux。
 
@@ -16,7 +16,7 @@
 
 | 下载 | 用途 |
 | --- | --- |
-| [mico_ota.bin](assets/tools/tc1-no-disassembly/mico_ota.bin) | 已准备好的配套固件，放到 TFTP 服务目录，文件名必须保持不变 |
+| [mico_ota.bin](assets/tools/tc1-no-disassembly/mico_ota.bin) | 0.9.6-ed4474 过渡包，放到 TFTP 服务目录，文件名必须保持不变 |
 | [tftp-trigger.bin（payload，1.0.0.26）](assets/tools/tc1-no-disassembly/tftp-trigger.bin) | 发送给原厂 OTA 接口的触发文件，用于 1.0.0.26 |
 | [tftp-trigger-1.0.0.24.bin（payload，1.0.0.24）](assets/tools/tc1-no-disassembly/tftp-trigger-1.0.0.24.bin) | 同一触发文件，目标地址按 1.0.0.24 平移 |
 | [tftp-trigger-1.0.0.21.bin（payload，1.0.0.21）](assets/tools/tc1-no-disassembly/tftp-trigger-1.0.0.21.bin) | 同一触发文件，目标地址按 1.0.0.21 平移 |
@@ -310,7 +310,7 @@ TC1 随后连接 AP 的 `PHICOMM_OTA_AP`，从电脑下载 `mico_ota.bin`。有 
 
 用电脑或手机连接这个新热点，在浏览器打开 **`http://192.168.0.1/`**，确认能进入社区固件本地网页，再填写日常使用的 Wi-Fi。之后的按键、配网和六路开关操作见 [TC1 功能与操作](tc1-guide)。
 
-连接新热点，在本地网页核对设备型号和版本，完成安装。
+先完成日常 Wi-Fi 配置，再到[固件与资源下载]({{SITE_URL}}#releases)选择 **TC1 → 最新兼容稳定版 → 完整版 → 签名 OTA**，下载 `phicomm_tc1_a1.ota.bin.signed` 和同版本 `SHA256SUMS`。校验后在设备网页的固件更新页上传安装，保持供电。重启后重新打开网页，核对版本已更新，并检查六路名称和配置。详细步骤见[固件更新](firmware-update)；无需再次发送原厂触发文件。
 
 ## 8. 关闭临时服务，恢复网络
 

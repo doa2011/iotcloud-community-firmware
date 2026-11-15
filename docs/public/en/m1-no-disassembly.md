@@ -4,7 +4,7 @@ Start at [Firmware & resources]({{SITE_URL}}en/#releases) and choose the latest 
 
 This guide updates only the M1 Wi-Fi module and retains the sensor controller. It covers two factory provisioning methods and two OTA methods. Prefer the official app for provisioning if available.
 
-Use the **full native M1 OTA image**, version **0.9.21 or newer**. The commands below use stable **v0.9.27**. Keep power connected throughout.
+Use the **full native M1 OTA image** from the latest compatible stable release in Downloads, version **0.9.21 or newer**. Keep power connected throughout.
 
 <!-- os-picker -->
 
@@ -151,10 +151,12 @@ Match the response name and MAC suffix against the device label and router recor
 
 ## 3. Method A: upload through the factory LAN OTA interface
 
-Download these two **0.9.27** files into an empty folder and open a terminal there:
+In [Firmware & resources]({{SITE_URL}}en/#releases), select **M1 → latest compatible stable release → Full → Native OTA**. Download these two files from that same release into an empty folder and open a terminal there:
 
-- [Full M1 native OTA image]({{SITE_URL}}releases/v0.9.27/phicomm_m1.ota.bin.raw)
-- [SHA256SUMS]({{SITE_URL}}releases/v0.9.27/SHA256SUMS)
+- `phicomm_m1.ota.bin.raw`
+- `SHA256SUMS`
+
+Use the version currently listed in Downloads; installing the old v0.9.27 example first is unnecessary. RC builds are for beta testing.
 
 **Check that the model is M1 and the version is at least 0.9.21.** Use the full image specified here for first migration, rather than `no-frontend-resources`. A full Flash backup or `.all.bin` is for other recovery procedures; `.ota.bin.signed` is for devices already running community firmware. None is the factory upload body. Renaming a file to `.raw` does not convert it.
 
@@ -298,7 +300,7 @@ Expected computer events are:
 3. `/m1-native.bin?deviceMAC` and `download_complete`: the complete image was sent. Query strings and Range requests are supported.
 4. `wifiSoftware.ifSuccess: true` inside `cloud_tcp`: the stock application reports update success. Then check the community version as described in the next section.
 
-Manifest version `14.2.4.2` satisfies the stock `14.2.4.1` version comparison; the installed community version is 0.9.27. If requests are absent, check connectivity, DNS-rule counters, server ports and the controller, rather than repeatedly rebooting or forcing different files.
+Manifest version `14.2.4.2` satisfies the stock `14.2.4.1` version comparison without changing the downloaded image's community version. If requests are absent, check connectivity, DNS-rule counters, server ports and the controller, rather than repeatedly rebooting or forcing different files.
 
 ### Step 4: verify community firmware and set up Wi-Fi
 
@@ -332,7 +334,7 @@ First migration may require Wi-Fi setup again. If the old IP is unreachable afte
 1. Join the `M1-AP-XXXXXX` matching your device's MAC suffix. Stay connected even if your computer reports no Internet.
 2. Open `http://192.168.0.1/` and save your 2.4 GHz Wi-Fi settings in the initial setup page. Allow time to connect.
 3. Rejoin the router and find M1 by its label MAC. The new IP may match the factory IP or change. Open `http://device-IP/` using port 80, rather than the factory port 8000.
-4. Confirm model M1, version **0.9.21 or newer**, updating temperature/humidity and PM2.5 readings, and normal display and device communication.
+4. Confirm model M1, a running version matching the selected download, updating temperature/humidity and PM2.5 readings, and normal display and device communication.
 5. After installation and connectivity are confirmed, a normal power cycle can check boot, automatic reconnection and retained settings.
 
 For a read-only status check, update the address in the same terminal:

@@ -1,6 +1,6 @@
 # TC1 OTA internals and custom images
 
-Start at [Firmware & resources]({{SITE_URL}}en/#releases) and choose the latest compatible release for your device with its matching checksums. Pinned versions below are reproducible examples; stated minimum versions, stock versions and migration-tool requirements still apply.
+The `mico_ota.bin` in this guide is a fixed **0.9.6-ed4474 migration image** for stock installation. It does not track current releases. After migration, follow the steps below to install the latest compatible stable TC1 release from [Downloads]({{SITE_URL}}en/#releases).
 
 **For TC1 A1 hardware (EMW3031 / MK3031) running stock firmware 1.0.0.26, 1.0.0.24 or 1.0.0.21.** Other stock versions, TC1 A2 and the A1 air purifier are not supported.
 
@@ -29,7 +29,7 @@ Review [power and wiring requirements](flash-prep) and [firmware package selecti
 
 ### Prepare the update file
 
-Download the prepared [mico_ota.bin](assets/tools/tc1-no-disassembly/mico_ota.bin) (649344 bytes) to skip packaging. Use the following method only when preparing another image.
+Download the prepared [mico_ota.bin](assets/tools/tc1-no-disassembly/mico_ota.bin) (649344 bytes, **0.9.6-ed4474 migration image**) to skip packaging. Use the following method only when preparing another image; the fixed sizes and MD5 below apply only to the bundled snapshot.
 
 The update file is the raw **MRVL application-slot image plus its 16-byte binary MD5**, not a 32-character text digest. The community image is 649328 bytes; the steps below produce a 649344-byte `mico_ota.bin`:
 
@@ -157,7 +157,9 @@ After a successful first boot, the open AP **`TC1_A1-AP-<last six MAC chars in u
 
 ### 5. Confirm success and restore your network
 
-Check the stock identity and complete TFTP transfer, then join the new firmware hotspot and confirm the version in its local WebUI.
+Check the stock identity and complete TFTP transfer, then join the new firmware hotspot and confirm the migration version in its local WebUI.
+
+Configure normal Wi-Fi, then select **TC1 → latest compatible stable release → Full → Signed OTA** in [Firmware & resources]({{SITE_URL}}en/#releases). Download `phicomm_tc1_a1.ota.bin.signed` and that release's `SHA256SUMS`. Verify the digest, upload through the device's firmware update page and keep power connected. After reboot, reopen the WebUI and check the new version, six outlet names and settings. See [Firmware updates](firmware-update); do not send the stock trigger again.
 
 Once the new firmware works, shut down the temporary OTA AP and TFTP service and restore the interface addresses and firewall rules changed for flashing. If you created temporary interfaces and dnsmasq TFTP settings on OpenWrt / ImmortalWrt, remove those settings and restore the original network.
 

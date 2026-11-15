@@ -50,6 +50,8 @@ def rewrite(text, language="zh"):
         if '#' in target:
             target, _, frag = target.partition('#')
             anchor = '#' + frag
+        if language == 'en' and target.startswith('../assets/'):
+            target = target[3:]
         if target.startswith('assets/'):
             return f']({WIKI_ASSETS}{target[len("assets/"):]}{anchor})'
         path, query_separator, query = target.partition('?')

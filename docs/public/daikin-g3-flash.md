@@ -19,7 +19,7 @@ Windows 的免拆流程通过 SSH 操作同网段的蓝牙 Linux 主机；Linux 
 
 ## 下载文件
 
-到[固件与资源下载]({{SITE_URL}}#releases)选择“大金空气质量检测（3代）”。本教程使用当前 **v1.0.0-rc.6**；也可使用更新的兼容版本，工具包与固件取自同一发布。
+到[固件与资源下载]({{SITE_URL}}#releases)选择“大金空气质量检测（3代）”的最新兼容稳定版，工具包与固件取自同一发布。若该型号尚无稳定版，先阅读候选版说明再决定是否使用 Beta；不要下载大金 1/2 代固件。
 
 | 用途 | 文件 | 写入方式 |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ Windows 的免拆流程通过 SSH 操作同网段的蓝牙 Linux 主机；Linux 
 | 可选高清字库 | `daikin_G3_zh32.iotfnt` | 屏幕资源页安装 |
 | 校验清单 | `SHA256SUMS` | 与下载文件核对 SHA-256 |
 
-在[当前 RC6 发布页](https://github.com/phicomm-io/iotcloud-community-firmware/releases/tag/v1.0.0-rc.6)下载所需文件及 `SHA256SUMS`。只核对本次使用的文件即可：
+在[下载页所选版本]({{SITE_URL}}#releases)下载所需文件及 `SHA256SUMS`。只核对本次使用的文件即可：
 
 <!-- os:windows -->
 ### Windows：校验文件
@@ -220,7 +220,7 @@ python3 trigger.py --device AABBCCDDEEFF --host 192.168.1.10 \
 docker compose -f ./lab/compose.json logs -f https
 ```
 
-`V99.00.00` 是这次原厂升级使用的目标标签；社区启动后显示实际 RC6 版本。等待 `artifact` 日志显示 HTTP 200 和完整传输长度，随后设备自动重启。此步骤只更新 ESP32，原厂屏幕继续保留。
+`V99.00.00` 是这次原厂升级使用的目标标签；社区启动后显示实际固件版本。等待 `artifact` 日志显示 HTTP 200 和完整传输长度，随后设备自动重启。此步骤只更新 ESP32，原厂屏幕继续保留。
 
 ### 4. 确认与清理
 
@@ -426,7 +426,7 @@ verifybin daikin_G3_screen.bin 0x14000
 savebin g3-mcu-installed.bin 0x14000 0x67000
 ```
 
-当前 RC6 应用为 **421888 字节**，范围为 `0x14000` 至 `0x7afff`。回读文件的 SHA-256 应与下载镜像相同。**不要执行整片 erase，也不要把屏幕应用写到 `0x0`**；保留前 80 KiB 引导区和 `0x7e000` 起的配置区。
+v1.0.0 屏幕应用为 **421888 字节**，范围为 `0x14000` 至 `0x7afff`。回读文件的 SHA-256 应与下载镜像相同。**不要执行整片 erase，也不要把屏幕应用写到 `0x0`**；保留前 80 KiB 引导区和 `0x7e000` 起的配置区。
 
 校验通过后输入 `r`、`g`、`exit`。断电、拆除调试接线，再恢复原机供电，长按正面键约 2 秒开机。打开设备网页，确认屏幕 MCU 版本和读数；高清字库通过 WebUI 单独安装。
 

@@ -4,7 +4,7 @@
 
 适用于原装 EMW3080B / MK3080B 模块的 A1 空气净化器。**通过原厂局域网 OTA 安装社区固件已证实可行。** 本文提供 EasyLink 配网、局域网上传，以及根据原厂固件整理的 DNS 主动下载路径。
 
-使用 **A1 完整版原生 OTA 镜像**，以下固定为稳定版 **v0.9.27**。保持正常供电、装好滤芯；有线恢复见 [A1 刷机](a1-flash)。
+使用下载区所选最新兼容稳定版的 **A1 完整版原生 OTA 镜像**。保持正常供电、装好滤芯；有线恢复见 [A1 刷机](a1-flash)。
 
 <!-- os-picker -->
 
@@ -66,10 +66,12 @@ curl --noproxy '*' --connect-timeout 3 --max-time 5 "http://${DeviceIp}:8000/con
 
 ## 3. 方式一：局域网上传 OTA
 
-下载以下两份 **0.9.27** 文件，放进同一个空文件夹，然后在该文件夹打开终端：
+在[固件与资源下载]({{SITE_URL}}#releases)选择 **A1 → 最新兼容稳定版 → 完整版 → 原生 OTA**，下载以下两份同版本文件，放进同一个空文件夹，然后在该文件夹打开终端：
 
-- [A1 完整版原生 OTA 镜像]({{SITE_URL}}releases/v0.9.27/phicomm_a1.ota.bin.raw)
-- [SHA256SUMS 校验清单]({{SITE_URL}}releases/v0.9.27/SHA256SUMS)
+- `phicomm_a1.ota.bin.raw`
+- `SHA256SUMS` 校验清单
+
+以下载区实际版本为准，无需先安装旧教程示例中的 v0.9.27。RC 仅用于 Beta 测试。
 
 **核对型号为 A1。** 本文首次迁移使用上面指定的完整版文件；不使用 `no-frontend-resources` 精简版。`.all.bin` 和整片备份用于其他恢复流程，`.ota.bin.signed` 用于已经运行社区固件的设备，都不能作为原厂接口的上传正文。不要将这些文件改名为 `.raw` 使用。
 
@@ -132,7 +134,7 @@ curl --http1.0 --noproxy '*' --connect-timeout 5 --max-time 300 --header 'Conten
 | 更新检查 | `aircleaner.phicomm.com:443/aircleanerfirmware/checkUpdate` |
 | 业务连接 | `aircleanerconnecter.phicomm.com:9000` |
 
-更新清单直接使用顶层 `url`、`md5`、`ver`、`enforce`。原厂 v1.47 要求版本数值更高（例如 `v1.48`）且 `enforce: true`；此值仅用于满足原厂版本比较，安装后的社区版本为 0.9.27。原厂这条 TLS 路径不校验证书，但服务端需要兼容旧客户端。
+更新清单直接使用顶层 `url`、`md5`、`ver`、`enforce`。原厂 v1.47 要求版本数值更高（例如 `v1.48`）且 `enforce: true`；此值仅用于满足原厂版本比较，不改变所下载镜像的社区版本。原厂这条 TLS 路径不校验证书，但服务端需要兼容旧客户端。
 
 ### 在 Linux 电脑启动临时服务
 
@@ -225,7 +227,7 @@ cmp /tmp/a1-dns-migration/dhcp.before /tmp/a1-dns-migration/dhcp.after
 1. 找到 MAC 后缀对应的 `A1-AP-XXXXXX`，连接后保持使用该网络，即使电脑提示没有 Internet。
 2. 浏览器打开 `http://192.168.0.1/`，在首次设置页面填写 2.4 GHz Wi-Fi，保存并等待连接。
 3. 电脑连回路由器，按机身 MAC 查新 IP。新 IP 可能与原厂时相同，也可能变化；打开 `http://设备IP/`，不再使用原厂的 8000 端口。
-4. 确认型号为 A1、版本为 **0.9.27**，风机、灯环和触摸控制正常。
+4. 确认型号为 A1、实际版本与所选下载版本一致，风机、灯环和触摸控制正常。
 5. 确认安装与联网完成后，可正常断电再通电，检查能否重新启动、自动联网并保留配置。
 
 也可以在同一终端中更新 IP 后，只读核对社区状态：

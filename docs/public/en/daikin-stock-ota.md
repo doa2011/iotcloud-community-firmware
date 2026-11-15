@@ -1,6 +1,6 @@
 # Daikin BRY88AB151K: migrate through stock OTA
 
-Start at [Firmware & resources]({{SITE_URL}}en/#releases) and choose the latest compatible release for your device with its matching checksums. Pinned versions below are reproducible examples; stated minimum versions, stock versions and migration-tool requirements still apply.
+In [Firmware & resources]({{SITE_URL}}en/#releases), select the latest compatible stable release for **Daikin air quality detector (G1/G2)**, the `full` variant and **Native OTA**. The stock sender accepts newer images meeting the format and size limits below; installing the old `0.9.21-dirty` transition image first is unnecessary. RC builds are for beta testing.
 
 Choose your computer’s operating system below. Checking the file and uploading will both show matching commands. On Windows, use PowerShell; on macOS or Linux, use Terminal. Without JavaScript, all commands remain visible.
 
@@ -16,17 +16,12 @@ Stock OTA listens on TCP 8555 after entering update mode. It writes the inactive
 
 ## 2. Download and check the files
 
-- [Python sender](../assets/tools/daikin-stock-ota/daikin_stock_ota.py)
-- [Tested BRY88AB151K application](../assets/tools/daikin-stock-ota/daikin-bry88ab.application.bin)
-- [SHA256SUMS](../assets/tools/daikin-stock-ota/SHA256SUMS)
+- [Python sender](../assets/tools/daikin-stock-ota/daikin_stock_ota.py).
+- In [Firmware & resources]({{SITE_URL}}en/#releases), select Daikin G1/G2, the latest compatible stable release and the `full` variant. Download `daikin_BRY88AX151K.ota.bin.raw` and `SHA256SUMS` from that same release. Use the actual published filename if it differs.
 
-Save the sender and image in the same directory. The application must be **1,027,296 bytes**, with SHA-256:
+Keep all three files in one directory. **Stock installation requires a native application image, not `.all.bin`, a full-flash backup, `.ota.bin.signed`, the `hub` variant or G3 firmware.** Each stock application slot is **1,572,864 bytes (1.5 MiB)**; that limit remains after migration. The sender checks SHA-256, ESP32 image format and size.
 
-```text
-649a7b81b35e19510f9f7edb8488157418117849361bc62c6f4e13c61a5fb19e
-```
-
-This is the unchanged ordinary `application.bin`. Do not send `factory.bin`, a complete Flash backup, a signed wrapper, or an image for another model. Each stock application slot is **1,572,864 bytes (1.5MiB)**. That limit remains after migration.
+Replace `SHA256_FROM_MANIFEST` below with the **64-character SHA-256** on the `daikin_BRY88AX151K.ota.bin.raw` line in your downloaded `SHA256SUMS`. Do not reuse the old tutorial image's digest.
 
 Open a terminal in the download directory and check the file without contacting the device.
 
@@ -35,7 +30,7 @@ Open a terminal in the download directory and check the file without contacting 
 Windows PowerShell:
 
 ```powershell
-py -3 .\daikin_stock_ota.py .\daikin-bry88ab.application.bin --sha256 649a7b81b35e19510f9f7edb8488157418117849361bc62c6f4e13c61a5fb19e --check-only
+py -3 .\daikin_stock_ota.py .\daikin_BRY88AX151K.ota.bin.raw --sha256 SHA256_FROM_MANIFEST --check-only
 ```
 
 <!-- /os -->
@@ -45,12 +40,12 @@ py -3 .\daikin_stock_ota.py .\daikin-bry88ab.application.bin --sha256 649a7b81b3
 macOS / Linux:
 
 ```sh
-python3 ./daikin_stock_ota.py ./daikin-bry88ab.application.bin --sha256 649a7b81b35e19510f9f7edb8488157418117849361bc62c6f4e13c61a5fb19e --check-only
+python3 ./daikin_stock_ota.py ./daikin_BRY88AX151K.ota.bin.raw --sha256 SHA256_FROM_MANIFEST --check-only
 ```
 
 <!-- /os -->
 
-Install Python 3 first if the command is unavailable. Stop on a hash or format mismatch and download the correct file again.
+Install Python 3 first if unavailable. Stop on a hash, format or size mismatch and check the model, variant and matching checksum manifest.
 
 ## 3. Trigger stock OTA with the button
 
@@ -118,7 +113,7 @@ Confirm that the computer is connected to your device's hotspot, then run the se
 Windows PowerShell:
 
 ```powershell
-py -3 .\daikin_stock_ota.py .\daikin-bry88ab.application.bin --sha256 649a7b81b35e19510f9f7edb8488157418117849361bc62c6f4e13c61a5fb19e --version SV.02.00.01.21
+py -3 .\daikin_stock_ota.py .\daikin_BRY88AX151K.ota.bin.raw --sha256 SHA256_FROM_MANIFEST --version SV.02.00.01.21
 ```
 
 <!-- /os -->
@@ -128,7 +123,7 @@ py -3 .\daikin_stock_ota.py .\daikin-bry88ab.application.bin --sha256 649a7b81b3
 macOS / Linux:
 
 ```sh
-python3 ./daikin_stock_ota.py ./daikin-bry88ab.application.bin --sha256 649a7b81b35e19510f9f7edb8488157418117849361bc62c6f4e13c61a5fb19e --version SV.02.00.01.21
+python3 ./daikin_stock_ota.py ./daikin_BRY88AX151K.ota.bin.raw --sha256 SHA256_FROM_MANIFEST --version SV.02.00.01.21
 ```
 
 <!-- /os -->
@@ -140,7 +135,7 @@ Expected output includes:
 ```text
 Kit2 Version Up -> Okey
 SV.02.00.01.21 -> ToDo
-ACK .../1027296 (...%)
+ACK .../<image bytes> (...%)
 Final response: b'OK'
 ```
 
@@ -148,15 +143,17 @@ Wait for the final `OK` and reboot. The sender waits for each length ACK and sep
 
 ## 7. Verify the community application
 
-After reboot, connect to the new open hotspot **`DAIKIN-XXXXXX`**, using the last six MAC digits. The tested hotspot became `DAIKIN-f76748`. An old SSID can remain in scan caches briefly.
-
-Open **http://192.168.4.1** and verify the model, device ID and version. The tested device reported `BRY88AB151K`, `9c9c1ff76748`, and `0.9.21-2cfd89-dirty`. Configure router Wi-Fi, a management password and MQTT as needed.
-
-The transition image included with this guide uses the older hotspot name and address above. After updating to v0.9.25, the recovery hotspot uses `BRY88AX151K-AP-<last six MAC digits in uppercase>` at `http://192.168.0.1/`. Once router Wi-Fi is configured, continue using the router-assigned IP for normal access.
+After boot, join the open hotspot **`BRY88AX151K-AP-<last six MAC digits in uppercase>`** and open **http://192.168.0.1/**. Check the model, device ID and that the version matches your selected download, then configure router Wi-Fi, a management password and MQTT. Once connected to your router, use its assigned IP.
 
 Check readings after sensor warm-up. CO₂ may take longer; devices without a formaldehyde sensor have no HCHO reading.
 
-This procedure retains the stock bootloader and partition table and starts the community application from the second slot, `0x190000`. Configure Wi-Fi again on first boot. Future images must still fit the stock 1.5 MiB application slots.
+The stock bootloader and partition table remain, and the application starts from the second slot at `0x190000`. Configure Wi-Fi again on first boot. Later images must still fit the stock 1.5 MiB slots.
+
+### If you already installed 0.9.21-dirty from the old guide
+
+The old `daikin-bry88ab.application.bin` attachment is a fixed `0.9.21-2cfd89-dirty` snapshot. It is not the current release. Join its `DAIKIN-<last six MAC digits>` hotspot, open `http://192.168.4.1/` and configure router Wi-Fi first.
+
+From [Downloads]({{SITE_URL}}en/#releases), obtain the latest compatible stable Daikin G1/G2 `full` image, `daikin_BRY88AX151K.ota.bin.raw`, and its matching checksums. Verify it and install it through the old WebUI's local firmware upload. That old version accepts a native application image; after installing a version supporting signatures, use `.ota.bin.signed` for normal updates as described in [Firmware updates](firmware-update). Keep power connected. After reboot, check the version, sensor readings and network settings. The new recovery hotspot and address follow the format at the start of this section.
 
 ## 8. Troubleshooting and recovery
 

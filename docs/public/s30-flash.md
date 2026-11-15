@@ -4,19 +4,19 @@
 
 适用于 **ORVIBO S30M-V1B**：BL2028N 模块、BK7231N 芯片、HLW8032 计量。已在原厂 **`2M.1220`** 上实测通过免拆网络 OTA，也保留拆机串口备份、安装与恢复方式。默认固件采用原厂免拆布局，保留本机启动器和工厂 MAC/RF；**首次安装社区固件需重新配网，不保留原厂应用配置**。安装后的操作见 [S30M-V1B 功能与操作](s30-guide)。其他 S30 系列或不同模块的设备不能仅凭外壳相同套用本教程。
 
-## RC6 文件下载
+## 文件下载
 
-当前候选版本为 **v1.0.0-rc.6（Beta）**。只下载与所选方法对应的文件：
+在[固件与资源下载]({{SITE_URL}}#releases)选择 **S30M-V1B** 的最新兼容稳定版。若该型号尚无稳定版，先阅读候选版说明，再决定是否使用 Beta；不要使用其他型号的稳定版。文件和校验清单必须来自同一发布：
 
-| 用途 | 正式文件 |
+| 用途 | 文件格式 |
 | --- | --- |
-| 原厂免拆安装、社区网页 URL OTA | [BL2028N_OTA_1.0.0-rc.6.rbl](https://github.com/phicomm-io/iotcloud-community-firmware/releases/download/v1.0.0-rc.6/BL2028N_OTA_1.0.0-rc.6.rbl) |
-| 保留原厂启动器的串口安装，从 `0x11000` 写入 | [BL2028N_STOCK_UA_1.0.0-rc.6.bin](https://github.com/phicomm-io/iotcloud-community-firmware/releases/download/v1.0.0-rc.6/BL2028N_STOCK_UA_1.0.0-rc.6.bin) |
-| 校验值 | [SHA256SUMS-S30](https://github.com/phicomm-io/iotcloud-community-firmware/releases/download/v1.0.0-rc.6/SHA256SUMS-S30) |
+| 原厂免拆安装、社区网页 URL OTA | `BL2028N_OTA_<版本>.rbl` |
+| 保留原厂启动器的串口安装，从 `0x11000` 写入 | `BL2028N_STOCK_UA_<版本>.bin` |
+| 校验值 | 下载区该版本提供的 `SHA256SUMS` 或 `SHA256SUMS-S30` |
 
-例如仅下载 RBL 后，在同一目录运行 `grep "  BL2028N_OTA_1.0.0-rc.6.rbl$" SHA256SUMS-S30 | sha256sum -c -`；macOS 可用 `shasum -a 256`，与校验文件对应行核对。不要使用其它版本或其它设备的包。
+将 `<版本>` 替换为实际下载版本，文件名以下载区为准，不固定使用 RC6。用 `sha256sum 文件名`、macOS 的 `shasum -a 256 文件名` 或 PowerShell 的 `Get-FileHash 文件名 -Algorithm SHA256` 计算校验值，与同版本清单中该文件对应行逐字符比较。
 
-下载文件名按发布版本固定；设备显示的版本还包含六位 Git 提交后缀。
+设备显示的版本还包含六位 Git 提交后缀。社区网页只支持 **URL 下载**：从下载区复制所选 RBL 的实际直链，再按[后续 URL OTA](s30-guide#升级)安装。
 
 ## 先选择刷机方式
 
@@ -91,19 +91,19 @@ python3 -m venv .venv
 .venv/bin/python -m pip install paho-mqtt==2.1.0
 ```
 
-取得对应 `.rbl` 与 `SHA256SUMS-S30`，先校验，随后运行；替换全部占位符：
+取得对应 `.rbl` 与 `SHA256SUMS-S30`，先校验，随后运行；将 `<VERSION>` 替换为所下载 RBL 文件名中的版本，并替换其余占位符：
 
 ```sh
 mkdir -p tools
 curl --fail --location https://raw.githubusercontent.com/phicomm-io/iotcloud-community-firmware/main/tools/s30_stock_ota.py -o tools/s30_stock_ota.py
 chmod 600 wifi.private.json mqtt.private.json
-grep "  BL2028N_OTA_1.0.0-rc.6.rbl$" SHA256SUMS-S30 | sha256sum -c -
+grep "  BL2028N_OTA_<VERSION>.rbl$" SHA256SUMS-S30 | sha256sum -c -
 sudo .venv/bin/python tools/s30_stock_ota.py \
   --device <原厂设备IP> --device-id <本机12位工厂MAC> \
   --host <电脑局域网IP> \
   --wifi-file wifi.private.json --mqtt-file mqtt.private.json \
   --mqtt-ca gateway-cert.pem --cert gateway-cert.pem --key gateway-key.pem \
-  --rbl 'BL2028N_OTA_1.0.0-rc.6.rbl' --sha256 <该文件公布的SHA256>
+  --rbl 'BL2028N_OTA_<VERSION>.rbl' --sha256 <该文件公布的SHA256>
 ```
 
 原厂尚未配网时，先进入 `CMQLINK-590513-XXXX` 热点。为该设备的工厂 **STA MAC** 在目标路由器预留 IP，将其填入 `--device`；电脑用 Wi-Fi 连接原厂热点，同时通过另一网口保持 `--host` 地址可达，并在命令中加 `--provision-address 192.168.188.1`。工厂 STA MAC 与热点 BSSID 不同，不能直接照抄 BSSID。`wifi.private.json` 填安装时要使用的同一局域网 2.4 GHz 网络。

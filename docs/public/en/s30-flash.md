@@ -4,19 +4,19 @@ Start at [Firmware & resources]({{SITE_URL}}en/#releases) and choose the latest 
 
 This guide covers the **ORVIBO S30M-V1B**, with a BL2028N module, BK7231N chip and HLW8032 meter. Network installation has been verified on stock **`2M.1220`**. UART remains available for backups, installation and recovery. The default layout retains this unit’s original bootloader and factory MAC/RF; **first installation starts with fresh community settings and requires Wi-Fi setup again**. See [S30M-V1B operation](s30-guide) for use after installation.
 
-## RC6 downloads
+## Downloads
 
-The current candidate is **v1.0.0-rc.6 (Beta)**. Select the file for your installation method:
+Select the latest compatible stable **S30M-V1B** release in [Firmware & resources]({{SITE_URL}}en/#releases). If this model has no stable release, read the candidate notes before choosing a beta; another model's stable image is unsuitable. Obtain firmware and checksums from the same release:
 
-| Purpose | Release file |
+| Purpose | Filename pattern |
 | --- | --- |
-| Stock network installation or community URL OTA | [BL2028N_OTA_1.0.0-rc.6.rbl](https://github.com/phicomm-io/iotcloud-community-firmware/releases/download/v1.0.0-rc.6/BL2028N_OTA_1.0.0-rc.6.rbl) |
-| UART installation preserving the stock bootloader; write at `0x11000` | [BL2028N_STOCK_UA_1.0.0-rc.6.bin](https://github.com/phicomm-io/iotcloud-community-firmware/releases/download/v1.0.0-rc.6/BL2028N_STOCK_UA_1.0.0-rc.6.bin) |
-| Checksums | [SHA256SUMS-S30](https://github.com/phicomm-io/iotcloud-community-firmware/releases/download/v1.0.0-rc.6/SHA256SUMS-S30) |
+| Stock network installation or community URL OTA | `BL2028N_OTA_<version>.rbl` |
+| UART installation preserving the stock bootloader; write at `0x11000` | `BL2028N_STOCK_UA_<version>.bin` |
+| Checksums | `SHA256SUMS` or `SHA256SUMS-S30` supplied for that release |
 
-Download names are fixed per release; the device reports the release version followed by its six-digit Git suffix.
+Replace `<version>` with the downloaded release version and use the actual filename in Downloads. RC6 is not a fixed requirement. Compute the digest with `sha256sum filename`, macOS `shasum -a 256 filename` or PowerShell `Get-FileHash filename -Algorithm SHA256`, then compare the matching entry in that release's checksums.
 
-For an RBL-only download, run `grep "  BL2028N_OTA_1.0.0-rc.6.rbl$" SHA256SUMS-S30 | sha256sum -c -` in the same directory. On macOS use `shasum -a 256` and compare the matching checksum entry.
+The device version also includes a six-digit Git suffix. Community WebUI updates support **URL download only**: copy the selected RBL's actual direct URL from Downloads and follow [URL OTA](s30-guide#updates).
 
 ## Choose an installation method
 
@@ -91,19 +91,19 @@ python3 -m venv .venv
 .venv/bin/python -m pip install paho-mqtt==2.1.0
 ```
 
-Download the matching RBL and `SHA256SUMS-S30`, verify them, and replace every placeholder:
+Download the matching RBL and `SHA256SUMS-S30`, verify them, replace `<VERSION>` with the version in the downloaded RBL filename, and replace the remaining placeholders:
 
 ```sh
 mkdir -p tools
 curl --fail --location https://raw.githubusercontent.com/phicomm-io/iotcloud-community-firmware/main/tools/s30_stock_ota.py -o tools/s30_stock_ota.py
 chmod 600 wifi.private.json mqtt.private.json
-grep "  BL2028N_OTA_1.0.0-rc.6.rbl$" SHA256SUMS-S30 | sha256sum -c -
+grep "  BL2028N_OTA_<VERSION>.rbl$" SHA256SUMS-S30 | sha256sum -c -
 sudo .venv/bin/python tools/s30_stock_ota.py \
   --device <stock-device-IP> --device-id <this-unit-12-digit-factory-MAC> \
   --host <computer-LAN-IP> \
   --wifi-file wifi.private.json --mqtt-file mqtt.private.json \
   --mqtt-ca gateway-cert.pem --cert gateway-cert.pem --key gateway-key.pem \
-  --rbl 'BL2028N_OTA_1.0.0-rc.6.rbl' --sha256 <published-file-SHA256>
+  --rbl 'BL2028N_OTA_<VERSION>.rbl' --sha256 <published-file-SHA256>
 ```
 
 For an unconfigured stock unit, enter its `CMQLINK-590513-XXXX` AP. Reserve a target LAN IP for its factory **STA MAC** on the router and use that IP for `--device`. Connect the computer Wi-Fi to the stock AP while another interface keeps `--host` reachable on the target LAN; add `--provision-address 192.168.188.1`. The factory STA MAC differs from the AP BSSID. Set `wifi.private.json` to the 2.4 GHz network on this LAN.
