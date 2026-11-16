@@ -25,7 +25,7 @@
     "protocol/display_diag.h": "3528e75108e691b6d243c2087fc7e9c4dea80b835d01883675dad7491f167bef",
     "protocol/page_control.h": "dcf0c15f7a9addc63513d1b57714f215deb51101529a8659ed28fee2126d92dc",
     "protocol/media_wire.c": "005c86dcc18aa7c7ff5d123d1764c2ff57c5b2667866c979130574c64e051fa5",
-    "protocol/media_wire.h": "b29dc9dfce6bb5aed120bdc26222bb32c84114386cafb0c100927cb097e61cfd"
+    "protocol/media_wire.h": "780b4a98536ac384f231b37033a6b361ee6de007670881cc6a59fe83e6e10d58"
   },
   "source_paths": {
     "protocol/screen_link.c": "protocol/screen_link.c",
