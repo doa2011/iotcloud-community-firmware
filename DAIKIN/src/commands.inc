@@ -132,6 +132,16 @@ key.mqtt=mqttConnected;key.hcho=hchoPresent;key.indicator=indicator;key.recovery
 #endif
   return key;
 }
+#ifdef IOTCLOUD_BRY88_SCREEN
+static bool encodeBusinessHttpEnvelope(const String &wire,String &http){
+  // Match ph_writer's map16 envelope exactly, including the zero count byte.
+  // Append the already encoded data directly: a temporary full envelope would
+  // require another contiguous allocation while video JPEG slots are resident.
+  static const char prefix[]={char(0xde),0,2,char(0xa4),'c','o','d','e',char(0xa2),'o','k',char(0xa4),'d','a','t','a',0};
+  return http.reserve(sizeof(prefix)-1+wire.length())&&
+    http.concat(prefix,sizeof(prefix)-1)&&http.concat(wire.c_str(),wire.length());
+}
+#endif
 static bool pollBusinessStatusCache(uint32_t now){
   const BusinessStatusKey next=businessStatusSource(now);
   if(businessStatusReady&&!businessStatusInvalid&&next==businessStatusKey){businessReadSnapshot.refresh(now);return true;}
@@ -162,6 +172,9 @@ static bool pollBusinessStatusCache(uint32_t now){
   if(!wire.reserve(n)||serializeWireMP(businessStatusDocument,wire)!=n){businessStatusBuildFailure=2;return false;}
   // Reuse the encoded value instead of copying the object tree and encoding
   // the same business data a second time for GET /status.
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(!encodeBusinessHttpEnvelope(wire,http)){businessStatusBuildFailure=4;return false;}
+#else
   ph_writer envelope;if(!phw_init_capacity(&envelope,PH_WIRE_MSGPACK,n+64)){businessStatusBuildFailure=3;return false;}
   ph_buf cached={const_cast<char*>(wire.c_str()),wire.length(),wire.length()+1};
   phw_begin(&envelope,nullptr,false);phw_text(&envelope,"code","ok");
@@ -169,6 +182,7 @@ static bool pollBusinessStatusCache(uint32_t now){
   ph_buf *encoded=phw_take(&envelope);
   const bool complete=encoded&&http.reserve(encoded->len)&&http.concat(encoded->buf,encoded->len);
   ph_buf_free(encoded);if(!complete){businessStatusBuildFailure=4;return false;}
+#endif
   if(!businessReadSnapshot.publish(std::move(wire),std::move(http),now,freshFor==0x7fffffffu?0:freshFor)){businessStatusBuildFailure=5;return false;}
   businessStatusBuildFailure=0;
   businessStatusKey=next;businessStatusInvalid=false;businessStatusReady=true;++businessStatusBuilds;return true;

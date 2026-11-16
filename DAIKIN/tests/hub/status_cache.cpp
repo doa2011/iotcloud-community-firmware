@@ -223,6 +223,25 @@ static void concurrentCopies(){
  cache.invalidate();String missing;assert(!cache.copy(missing,false,5000));
 }
 
+#ifdef IOTCLOUD_BRY88_SCREEN
+static void exactBusinessEnvelope(const String &wire,const String &actual){
+ ph_writer reference;assert(phw_init_capacity(&reference,PH_WIRE_MSGPACK,wire.length()+64));
+ ph_buf cached={const_cast<char*>(wire.c_str()),wire.length(),wire.length()+1};
+ phw_begin(&reference,nullptr,false);phw_text(&reference,"code","ok");
+ phw_cached_value(&reference,"data",&cached,8);phw_end(&reference);
+ ph_buf *encoded=phw_take(&reference);assert(encoded);
+ assert(actual.length()==encoded->len&&!memcmp(actual.c_str(),encoded->buf,encoded->len));
+ ph_buf_free(encoded);
+}
+static void envelopeFixtures(){
+ const char *fixtures[]={"{}","{\"nested\":{\"items\":[0,null,false,\"a\\u0000b\"]}}"};
+ for(const char *json:fixtures){
+  DynamicJsonDocument doc(512);assert(!deserializeJson(doc,json));
+  String wire,http;serializeWireMP(doc,wire);
+  assert(encodeBusinessHttpEnvelope(wire,http));exactBusinessEnvelope(wire,http);
+ }
+}
+#endif
 int main(){
  DynamicJsonDocument power(512);assert(!deserializeJson(power,"{\"enabled\":false,\"start_minute\":1380,\"end_minute\":420,\"timezone_minutes\":480}"));
 #ifdef IOTCLOUD_BRY88_SCREEN
@@ -244,6 +263,9 @@ int main(){
  for(auto &s:readings)s.set(42,clockMs);
  assert(pollBusinessStatusCache(clockMs));const unsigned count=businessStatusBuilds;
  const String wire=cachedBusinessState(),http=cachedHttpStatus();
+#ifdef IOTCLOUD_BRY88_SCREEN
+ exactBusinessEnvelope(wire,http);envelopeFixtures();
+#endif
  clockMs+=1000;assert(pollBusinessStatusCache(clockMs));assert(businessStatusBuilds==count);
  assert(cachedBusinessState()==wire&&cachedHttpStatus()==http);
  DynamicJsonDocument doc(8192);state(doc.to<JsonObject>());
