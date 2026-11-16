@@ -98,6 +98,10 @@ struct BusinessStatusKey {
 };
 static bool businessStatusInvalid=true,businessStatusReady=false;
 static unsigned businessStatusBuilds=0;
+#ifdef IOTCLOUD_BRY88_SCREEN
+static size_t businessStatusPoolBytes=0;
+static unsigned businessStatusPoolOverflows=0;
+#endif
 static BusinessStatusKey businessStatusKey;
 #ifndef IOTCLOUD_BRY88_SCREEN
 static DynamicJsonDocument businessStatusDocument(4096);
@@ -145,7 +149,12 @@ static bool pollBusinessStatusCache(uint32_t now){
   DynamicJsonDocument businessStatusDocument(6144);
 #endif
   businessStatusDocument.clear();buildBusinessState(businessStatusDocument.to<JsonObject>(),now);
+#ifdef IOTCLOUD_BRY88_SCREEN
+  businessStatusPoolBytes=businessStatusDocument.memoryUsage();
+  if(businessStatusDocument.overflowed()){++businessStatusPoolOverflows;return false;}
+#else
   if(businessStatusDocument.overflowed())return false;
+#endif
   String wire,http;
   const size_t n=measureMsgPack(businessStatusDocument);
   if(!wire.reserve(n)||serializeWireMP(businessStatusDocument,wire)!=n)return false;
@@ -180,7 +189,9 @@ template<class T> static void diagnosticField(JsonArray fields,unsigned id,const
 }
 static void diagnostics(JsonObject out){
 #ifdef IOTCLOUD_BRY88_SCREEN
-  screenPowerStatus(out.createNestedObject("power_management"));
+  screenPowerStatus(out.createNestedObject("power_management"),true);
+  out["business_status_json_pool_bytes"]=businessStatusPoolBytes;
+  out["business_status_json_pool_overflows"]=businessStatusPoolOverflows;
 #endif
   const uint32_t now=millis();out["schema"]=PH_DIAGNOSTICS_SCHEMA;
   JsonArray fields=out.createNestedArray("fields");

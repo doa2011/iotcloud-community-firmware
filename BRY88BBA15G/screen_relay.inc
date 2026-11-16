@@ -18,12 +18,13 @@ static volatile uint32_t screenRelayReceived = 0, screenRelayReplaced = 0,
   screenRelayRejected = 0, screenRelayCompleted = 0, screenRelayReceivedCrc = 0,
   screenRelayCompletedCrc = 0, screenRelayCompletedAge = 0,
   screenRelayMaxAge = 0, screenRelayBufferBytes = 0, screenRelayPeakBytes = 0;
-static void screenRelayPowerStatus(JsonObject pm) {
+static void screenRelayPowerStatus(JsonObject pm, bool detailed) {
   pm["relay_worker_running"] = screenRelayTask != nullptr;
   pm["relay_idle_blocked"] = screenRelayIdleBlocked;
   pm["relay_idle_waits"] = screenRelayIdleWaits;
   pm["relay_timed_poll_wakeups"] = screenRelayPollWakeups;
   pm["relay_jobs_handled"] = screenRelayJobsHandled;
+  if (!detailed) return;
   pm["relay_frames_received"] = screenRelayReceived;
   pm["relay_frames_replaced"] = screenRelayReplaced;
   pm["relay_frames_rejected"] = screenRelayRejected;
@@ -77,8 +78,8 @@ static void screenRelayWorker(void *) {
   };
   for (;;) {
     ScreenRelayItem job;
-    // Without a socket or receive credit only a queued command can advance
-    // this owner. Sleep until that command rather than waking 100 times/s.
+    // An inactive owner sleeps until a command. An active stream drains
+    // upstream even when UART credit is outstanding.
     bool idle = !socket;
     if (idle) screenRelayIdleWaits++;
     screenRelayIdleBlocked = idle;

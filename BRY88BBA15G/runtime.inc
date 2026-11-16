@@ -16,7 +16,7 @@ static bool screenMediaFeed(unsigned,uint32_t);
 static bool screenMediaAnnounce(const String &);
 static bool screenMediaNegotiating();
 static void screenServicesStatus(JsonObject);
-static void screenRelayPowerStatus(JsonObject);
+static void screenRelayPowerStatus(JsonObject, bool);
 static void screenServicesInit();
 static void screenServicesPoll(uint32_t);
 static bool screenOtaCommand(const String &, const String &);
@@ -137,7 +137,7 @@ static void screenRequestSnapshot() {
   doc.createNestedObject("data");
   screenDelivery(screenRoot() + "/mqtt/service/get_snapshot", doc, 0);
 }
-static void screenPowerStatus(JsonObject pm) {
+static void screenPowerStatus(JsonObject pm, bool detailed = false) {
   esp_pm_config_esp32_t power = {};
   ESP_ERROR_CHECK(esp_pm_get_configuration(&power));
   pm["max_cpu_mhz"] = power.max_freq_mhz;
@@ -147,7 +147,7 @@ static void screenPowerStatus(JsonObject pm) {
   pm["mcu_wake_lock"] = screenWakeHeld;
   pm["uart_tx_lock"] = screenTxHeld;
   pm["last_wakeup_cause"] = unsigned(esp_sleep_get_wakeup_cause());
-  screenRelayPowerStatus(pm);
+  screenRelayPowerStatus(pm, detailed);
 }
 static void screenStatus(JsonObject out) {
   out["hardware_model"] = "BRY88BBA15G";
