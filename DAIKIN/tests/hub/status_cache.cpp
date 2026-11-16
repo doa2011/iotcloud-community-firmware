@@ -75,6 +75,7 @@ static bool mqttConnected = true;
 #ifdef IOTCLOUD_BRY88_SCREEN
 static bool mqttCommandReady = true;
 static void screenStatus(JsonObject out);
+static int screenTvocWarmup(uint32_t);
 static void screenPowerStatus(JsonObject,bool=false) {}
 #endif
 #include "indicators.inc"
@@ -101,13 +102,47 @@ static bool screenFields(JsonObjectConst,const char *){return true;}
 static bool bry_bridge_send(void *,const void *,size_t,unsigned){return true;}
 #include "../../../BRY88BBA15G/screen_brightness.inc"
 #include "../../../BRY88BBA15G/screen_module.inc"
-static void screenStatus(JsonObject out){
- out["sensor_source"]="screen_mcu";
- JsonObject screen=out.createNestedObject("screen");
+static DynamicJsonDocument screenSnapshot(4096);
+static uint32_t screenSnapshotAt=0,screenFrames=0,screenLastRx=0,screenDataAt=0;
+static String screenMcuVersion("iotcloud-screen-test"),screenGalleryVersion("iotcloud-built-in"),screenPendingToken;
+static bool screenSession=true;
+static unsigned screenPendingCode=0;
+static uint8_t screenRaw[64];static size_t screenRawSize=0;
+static unsigned getCpuFrequencyMhz(){return 80;}
+static const char *screenSettingsRequestState(){return "idle";}
+static void screenServicesStatus(JsonObject screen){
+#ifdef G3_FULL_STATUS_CAPACITY
+#include "../../../BRY88BBA15G/tests/fixtures/business_screen_full.inc"
+#endif
  screenBrightnessStatus(screen.createNestedObject("brightness"));
  screenResourceStatus(screen.createNestedObject("resources"));
  screenModuleStatus(screen.createNestedObject("module"));
  if(duringStateBuild)duringStateBuild();
+}
+#include "screen_status.inc"
+static void tvocMeasurementWarmup(){
+ screenSnapshotAt=clockMs;screenSnapshot["status"]["tvoc_warmup_seconds_remaining"]=120;
+ auto publish=[](){assert(pollBusinessStatusCache(clockMs));DynamicJsonDocument doc(16384);assert(!deserializeMsgPack(doc,cachedBusinessState().c_str(),cachedBusinessState().length()));return doc;};
+ requestBusinessStatusRefresh();auto doc=publish();
+ std::printf("G3 full MessagePack decode pool %u/8192, overflow %u\n",unsigned(doc.memoryUsage()),unsigned(doc.overflowed()));
+ assert(doc.memoryUsage()<=8192&&!doc.overflowed());
+ DynamicJsonDocument viaState(16384);state(viaState.to<JsonObject>());
+ assert(viaState["tvoc_warmup_seconds_remaining"]==120&&viaState["snapshot_uptime_ms"]==clockMs);
+ assert(doc["tvoc_warmup_seconds_remaining"]==120);
+ assert(doc["co2_warmup_seconds_remaining"].isNull());
+ assert(businessStatusPoolOverflows==0&&businessStatusPoolBytes<=6400);
+ std::printf("G3 production builder pool %u/6400, overflow %u\n",unsigned(businessStatusPoolBytes),businessStatusPoolOverflows);
+ clockMs+=1501;doc=publish();assert(doc["tvoc_warmup_seconds_remaining"]==119);
+ assert(!doc["sensors"]["tvoc"]["valid"].as<bool>());
+ clockMs=screenSnapshotAt+20000;doc=publish();assert(doc["tvoc_warmup_seconds_remaining"].isNull());
+ screenSnapshotAt=clockMs;screenSnapshot["status"]["tvoc_warmup_seconds_remaining"]=0;
+ requestBusinessStatusRefresh();doc=publish();assert(doc["tvoc_warmup_seconds_remaining"]==0);
+ screenSnapshot["status"]["tvoc_warmup_seconds_remaining"]=nullptr;
+ requestBusinessStatusRefresh();doc=publish();assert(doc["tvoc_warmup_seconds_remaining"].isNull());
+ // Unsigned snapshot age also advances correctly across millis() wrap.
+ screenSnapshotAt=UINT32_MAX-500;screenSnapshot["status"]["tvoc_warmup_seconds_remaining"]=300;
+ assert(screenTvocWarmup(1000)==299);
+ screenSnapshot.clear();requestBusinessStatusRefresh();
 }
 static void telemetryKeepsPublication(){
  auto receive=[&](const std::function<void()> &callback){
@@ -122,7 +157,7 @@ static void telemetryKeepsPublication(){
  uint8_t backlight[SCREEN_BACKLIGHT_BYTES];
  assert(screen_backlight_encode(backlight,60,10,10,false));
  receive([&](){assert(screenBrightnessReceive(backlight,sizeof(backlight)));});
- DynamicJsonDocument doc(8192);state(doc.to<JsonObject>());
+ DynamicJsonDocument doc(16384);state(doc.to<JsonObject>());
  assert(doc["screen"]["brightness"]["available"]==true&&doc["screen"]["brightness"]["applied_percent"]==10);
  uint8_t bank[24]={0x2a,2,2,0,1,0,0,0,57,0,0,0,0x12,0x34,0x56,0x78};
  receive([&](){screenResourceReceive(bank,sizeof(bank));});
@@ -243,6 +278,9 @@ static void envelopeFixtures(){
 }
 #endif
 int main(){
+#ifdef G3_FULL_STATUS_CAPACITY
+#include "../../../BRY88BBA15G/tests/fixtures/business_snapshot_full.inc"
+#endif
  DynamicJsonDocument power(512);assert(!deserializeJson(power,"{\"enabled\":false,\"start_minute\":1380,\"end_minute\":420,\"timezone_minutes\":480}"));
 #ifdef IOTCLOUD_BRY88_SCREEN
  assert(!validSection("pm_power",power.as<JsonObjectConst>()));
@@ -261,6 +299,10 @@ int main(){
  config["hub"]["username"]="owner";config["device"]["name"]="initial";
  co2Module.warmed=true;co2Module.received=true;co2Module.measuredAt=clockMs;
  for(auto &s:readings)s.set(42,clockMs);
+#ifdef G3_FULL_STATUS_CAPACITY
+ // G3 has neither the optional HCHO nor PM10 hardware channel.
+ hchoPresent=false;readings[HCHO].received=false;readings[PM10].received=false;
+#endif
  assert(pollBusinessStatusCache(clockMs));const unsigned count=businessStatusBuilds;
  const String wire=cachedBusinessState(),http=cachedHttpStatus();
 #ifdef IOTCLOUD_BRY88_SCREEN
@@ -268,10 +310,14 @@ int main(){
 #endif
  clockMs+=1000;assert(pollBusinessStatusCache(clockMs));assert(businessStatusBuilds==count);
  assert(cachedBusinessState()==wire&&cachedHttpStatus()==http);
- DynamicJsonDocument doc(8192);state(doc.to<JsonObject>());
+ DynamicJsonDocument doc(16384);state(doc.to<JsonObject>());
  assert(doc["snapshot_uptime_ms"]==240000&&doc["sensors"]["pm25"]["valid"]==true);
  assert(!doc.containsKey("free_memory")&&!doc.containsKey("ota_partitions"));
+#ifdef IOTCLOUD_BRY88_SCREEN
+ assert(!doc.containsKey("co2_diagnostics"));
+#else
  assert(doc["co2_diagnostics"]["calibration"].is<JsonObject>());
+#endif
  clockMs=260000;assert(pollBusinessStatusCache(clockMs));assert(businessStatusBuilds==count+1);
  doc.clear();state(doc.to<JsonObject>());assert(doc["sensors"]["pm25"]["valid"]==false);
  readings[PM25].set(51,clockMs);assert(pollBusinessStatusCache(clockMs));
@@ -295,12 +341,18 @@ int main(){
  doc.clear();state(doc.to<JsonObject>());assert(doc["snapshot_uptime_ms"]==clockMs);
 #ifdef IOTCLOUD_BRY88_SCREEN
  telemetryKeepsPublication();
+ tvocMeasurementWarmup();
 #endif
  config["device"]["name"]="changed";invalidateBusinessStatusCache();
  String invalidated;assert(!businessReadSnapshot.copy(invalidated,false,clockMs));
  doc.clear();state(doc.to<JsonObject>());assert(doc["name"]=="changed");
  clockMs=100000;co2Module.warmed=false;assert(pollBusinessStatusCache(clockMs));unsigned warm=businessStatusBuilds;
- clockMs+=1000;assert(pollBusinessStatusCache(clockMs));assert(businessStatusBuilds==warm+1);
+ clockMs+=1000;assert(pollBusinessStatusCache(clockMs));
+#ifndef IOTCLOUD_BRY88_SCREEN
+ assert(businessStatusBuilds==warm+1);
+#else
+ assert(businessStatusBuilds==warm);
+#endif
  co2Module.attempted=true;co2Module.requestedAt=clockMs;assert(pollBusinessStatusCache(clockMs));unsigned cool=businessStatusBuilds;
  clockMs+=1000;assert(pollBusinessStatusCache(clockMs));assert(businessStatusBuilds==cool+1);
  doc.clear();diagnostics(doc.to<JsonObject>());assert(doc["schema"]==1);

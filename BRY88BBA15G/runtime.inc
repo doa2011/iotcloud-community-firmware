@@ -149,12 +149,25 @@ static void screenPowerStatus(JsonObject pm, bool detailed = false) {
   pm["last_wakeup_cause"] = unsigned(esp_sleep_get_wakeup_cause());
   screenRelayPowerStatus(pm, detailed);
 }
+// Measurement preheat is independent of the optional calibration session.
+// Snapshot timestamps are local monotonic time; unknown/offline stays unknown.
+static int screenTvocWarmup(uint32_t now) {
+  JsonVariantConst status = screenSnapshot["status"];
+  if (uint32_t(now - screenSnapshotAt) >= 20000 ||
+      !status["tvoc_warmup_seconds_remaining"].is<unsigned>()) return -1;
+  const unsigned seconds = status["tvoc_warmup_seconds_remaining"].as<unsigned>();
+  const uint32_t elapsed = uint32_t(now - screenSnapshotAt) / 1000;
+  return seconds > elapsed ? int(seconds - elapsed) : 0;
+}
 static void screenStatus(JsonObject out) {
   out["hardware_model"] = "BRY88BBA15G";
   out["cpu_frequency_mhz"] = getCpuFrequencyMhz();
   screenPowerStatus(out.createNestedObject("power_management"));
   out["sensor_source"] = "screen_mcu";
   out["co2_warmup_seconds_remaining"] = nullptr;
+  const int tvocWarmup = screenTvocWarmup(millis());
+  if (tvocWarmup < 0) out["tvoc_warmup_seconds_remaining"] = nullptr;
+  else out["tvoc_warmup_seconds_remaining"] = tvocWarmup;
   out.remove("co2_diagnostics");
   out.remove("climate_compensation");
   out["indicator_rules_supported"] = false;

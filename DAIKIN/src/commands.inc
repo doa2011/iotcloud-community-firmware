@@ -113,7 +113,11 @@ static void invalidateBusinessStatusCache(){requestBusinessStatusRefresh();busin
 static BusinessStatusKey businessStatusSource(uint32_t now){
   BusinessStatusKey key={};
   for(unsigned i=0;i<SENSOR_COUNT;i++){auto &s=key.samples[i];const auto &r=readings[i];s.value=r.value;s.at=r.at;s.max_age_ms=r.max_age_ms;s.received=r.received;s.present=sensorPresent(i);s.valid=r.valid(now);}
+#ifdef IOTCLOUD_BRY88_SCREEN
+  key.warmup=uint32_t(screenTvocWarmup(now));
+#else
   key.warmup=!co2Module.warmed&&now<180000?(180000-now+999)/1000:0;
+#endif
   key.cooldown=co2Module.cooldown(now);key.available=co2Module.canCalibrate(now);
   key.requested=co2Module.requestedAt;key.completed=co2Module.completedAt;
   key.calibration=unsigned(co2Module.calibration);key.target=co2Module.target;
@@ -158,7 +162,7 @@ static bool pollBusinessStatusCache(uint32_t now){
 #ifdef IOTCLOUD_BRY88_SCREEN
   // Only the encoded publication survives this call. Release its scratch pool
   // before weather admission; a resident 6 KiB pool can starve later TLS jobs.
-  DynamicJsonDocument businessStatusDocument(6144);
+  DynamicJsonDocument businessStatusDocument(6400);
 #endif
   businessStatusDocument.clear();buildBusinessState(businessStatusDocument.to<JsonObject>(),now);
 #ifdef IOTCLOUD_BRY88_SCREEN
@@ -193,7 +197,7 @@ static void state(JsonObject out){
   // Bootstrap is allowed before the first loop; normal reads only copy cache.
   if((!businessStatusReady||businessStatusInvalid)&&!pollBusinessStatusCache(millis()))return;
 #ifdef IOTCLOUD_BRY88_SCREEN
-  DynamicJsonDocument decoded(6144);
+  DynamicJsonDocument decoded(8192);
   const String &wire=cachedBusinessState();
   if(!deserializeMsgPack(decoded,wire.c_str(),wire.length()))out.set(decoded.as<JsonObjectConst>());
 #else

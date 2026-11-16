@@ -82,6 +82,7 @@ char *dtostrf(double,int,unsigned int,char*);
         (temp / 'config_validation.inc').write_text(section(src / 'commands.inc', 'static bool knownFields(', 'static bool validConfig('))
         (temp / 'public_read.inc').write_text(section(src / 'http.inc', 'static bool publicReadCommand(', 'static esp_err_t commandHandler('))
         (temp / 'account_scope.inc').write_text(section(src / 'mqtt.inc', 'static String mqttAccountScope(', 'static void discovery('))
+        (temp / 'screen_status.inc').write_text(section(ROOT / 'BRY88BBA15G/runtime.inc', 'static int screenTvocWarmup(', 'static bool screenTime('))
         shutil.copyfile(src / 'diagnostics_ids.h', temp / 'diagnostics_ids.h')
         shutil.copyfile(src / 'indicators.inc', temp / 'indicators.inc')
         cls.binary = temp / 'native-publish'
@@ -111,6 +112,16 @@ char *dtostrf(double,int,unsigned int,char*);
         screen_command = [('-DIOTCLOUD_BRY88_SCREEN=1' if arg == '-DIOTCLOUD_HUB=1' else
                            str(cls.screen_binary) if arg == str(cls.binary) else arg)
                           for arg in compile_command]
+        if os.environ.get('DAIKIN_TEST_32BIT') == '1':
+            arch = ['-m32', '-isystem', '/usr/include/x86_64-linux-gnu']
+            screen_command[1:1] = arch + ['-DG3_FULL_STATUS_CAPACITY=1']
+            for obj in objects:
+                source = (ROOT/'BRY88BBA15G/protocol/scene.c' if obj == str(scene)
+                          else ROOT/'common'/(Path(obj).stem+'.c'))
+                target = str(Path(obj).with_suffix('.32.o'))
+                subprocess.run(['cc', *arch, '-std=gnu99', '-g', '-O1',
+                    '-fsanitize=address,undefined', '-fno-pie', '-c', str(source), '-o', target],check=True)
+                screen_command = [target if arg == obj else arg for arg in screen_command]
         screen_command.insert(1, '-Wno-unused-parameter')
         subprocess.run(screen_command, check=True)
 
