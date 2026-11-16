@@ -10,7 +10,7 @@ static void screenClockPoll(uint32_t now) {
   if (online && (!screenClockOnline || address != screenClockAddress)) {
     // Starting before DHCP can leave the first request in the SDK's retry
     // backoff. Restart on a new connection, with DNS and an IPv4 address ready.
-    configTime(0, 0, "pool.ntp.org", "time.cloudflare.com");
+    configTime(0, 0, "pool.ntp.org", "time.cloudflare.com", "time.windows.com");
     screenClockAddress = address;
   }
   screenClockOnline = online;
