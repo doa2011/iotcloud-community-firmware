@@ -97,8 +97,7 @@ struct BusinessStatusKey {
   }
 };
 static bool businessStatusInvalid=true,businessStatusReady=false;
-static unsigned businessStatusBuilds=0,businessStatusBuildFailure=0;
-static uint32_t businessStatusBuildAt=0;
+static unsigned businessStatusBuildFailure=0;
 #ifdef IOTCLOUD_BRY88_SCREEN
 static size_t businessStatusPoolBytes=0;
 static unsigned businessStatusPoolOverflows=0;
@@ -158,7 +157,6 @@ static bool pollBusinessStatusCache(uint32_t now){
     if(next.samples[i].valid)freshFor=std::min(freshFor,next.samples[i].max_age_ms-uint32_t(now-next.samples[i].at));
   }
   businessStatusReady=false;
-  businessStatusBuildAt=now;
 #ifdef IOTCLOUD_BRY88_SCREEN
   // Only the encoded publication survives this call. Release its scratch pool
   // before weather admission; a resident 6 KiB pool can starve later TLS jobs.
@@ -189,7 +187,7 @@ static bool pollBusinessStatusCache(uint32_t now){
 #endif
   if(!businessReadSnapshot.publish(std::move(wire),std::move(http),now,freshFor==0x7fffffffu?0:freshFor)){businessStatusBuildFailure=5;return false;}
   businessStatusBuildFailure=0;
-  businessStatusKey=next;businessStatusInvalid=false;businessStatusReady=true;++businessStatusBuilds;return true;
+  businessStatusKey=next;businessStatusInvalid=false;businessStatusReady=true;return true;
 }
 static const String &cachedBusinessState(){return businessReadSnapshot.data();}
 static const String &cachedHttpStatus(){return businessReadSnapshot.envelope();}
@@ -214,12 +212,6 @@ static void diagnostics(JsonObject out){
   out["business_status_json_pool_bytes"]=businessStatusPoolBytes;
   out["business_status_json_pool_overflows"]=businessStatusPoolOverflows;
   out["business_status_build_failure"]=businessStatusBuildFailure;
-  out["business_status_builds"]=businessStatusBuilds;
-  out["business_status_build_age_ms"]=millis()-businessStatusBuildAt;
-  out["business_status_lease_age_ms"]=businessReadSnapshot.checkedAge(millis());
-  out["business_status_deadline_remaining_ms"]=businessReadSnapshot.deadlineRemaining(millis());
-  out["business_status_ready"]=businessStatusReady;
-  out["business_status_invalid"]=businessStatusInvalid;
 #endif
   const uint32_t now=millis();out["schema"]=PH_DIAGNOSTICS_SCHEMA;
   JsonArray fields=out.createNestedArray("fields");

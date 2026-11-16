@@ -66,7 +66,6 @@ class ScreenLatestFrame {
       s.input.data = data;
       s.allocated += growth;
       s.input.capacity = capacity;
-      if (s.allocated > s.peakBytes) s.peakBytes = s.allocated;
     }
     s.input.data[at] = byte;
     return true;
