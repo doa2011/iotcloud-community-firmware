@@ -34,7 +34,7 @@ static bool screenMediaQuiesce() {
   bool quiet = bry::uartDiscardUntilQuiet(screenUart, [] { return millis(); },
                                         [](unsigned ms) { delay(ms); });
   stockFrame.reset();
-  screenMedia.parser.active = false;
+  media_reset(&screenMedia.parser);
   return quiet;
 }
 static bool screenMediaWrite(unsigned channel, uint32_t seq, const void *p,
@@ -73,7 +73,7 @@ static bool screenMediaBaud(uint32_t rate) {
   }
   if (ok)
     screenMedia.rate = rate;
-  screenMedia.parser.active = false;
+  media_reset(&screenMedia.parser);
   return ok;
 }
 static void screenMediaFallback() {
@@ -207,6 +207,12 @@ static void screenMediaPacket(void *, unsigned channel, uint32_t session,
       screenMediaSnapshot(p + 2, n - 2);
   } else
     screenRelayPacket(channel, sequence, p, n);
+}
+static bool screenMediaResync(uint32_t now) {
+  bool binary = screenMedia.session && (screenMedia.ready || screenMedia.parser.active);
+  if (binary) media_resync(&screenMedia.parser, now);
+  else media_reset(&screenMedia.parser);
+  return binary;
 }
 static bool screenMediaFeed(unsigned c, uint32_t now) {
   // A heartbeat already in flight can arrive after OTA takes ownership.

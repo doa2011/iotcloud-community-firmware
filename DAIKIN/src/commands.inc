@@ -209,6 +209,7 @@ template<class T> static void diagnosticField(JsonArray fields,unsigned id,const
 static void diagnostics(JsonObject out){
 #ifdef IOTCLOUD_BRY88_SCREEN
   screenPowerStatus(out.createNestedObject("power_management"),true);
+  screenUartDiagnostics(out);
   out["business_status_json_pool_bytes"]=businessStatusPoolBytes;
   out["business_status_json_pool_overflows"]=businessStatusPoolOverflows;
   out["business_status_build_failure"]=businessStatusBuildFailure;

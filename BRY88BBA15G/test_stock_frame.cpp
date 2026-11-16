@@ -50,5 +50,19 @@ int main(){
   }
   assert(lines==2&&packets==1&&!parser.crc_errors&&!parser.framing_errors);
  }
+ // A known binary loss followed by fallback must discard the old text
+ // suffix through LF, then hand the next complete stock response to its owner.
+ {
+  bry::StockFrame frame; media_parser parser={}; unsigned lines=0;
+  media_resync(&parser,1); frame.reset(); frame.discard=true;
+  assert(media_feed(&parser,'x',2002));
+  media_reset(&parser); // baud/fallback/raw-maintenance release
+  std::string text="version?\r\nmac?\r\n";
+  for(unsigned char c:text)if(!media_feed(&parser,c,2003))
+   frame.feed(c,[&](const uint8_t*p,size_t n,size_t,size_t){
+    assert(n==4&&!memcmp(p,"mac?",4));++lines;
+   });
+  assert(lines==1&&!frame.discard);
+ }
  puts("stock UART: mixed media, all split positions, embedded NUL/CRLF and overflow recovery passed");
 }

@@ -57,7 +57,7 @@ static __attribute__((noinline)) const char *screenLegacyServicesCommand(
   if (action == "screen.recovery.get") {
     if (params.size())
       return "invalid_params";
-    screenGuardStatus(data, false);
+    screenGuardStatus(data, false, true);
     return "ok";
   }
   if (action == "screen.recovery.nor.set") {
@@ -99,7 +99,7 @@ static __attribute__((noinline)) const char *screenLegacyServicesCommand(
     if (!params["request"].as<uint32_t>() ||
         params["request"].as<uint32_t>() != screenGuard.request)
       return "not_found";
-    screenGuardStatus(data, true);
+    screenGuardStatus(data, true, true);
     return "ok";
   }
   if (action == "screen.layout.get") {

@@ -559,11 +559,17 @@ nested in status). `available` requires matching-session telemetry received with
 `exception_msp`, `rtc_status`, `sdram_error` and `uptime_ms`. Reason 0 means normal
 startup, 2 a retained fault or explicit recovery, 3 WDT reset, 4 recovery-only
 build, 5 boot-flag acknowledgement failure, and 6 SDRAM or control-pointer failure.
-The diagnostic payload must be version 3 (`0xe2,3`), exactly 82 bytes.
+The diagnostic payload accepts version 3 (`0xe2,3`), exactly 82 bytes, or
+version 4 (`0xe2,4`), exactly 98 bytes.
 It contains 20 LE32 values, including `fault_pc`, `stacked_lr`, `stacked_xpsr`,
 `control_actual`, `control_expected`, `control_address` and `sensor_step`.
 The actual value is captured by the volatile read that failed comparison.
-`diagnostic_max_version` is 3; earlier diagnostic formats are rejected.
+Version 4 appends four LE32 fields: `hardware_rx_overruns` (observed RXOV events,
+not a dropped-byte count), `ring_dropped_bytes`, `rx_loss_resets` and
+`last_rx_loss_ms` (boot milliseconds; zero before loss). These fields are omitted
+for version 3 and from ordinary business status. They are returned only by explicit
+maintenance queries (`screen.recovery.get`, `screen.boot.result.get`).
+`diagnostic_max_version` is 4; earlier formats are rejected.
 CRC/session/length/version and field ranges are checked before accepting it;
 it never completes or cancels a pending boot/OTA operation. Session changes clear
 the old report. The MCU only reads a complete aligned internal MSP exception
