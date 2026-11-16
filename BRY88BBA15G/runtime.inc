@@ -233,7 +233,12 @@ static const char *screenSettings(const String &action, JsonObjectConst params,
     JsonObjectConst d = params["no_disturb"];
     valid = d.size() == 3 && d["state"].is<bool>() &&
             screenTime(d["start_tm"] | "") && screenTime(d["end_tm"] | "");
-  } else if (params.containsKey("ipbox_push"))
+  } else if (params.containsKey("tvoc_warmup_minutes"))
+    valid = params["tvoc_warmup_minutes"].is<int>() &&
+            params["tvoc_warmup_minutes"].as<int>() >= -1 &&
+            params["tvoc_warmup_minutes"].as<int>() != 0 &&
+            params["tvoc_warmup_minutes"].as<int>() <= 60;
+  else if (params.containsKey("ipbox_push"))
     valid = params["ipbox_push"].is<bool>();
   // Unknown warning scaling/ranges and calibration are deliberately
   // unsupported.

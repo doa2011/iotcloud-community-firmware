@@ -18,6 +18,7 @@ ARDUINOJSON_END_PRIVATE_NAMESPACE
 #include "frames.h"
 #include "cm1106.h"
 #include "indicator_json.h"
+extern "C" char *utoa(unsigned value,char *out,int base){assert(base==10);std::sprintf(out,"%u",value);return out;}
 static uint32_t clockMs = 240000;
 static uint32_t millis() { return clockMs; }
 enum Sensor { PM25, CO2, TEMPERATURE, HUMIDITY, TVOC, HCHO, PM10, SENSOR_COUNT };
@@ -106,7 +107,8 @@ static DynamicJsonDocument screenSnapshot(4096);
 static uint32_t screenSnapshotAt=0,screenFrames=0,screenLastRx=0,screenDataAt=0;
 static String screenMcuVersion("iotcloud-screen-test"),screenGalleryVersion("iotcloud-built-in"),screenPendingToken;
 static bool screenSession=true;
-static unsigned screenPendingCode=0;
+static int screenPendingCode=0;
+static uint32_t screenPendingAt=0;
 static uint8_t screenRaw[64];static size_t screenRawSize=0;
 static unsigned getCpuFrequencyMhz(){return 80;}
 static const char *screenSettingsRequestState(){return "idle";}
@@ -120,6 +122,33 @@ static void screenServicesStatus(JsonObject screen){
  if(duringStateBuild)duringStateBuild();
 }
 #include "screen_status.inc"
+static DynamicJsonDocument screenSavedSettings(1024),delivered(1536);
+static uint32_t screenSettingsSession=0;
+static unsigned screenTail=0,screenHead=0;
+static const char *screenApplySettings(JsonObjectConst params,JsonObject){screenSavedSettings.set(params);return "accepted";}
+static void screenGetSettings(JsonObject out){out["saved_settings"]=screenSavedSettings;}
+static String screenRoot(){return "SENSOR/AABBCCDDEEFF";}
+static bool screenDelivery(const String &,JsonDocument &doc,unsigned){return delivered.set(doc);}
+#include "screen_settings.inc"
+#include "screen_restore.inc"
+static void tvocSettingsValidationAndReplay(){
+ DynamicJsonDocument params(256),reply(2048);
+ for(int value:{-1,1,15,60}){
+  params["tvoc_warmup_minutes"]=value;
+  assert(!strcmp(screenSettings("screen.settings.set",params.as<JsonObjectConst>(),reply.to<JsonObject>()),"accepted"));
+  screenSettingsSession=0;screenRestoreSettings();assert(delivered["data"]["tvoc_warmup_minutes"]==value);
+  assert(screenSettingsSession==screenBridge.session);
+  delivered.clear();screenRestoreSettings();assert(delivered.isNull());
+  ++screenBridge.session;screenRestoreSettings();assert(delivered["data"]["tvoc_warmup_minutes"]==value);
+  screenPendingCode=0;screenPendingToken="";
+ }
+ for(const char *wire:{"{\"tvoc_warmup_minutes\":0}","{\"tvoc_warmup_minutes\":-2}","{\"tvoc_warmup_minutes\":61}","{\"tvoc_warmup_minutes\":1.5}","{\"tvoc_warmup_minutes\":true}","{\"tvoc_warmup_minutes\":null}"}){
+  params.clear();assert(!deserializeJson(params,wire));
+  assert(!strcmp(screenSettings("screen.settings.set",params.as<JsonObjectConst>(),reply.to<JsonObject>()),"invalid_params"));
+ }
+ screenSavedSettings.clear();screenPendingCode=0;screenPendingToken="";
+}
+
 static void tvocMeasurementWarmup(){
  screenSnapshotAt=clockMs;screenSnapshot["status"]["tvoc_warmup_seconds_remaining"]=120;
  auto publish=[](){assert(pollBusinessStatusCache(clockMs));DynamicJsonDocument doc(16384);assert(!deserializeMsgPack(doc,cachedBusinessState().c_str(),cachedBusinessState().length()));return doc;};
@@ -342,6 +371,7 @@ int main(){
 #ifdef IOTCLOUD_BRY88_SCREEN
  telemetryKeepsPublication();
  tvocMeasurementWarmup();
+ tvocSettingsValidationAndReplay();
 #endif
  config["device"]["name"]="changed";invalidateBusinessStatusCache();
  String invalidated;assert(!businessReadSnapshot.copy(invalidated,false,clockMs));

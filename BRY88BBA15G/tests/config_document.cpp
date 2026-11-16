@@ -33,6 +33,7 @@ int main() {
   weather["label"] = "Guangzhou, Guangdong";
   weather["enabled"] = true;
   weather["key"] = std::string(256, 'k');
+  settings["tvoc_warmup_minutes"] = 15;
   settings["display"]["luminance"] = 0;
   settings["display"]["data_type"] = 0;
   settings["display"]["power_screen_time"] = 2;
@@ -75,6 +76,7 @@ int main() {
     assert(persisted == wire && largestWrite <= 256);
     DynamicJsonDocument restored(65536);
     assert(!deserializeMsgPack(restored, wire));
+    assert(restored["settings"]["tvoc_warmup_minutes"] == 15);
     assert(restored["layout"].as<std::string>() == layout);
     assert(restored["policy"].as<std::string>() == policy);
     assert(restored["appearance"].as<std::string>() == appearance);

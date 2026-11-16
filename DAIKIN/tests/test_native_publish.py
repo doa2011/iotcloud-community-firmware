@@ -82,6 +82,8 @@ char *dtostrf(double,int,unsigned int,char*);
         (temp / 'config_validation.inc').write_text(section(src / 'commands.inc', 'static bool knownFields(', 'static bool validConfig('))
         (temp / 'public_read.inc').write_text(section(src / 'http.inc', 'static bool publicReadCommand(', 'static esp_err_t commandHandler('))
         (temp / 'account_scope.inc').write_text(section(src / 'mqtt.inc', 'static String mqttAccountScope(', 'static void discovery('))
+        (temp / 'screen_settings.inc').write_text(section(ROOT / 'BRY88BBA15G/runtime.inc', 'static bool screenTime(', 'static void screenMeasurements('))
+        (temp / 'screen_restore.inc').write_text(section(ROOT / 'BRY88BBA15G/screen_services.inc', 'static void screenRestoreSettings(', 'static void screenLoad('))
         (temp / 'screen_status.inc').write_text(section(ROOT / 'BRY88BBA15G/runtime.inc', 'static int screenTvocWarmup(', 'static bool screenTime('))
         shutil.copyfile(src / 'diagnostics_ids.h', temp / 'diagnostics_ids.h')
         shutil.copyfile(src / 'indicators.inc', temp / 'indicators.inc')
