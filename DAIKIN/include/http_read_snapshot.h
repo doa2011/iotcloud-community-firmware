@@ -50,6 +50,8 @@ public:
     if(!ok){if(!valid_.load(std::memory_order_acquire))++unavailable_;else ++allocationFailed_;}
     xSemaphoreGive(mutex_);return ok;
   }
+  int32_t deadlineRemaining(uint32_t now)const{return hasDeadline_?int32_t(validUntil_-now):INT32_MAX;}
+  uint32_t checkedAge(uint32_t now)const{return now-checkedAt_.load(std::memory_order_acquire);}
   uint32_t unavailable()const{return unavailable_.load();}
   uint32_t expired()const{return expired_.load();}
   uint32_t contended()const{return contended_.load();}

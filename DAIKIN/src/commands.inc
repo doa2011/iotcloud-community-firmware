@@ -97,7 +97,8 @@ struct BusinessStatusKey {
   }
 };
 static bool businessStatusInvalid=true,businessStatusReady=false;
-static unsigned businessStatusBuilds=0;
+static unsigned businessStatusBuilds=0,businessStatusBuildFailure=0;
+static uint32_t businessStatusBuildAt=0;
 #ifdef IOTCLOUD_BRY88_SCREEN
 static size_t businessStatusPoolBytes=0;
 static unsigned businessStatusPoolOverflows=0;
@@ -143,6 +144,7 @@ static bool pollBusinessStatusCache(uint32_t now){
     if(next.samples[i].valid)freshFor=std::min(freshFor,next.samples[i].max_age_ms-uint32_t(now-next.samples[i].at));
   }
   businessStatusReady=false;
+  businessStatusBuildAt=now;
 #ifdef IOTCLOUD_BRY88_SCREEN
   // Only the encoded publication survives this call. Release its scratch pool
   // before weather admission; a resident 6 KiB pool can starve later TLS jobs.
@@ -151,23 +153,24 @@ static bool pollBusinessStatusCache(uint32_t now){
   businessStatusDocument.clear();buildBusinessState(businessStatusDocument.to<JsonObject>(),now);
 #ifdef IOTCLOUD_BRY88_SCREEN
   businessStatusPoolBytes=businessStatusDocument.memoryUsage();
-  if(businessStatusDocument.overflowed()){++businessStatusPoolOverflows;return false;}
+  if(businessStatusDocument.overflowed()){++businessStatusPoolOverflows;businessStatusBuildFailure=1;return false;}
 #else
   if(businessStatusDocument.overflowed())return false;
 #endif
   String wire,http;
   const size_t n=measureMsgPack(businessStatusDocument);
-  if(!wire.reserve(n)||serializeWireMP(businessStatusDocument,wire)!=n)return false;
+  if(!wire.reserve(n)||serializeWireMP(businessStatusDocument,wire)!=n){businessStatusBuildFailure=2;return false;}
   // Reuse the encoded value instead of copying the object tree and encoding
   // the same business data a second time for GET /status.
-  ph_writer envelope;if(!phw_init_capacity(&envelope,PH_WIRE_MSGPACK,n+64))return false;
+  ph_writer envelope;if(!phw_init_capacity(&envelope,PH_WIRE_MSGPACK,n+64)){businessStatusBuildFailure=3;return false;}
   ph_buf cached={const_cast<char*>(wire.c_str()),wire.length(),wire.length()+1};
   phw_begin(&envelope,nullptr,false);phw_text(&envelope,"code","ok");
   phw_cached_value(&envelope,"data",&cached,8);phw_end(&envelope);
   ph_buf *encoded=phw_take(&envelope);
   const bool complete=encoded&&http.reserve(encoded->len)&&http.concat(encoded->buf,encoded->len);
-  ph_buf_free(encoded);if(!complete)return false;
-  if(!businessReadSnapshot.publish(std::move(wire),std::move(http),now,freshFor==0x7fffffffu?0:freshFor))return false;
+  ph_buf_free(encoded);if(!complete){businessStatusBuildFailure=4;return false;}
+  if(!businessReadSnapshot.publish(std::move(wire),std::move(http),now,freshFor==0x7fffffffu?0:freshFor)){businessStatusBuildFailure=5;return false;}
+  businessStatusBuildFailure=0;
   businessStatusKey=next;businessStatusInvalid=false;businessStatusReady=true;++businessStatusBuilds;return true;
 }
 static const String &cachedBusinessState(){return businessReadSnapshot.data();}
@@ -192,6 +195,13 @@ static void diagnostics(JsonObject out){
   screenPowerStatus(out.createNestedObject("power_management"),true);
   out["business_status_json_pool_bytes"]=businessStatusPoolBytes;
   out["business_status_json_pool_overflows"]=businessStatusPoolOverflows;
+  out["business_status_build_failure"]=businessStatusBuildFailure;
+  out["business_status_builds"]=businessStatusBuilds;
+  out["business_status_build_age_ms"]=millis()-businessStatusBuildAt;
+  out["business_status_lease_age_ms"]=businessReadSnapshot.checkedAge(millis());
+  out["business_status_deadline_remaining_ms"]=businessReadSnapshot.deadlineRemaining(millis());
+  out["business_status_ready"]=businessStatusReady;
+  out["business_status_invalid"]=businessStatusInvalid;
 #endif
   const uint32_t now=millis();out["schema"]=PH_DIAGNOSTICS_SCHEMA;
   JsonArray fields=out.createNestedArray("fields");
