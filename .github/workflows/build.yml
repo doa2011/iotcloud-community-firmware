@@ -340,7 +340,7 @@ jobs:
         if: matrix.variant == 'full'
         run: |
           python3 -m unittest DAIKIN.tests.test_ota_identity DAIKIN.tests.test_wire_msgpack \
-            DAIKIN.tests.test_web_auth DAIKIN.tests.test_lan_pairing DAIKIN.tests.test_auth_storage
+            DAIKIN.tests.test_web_auth DAIKIN.tests.test_lan_pairing DAIKIN.tests.test_auth_storage DAIKIN.tests.test_sensor_runtime
       - name: Test ESP32 protocol and actual embedded page
         if: matrix.variant == 'full'
         run: |

@@ -78,6 +78,10 @@ static void screenStatus(JsonObject out);
 static void screenPowerStatus(JsonObject) {}
 #endif
 #include "indicators.inc"
+static void sensorDiagnostics(JsonObject) {}
+#include "climate.h"
+#include "i18n.h"
+#include "config_validation.inc"
 #include "state.inc"
 #include "public_read.inc"
 #include "account_scope.inc"
@@ -220,6 +224,17 @@ static void concurrentCopies(){
 }
 
 int main(){
+ DynamicJsonDocument power(512);assert(!deserializeJson(power,"{\"enabled\":false,\"start_minute\":1380,\"end_minute\":420,\"timezone_minutes\":480}"));
+#ifdef IOTCLOUD_BRY88_SCREEN
+ assert(!validSection("pm_power",power.as<JsonObjectConst>()));
+#else
+ assert(validSection("pm_power",power.as<JsonObjectConst>()));
+ power["end_minute"]=1440;assert(!validSection("pm_power",power.as<JsonObjectConst>()));
+ power["end_minute"]=420;power["enabled"]=1;assert(!validSection("pm_power",power.as<JsonObjectConst>()));
+ power["enabled"]=false;power["timezone_minutes"]=841;assert(!validSection("pm_power",power.as<JsonObjectConst>()));
+ power["timezone_minutes"]=480;power.remove("start_minute");assert(!validSection("pm_power",power.as<JsonObjectConst>()));
+#endif
+
  assert(mqttAccountScope("")=="local");
  assert(mqttAccountScope("a/B-9")=="u_612f422d39");
  assert(mqttAccountScope("\xe6\xb5\x8b\xe8\xaf\x95")=="u_e6b58be8af95");
@@ -271,5 +286,11 @@ int main(){
  assert(pair.size()==2&&pair[0].is<unsigned>());if(pair[0]==PH_DIAG_MQTT_ERROR_TYPE){assert(pair[1]==0);zero=true;}}
  assert(zero);co2Module.received=false;doc.clear();diagnostics(doc.to<JsonObject>());
  for(JsonArrayConst pair:doc["fields"].as<JsonArrayConst>())assert(pair[0]!=PH_DIAG_CO2_DIAGNOSTICS_RAW_PPM);
+ // A held PM sample has a long source age but cannot underflow the cache deadline.
+ clockMs=2000000;readings[PM25].set(55,clockMs-1800000);readings[PM25].max_age_ms=3600000;
+ assert(pollBusinessStatusCache(clockMs));assert(businessStatusKey.samples[PM25].valid);
+ unsigned beforeTTL=businessStatusBuilds;readings[PM25].max_age_ms=120000;
+ assert(pollBusinessStatusCache(clockMs));assert(!businessStatusKey.samples[PM25].valid);
+ assert(businessStatusBuilds==beforeTTL+1);readings[PM25].max_age_ms=20000;
  httpReads();largeEncodedRead();concurrentCopies();
 }

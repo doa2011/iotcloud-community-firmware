@@ -1,4 +1,4 @@
-#include "m1.h"
+#include <m1.h>
 
 /* MK3080B aliases: SDA=GPIO8, SCL=GPIO7; UART1 stays on GPIO9/10.
  * Separate STOP-delimited writes and reads are required by SCD40. */
@@ -10,6 +10,8 @@ static mico_i2c_device_t sensor = {
 static bool initialized;
 static unsigned phase;
 static uint32_t due = 1000;
+static uint16_t applied_pressure_hpa;
+static uint32_t pressure_settle_until;
 
 static OSStatus command(uint16_t value)
 {
@@ -38,14 +40,52 @@ static OSStatus read_words(uint16_t *words, unsigned count)
     return err;
 }
 
+static OSStatus set_ambient_pressure(uint16_t hpa)
+{
+    /* SCD4x datasheet v1.7, 3.7.5: Pa/100, valid range 700..1200.
+     * The default is 1013 hPa; zero is not a supported reset value. */
+    uint8_t bytes[5] = {0xe0, 0x00, hpa >> 8, hpa & 0xff, 0};
+    bytes[4] = scd40_crc(bytes + 2);
+    mico_rtos_lock_mutex(&m1_lock);
+    m1_state.scd40.last_command = 0xe000;
+    mico_rtos_unlock_mutex(&m1_lock);
+    mico_i2c_message_t message;
+    OSStatus err = MicoI2cBuildTxMessage(&message, bytes, sizeof(bytes), 1);
+    if (err == kNoErr) err = MicoI2cTransfer(&sensor, &message, 1);
+    return err;
+}
+
 void m1_scd40_tick(void)
 {
     uint32_t now = mico_rtos_get_time();
-    if ((int32_t)(now - due) < 0) return;
     OSStatus err = kNoErr;
+    if (phase == 3) {
+        if ((int32_t)(now - pressure_settle_until) < 0) return;
+        mico_rtos_lock_mutex(&m1_lock);
+        barometer_state_t pressure = m1_state.barometer;
+        mico_rtos_unlock_mutex(&m1_lock);
+        uint16_t hpa = 1013;
+        if (m1_barometer_fresh(&pressure, now) &&
+            pressure.pressure_centi_pa >= 7000000u && pressure.pressure_centi_pa <= 12000000u)
+            hpa = pressure.pressure_centi_pa / 10000u;
+        /* Only this phase has no pending SCD response. Check before the CO2
+         * poll deadline so pressure loss/recovery is applied promptly. */
+        if (hpa != applied_pressure_hpa) {
+            err = set_ambient_pressure(hpa);
+            if (err == kNoErr) {
+                applied_pressure_hpa = hpa;
+                pressure_settle_until = now + 1;
+                return;
+            }
+        }
+    }
+    if (err == kNoErr && (int32_t)(now - due) < 0) return;
     uint16_t words[3];
-    switch (phase) {
+    if (err == kNoErr) switch (phase) {
     case 0:
+        /* An MCU-only restart can leave the sensor's old pressure in RAM. */
+        applied_pressure_hpa = 0;
+        pressure_settle_until = now;
         if (initialized) { MicoI2cFinalize(&sensor); initialized = false; }
         err = MicoI2cInitialize(&sensor);
         mico_rtos_lock_mutex(&m1_lock);

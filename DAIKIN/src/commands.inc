@@ -51,6 +51,13 @@ static void buildBusinessState(JsonObject out,uint32_t now){
   out["mqtt_user"]=config["mqtt"]["user"]|"";out["mqtt_password_set"]=strlen(config["mqtt"]["password"]|"")>0;
   out["mqtt_connected"]=mqttConnected;out["mqtt_status"]=mqttConnected?"connected":strlen(config["mqtt"]["host"]|"")?"connecting":"disabled";
   out["mqtt_protocol"]="tmcp";out["mqtt_topic_mode"]="tmcp";out["mqtt_protocol_version"]=2;
+#ifndef IOTCLOUD_BRY88_SCREEN
+  JsonObject power=out.createNestedObject("pm_power");
+  power["enabled"]=config["pm_power"]["enabled"]|false;
+  power["start_minute"]=config["pm_power"]["start_minute"]|1380;
+  power["end_minute"]=config["pm_power"]["end_minute"]|420;
+  power["timezone_minutes"]=config["pm_power"]["timezone_minutes"]|480;
+#endif
   out["formaldehyde_present"]=hchoPresent;out["indicator_enabled"]=indicator;
   indicatorStatus(out,now);
 #ifdef IOTCLOUD_HUB
@@ -61,6 +68,7 @@ static void buildBusinessState(JsonObject out,uint32_t now){
     if(!sensorPresent(i))continue;
     JsonObject s=sensors.createNestedObject(keys[i]);bool valid=readings[i].valid(now);
     s["unit"]=units[i];
+    if((i==PM25||i==PM10)&&readings[i].max_age_ms!=20000)s["max_age_ms"]=readings[i].max_age_ms;
     s["valid"]=valid;s["received"]=readings[i].received;
     if(valid)s["value"]=readings[i].value;else s["value"]=nullptr;
     if(readings[i].received)s["age_ms"]=uint32_t(now-readings[i].at);else s["age_ms"]=nullptr;
@@ -73,7 +81,7 @@ static void buildBusinessState(JsonObject out,uint32_t now){
 // immutable encoded publication through HttpReadSnapshot, never this document.
 // Source keys compare exact typed values; no business JSON is built on a hit.
 struct BusinessStatusKey {
-  struct Sample {float value;uint32_t at;bool received,present,valid;};
+  struct Sample {float value;uint32_t at,max_age_ms;bool received,present,valid;};
   Sample samples[SENSOR_COUNT];
   uint32_t warmup,cooldown,requested,completed;
   unsigned calibration,target,wifiMode;
@@ -83,7 +91,7 @@ struct BusinessStatusKey {
   bool operator==(const BusinessStatusKey &other)const {
     for(unsigned i=0;i<SENSOR_COUNT;i++){
       const auto &a=samples[i],&b=other.samples[i];
-      if(memcmp(&a.value,&b.value,sizeof(float))||a.at!=b.at||a.received!=b.received||a.present!=b.present||a.valid!=b.valid)return false;
+      if(memcmp(&a.value,&b.value,sizeof(float))||a.at!=b.at||a.max_age_ms!=b.max_age_ms||a.received!=b.received||a.present!=b.present||a.valid!=b.valid)return false;
     }
     return warmup==other.warmup&&cooldown==other.cooldown&&requested==other.requested&&completed==other.completed&&calibration==other.calibration&&target==other.target&&wifiMode==other.wifiMode&&wifiStatus==other.wifiStatus&&rssi==other.rssi&&available==other.available&&pending==other.pending&&awaiting==other.awaiting&&attempted==other.attempted&&button==other.button&&mqtt==other.mqtt&&hcho==other.hcho&&indicator==other.indicator&&recovery==other.recovery&&hub==other.hub&&ip==other.ip;
   }
@@ -99,7 +107,7 @@ static void requestBusinessStatusRefresh(){businessStatusInvalid=true;}
 static void invalidateBusinessStatusCache(){requestBusinessStatusRefresh();businessReadSnapshot.invalidate();}
 static BusinessStatusKey businessStatusSource(uint32_t now){
   BusinessStatusKey key={};
-  for(unsigned i=0;i<SENSOR_COUNT;i++){auto &s=key.samples[i];const auto &r=readings[i];s.value=r.value;s.at=r.at;s.received=r.received;s.present=sensorPresent(i);s.valid=r.valid(now);}
+  for(unsigned i=0;i<SENSOR_COUNT;i++){auto &s=key.samples[i];const auto &r=readings[i];s.value=r.value;s.at=r.at;s.max_age_ms=r.max_age_ms;s.received=r.received;s.present=sensorPresent(i);s.valid=r.valid(now);}
   key.warmup=!co2Module.warmed&&now<180000?(180000-now+999)/1000:0;
   key.cooldown=co2Module.cooldown(now);key.available=co2Module.canCalibrate(now);
   key.requested=co2Module.requestedAt;key.completed=co2Module.completedAt;
@@ -128,7 +136,7 @@ static bool pollBusinessStatusCache(uint32_t now){
   uint32_t freshFor=0x7fffffffu;
   for(unsigned i=0;i<SENSOR_COUNT;i++){
     if(businessStatusKey.samples[i].valid&&!next.samples[i].valid)businessReadSnapshot.invalidate();
-    if(next.samples[i].valid)freshFor=std::min(freshFor,20000u-uint32_t(now-next.samples[i].at));
+    if(next.samples[i].valid)freshFor=std::min(freshFor,next.samples[i].max_age_ms-uint32_t(now-next.samples[i].at));
   }
   businessStatusReady=false;
 #ifdef IOTCLOUD_BRY88_SCREEN
@@ -195,6 +203,7 @@ static void diagnostics(JsonObject out){
   diagnosticField(fields,PH_DIAG_MQTT_ERROR_TYPE,int(mqttErrorType));
   diagnosticField(fields,PH_DIAG_MQTT_SOCKET_ERROR,int(mqttSocketError));
 #ifndef IOTCLOUD_BRY88_SCREEN
+  sensorDiagnostics(out.createNestedObject("sensors"));
   diagnosticField(fields,PH_DIAG_CO2_DIAGNOSTICS_PROTOCOL,"cm1106");
   diagnosticField(fields,PH_DIAG_CO2_DIAGNOSTICS_RECEIVED,co2Module.received);
   diagnosticField(fields,PH_DIAG_CO2_DIAGNOSTICS_FRESH,co2Module.fresh(now));
@@ -226,6 +235,13 @@ static const char *actions[]={"status.get","diagnostics.get","config.get","capab
 static void capabilities(JsonObject out){
   out["device_id"]=deviceId;out["model"]="daikin";out["firmware_version"]=version;out["variant"]=DAIKIN_VARIANT;out["firmware_variant"]=DAIKIN_VARIANT;out["hardware_model"]=hardwareModel;out["protocol"]=2;
   out["config_backup"]=1;out["config_recovery"]=configRecovery;out["device_language"]="zh-CN,en";out["mqtt_protocol"]="tmcp";out["mqtt_protocol_version"]=2;
+#ifndef IOTCLOUD_BRY88_SCREEN
+  JsonObject power=out.createNestedObject("pm_power");
+  power["enabled"]=config["pm_power"]["enabled"]|false;
+  power["start_minute"]=config["pm_power"]["start_minute"]|1380;
+  power["end_minute"]=config["pm_power"]["end_minute"]|420;
+  power["timezone_minutes"]=config["pm_power"]["timezone_minutes"]|480;
+#endif
   out["formaldehyde_present"]=hchoPresent;out["sensor_session_protocol"]=3;out["sensor_schema"]=3;
   out["indicator_rules_supported"]=true;
 #ifdef IOTCLOUD_BRY88_SCREEN
@@ -250,7 +266,7 @@ static bool knownFields(JsonObjectConst obj,const char *allowed){
 static bool validText(JsonVariantConst v,size_t max){return v.is<const char*>()&&strlen(v.as<const char*>())<=max;}
 static bool validSection(const String &section,JsonObjectConst values) {
 #ifdef IOTCLOUD_BRY88_SCREEN
-      if(section=="climate"||section=="indicator_rules")return false;
+      if(section=="climate"||section=="indicator_rules"||section=="pm_power")return false;
 #endif
       bool valid=!values.isNull()&&values.size()>0;
       if(section=="device"){
@@ -273,6 +289,10 @@ static bool validSection(const String &section,JsonObjectConst values) {
         valid=valid&&knownFields(values,"|temperature_offset||humidity_offset|")&&values.size()==2&&
           values["temperature_offset"].is<float>()&&values["humidity_offset"].is<float>()&&
           daikin::validClimateOffsets(values["temperature_offset"].as<float>(),values["humidity_offset"].as<float>());
+      }else if(section=="pm_power"){
+        valid=valid&&knownFields(values,"|enabled||start_minute||end_minute||timezone_minutes|")&&values.size()==4&&values["enabled"].is<bool>();
+        for(const char *key:{"start_minute","end_minute"})valid=valid&&values[key].is<int>()&&values[key].as<int>()>=0&&values[key].as<int>()<1440;
+        valid=valid&&values["timezone_minutes"].is<int>()&&values["timezone_minutes"].as<int>()>=-720&&values["timezone_minutes"].as<int>()<=840;
       }else if(section=="indicator_rules"){
         daikin::LightSettings parsed;valid=valid&&daikin::readLightSettings(values,parsed);
       }else valid=false;
@@ -280,9 +300,9 @@ static bool validSection(const String &section,JsonObjectConst values) {
 }
 static bool validConfig(JsonObjectConst candidate){
   #ifdef IOTCLOUD_HUB
-  if(candidate.isNull()||!knownFields(candidate,"|_version||device||auth||wifi||mqtt||climate||indicator_rules||indicator||lan_peers||hub|"))return false;
+  if(candidate.isNull()||!knownFields(candidate,"|_version||device||auth||wifi||mqtt||climate||pm_power||indicator_rules||indicator||lan_peers||hub|"))return false;
 #else
-  if(candidate.isNull()||!knownFields(candidate,"|_version||device||auth||wifi||mqtt||climate||indicator_rules||indicator||lan_peers|"))return false;
+  if(candidate.isNull()||!knownFields(candidate,"|_version||device||auth||wifi||mqtt||climate||pm_power||indicator_rules||indicator||lan_peers|"))return false;
 #endif
   if(candidate.containsKey("_version")&&(!candidate["_version"].is<unsigned>()||candidate["_version"].as<unsigned>()!=1))return false;
   for(JsonPairConst kv:candidate){

@@ -79,6 +79,7 @@ char *dtostrf(double,int,unsigned int,char*);
 ''')
         src = ROOT / 'DAIKIN/src'
         (temp / 'state.inc').write_text('#include "diagnostics_ids.h"\n' + section(src / 'commands.inc', 'static void otaPartitionStatus(', 'static const char *actions'))
+        (temp / 'config_validation.inc').write_text(section(src / 'commands.inc', 'static bool knownFields(', 'static bool validConfig('))
         (temp / 'public_read.inc').write_text(section(src / 'http.inc', 'static bool publicReadCommand(', 'static esp_err_t commandHandler('))
         (temp / 'account_scope.inc').write_text(section(src / 'mqtt.inc', 'static String mqttAccountScope(', 'static void discovery('))
         shutil.copyfile(src / 'diagnostics_ids.h', temp / 'diagnostics_ids.h')

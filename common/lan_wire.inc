@@ -33,10 +33,11 @@ bool lan_decode_value(const ph_value *root,lan_packet *out)
     bool have_body=phv_get(root,"body",&body);
     if(p.op!=LAN_SAMPLE){if(have_body)return false;*out=p;return true;}
     uint32_t fields;
-    if(!have_body||body.kind!=PHV_MAP||!phv_keys(&body,"|boot||sequence||fields||co2_supported||values||ages|")||
+    if(!have_body||body.kind!=PHV_MAP||!phv_keys(&body,"|boot||sequence||fields||co2_supported||values||ages||pm25_max_age_ms|")||
        !lan_u32(&body,"boot",&p.sample.boot)||p.sample.boot!=p.boot||
        !lan_u32(&body,"sequence",&p.sample.sequence)||!lan_u32(&body,"fields",&fields)||fields>31||
        !phv_get(&body,"co2_supported",&v)||!phv_bool(&v,&p.sample.co2_supported))return false;
+    if(phv_get(&body,"pm25_max_age_ms",&v)&&(!lan_u32(&body,"pm25_max_age_ms",&p.sample.pm25_max_age_ms)||!p.sample.pm25_max_age_ms||p.sample.pm25_max_age_ms>3600000))return false;
     if((fields&16)&&!p.sample.co2_supported)return false;
     p.sample.fields=(uint8_t)fields;
     ph_value values,ages;
@@ -68,6 +69,7 @@ bool lan_encode(ph_writer *w,const lan_packet *p)
     if(p->op==LAN_SAMPLE){
         phw_begin(w,"body",false);phw_u32(w,"boot",p->sample.boot);phw_u32(w,"sequence",p->sample.sequence);
         phw_uint(w,"fields",p->sample.fields);phw_bool(w,"co2_supported",p->sample.co2_supported);
+        if(p->sample.pm25_max_age_ms)phw_u32(w,"pm25_max_age_ms",p->sample.pm25_max_age_ms);
         phw_begin(w,"values",true);for(unsigned i=0;i<5;i++)phw_i32(w,NULL,p->sample.value[i]);phw_end(w);
         phw_begin(w,"ages",true);for(unsigned i=0;i<5;i++)phw_u32(w,NULL,p->sample.age_ms[i]);phw_end(w);
         phw_end(w);
