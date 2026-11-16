@@ -11,7 +11,8 @@ static void line(void *context, const char *p, size_t n) {
     const uint32_t supported = SCREEN_CAP_KNOWN & ~SCREEN_CAP_FLASH_INFO;
     const uint32_t required = supported &
         ~(SCREEN_CAP_MEDIA | SCREEN_CAP_IMAGE | SCREEN_CAP_BINARY_LINK |
-          SCREEN_CAP_URL_PUSH | SCREEN_CAP_PUSH_UPDATE | SCREEN_CAP_PUSH_POLICY);
+          SCREEN_CAP_URL_PUSH | SCREEN_CAP_PUSH_UPDATE | SCREEN_CAP_PUSH_POLICY |
+          SCREEN_CAP_PAGE_POLICY);
     if ((caps & required) != required)
       return; /* rc6 supports the current community MCU or factory UART only. */
     /* Repeat ACKs preserve the capabilities agreed for this session. */
