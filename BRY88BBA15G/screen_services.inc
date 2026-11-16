@@ -44,7 +44,7 @@ static const char *screenWallpaperCommand(const String &,JsonObjectConst,JsonObj
 static display_policy screenDisplayPolicy;
 static uint32_t screenPolicySession, screenPolicyAck, screenPolicySentAt;
 static const char *screenPolicyError = "";
-static void screenPolicyGet(JsonObject);
+static void screenPolicyGet(JsonObject, bool detail = false);
 static const char *screenPolicySet(JsonObjectConst, JsonObject);
 static void screenPolicyPoll();
 static screen_scene screenScene;

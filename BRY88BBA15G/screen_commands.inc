@@ -46,7 +46,7 @@ static __attribute__((noinline)) const char *screenLegacyServicesCommand(
   }
   if (action == "screen.display.get") {
     if (params.size()) return "invalid_params";
-    screenPolicyGet(data); return "ok";
+    screenPolicyGet(data, true); return "ok";
   }
   if (action == "screen.display.set") return screenPolicySet(params, data);
   if(action=="screen.startup.get") {

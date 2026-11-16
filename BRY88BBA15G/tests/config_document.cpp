@@ -38,7 +38,7 @@ int main() {
   settings["display"]["data_type"] = 0;
   settings["display"]["power_screen_time"] = 2;
   settings["display"]["battery_screen_time"] = 1;
-  std::string layout(12696, 'A'),policy(492,'B'),appearance(940,'C');
+  std::string layout(12696, 'A'),policy(632,'B'),appearance(940,'C');
   for (unsigned count : {0u, 1u, 32u}) {
     for (unsigned i = 0; i < REMINDER_MAX; i++) {
       auto &r = schedule.rules[i];
