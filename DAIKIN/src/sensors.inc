@@ -27,15 +27,14 @@ static void pollSensorClock(){
     configTime(0,0,"pool.ntp.org","time.cloudflare.com");
   }
 }
-static uint32_t pmMaxAgeMs(uint32_t now){(void)now;return pmPower.maxAgeMs();}
 static void pollPmPower(uint32_t now){
   const uint64_t utc=sensorUtc();
   const bool night=daikin::PmPower::nightAt(config["pm_power"]["enabled"]|false,
     config["pm_power"]["start_minute"]|1380U,config["pm_power"]["end_minute"]|420U,
     config["pm_power"]["timezone_minutes"]|480,utc!=0,utc);
   const uint8_t desired=pmPower.desired(now,night);
-  readings[PM25].max_age_ms=readings[PM10].max_age_ms=pmMaxAgeMs(now);
-  rawPm25.max_age_ms=rawPm10.max_age_ms=pmMaxAgeMs(now);
+  readings[PM25].max_age_ms=readings[PM10].max_age_ms=pmPower.maxAgeMs();
+  rawPm25.max_age_ms=rawPm10.max_age_ms=pmPower.maxAgeMs();
   if(desired==pmPower.mode||!due(now,nextPmCommand))return;
   nextPmCommand=now+1000;
   uint8_t packet[]={0x16,7,desired,0,0,0,0};
@@ -110,17 +109,15 @@ static void loadSgpBaseline(){
   storage.end();
   sgp.restorePending=sgp.recordPresent;
 }
-static bool initSgp(uint32_t now,bool restore){
+static bool initSgp(uint32_t now){
   readings[TVOC].received=false;
   sgpReady=false;sgp.humidityKnown=false;sgp.eligible=false;sgp.restored=false;
-  {
-    if(!sgpReadWords(0x3682,sgp.serial,3,1)||!sgpReadWords(0x202f,&sgp.feature,1,10)){sgp.errors++;return false;}
-    sgp.identity=true;
-  }
+  if(!sgpReadWords(0x3682,sgp.serial,3,1)||!sgpReadWords(0x202f,&sgp.feature,1,10)){sgp.errors++;return false;}
+  sgp.identity=true;
   loadSgpBaseline();
   if(!sgpWriteWords(0x2003,nullptr,0)){sgp.errors++;return false;}
   const uint64_t utc=sensorUtc();
-  if(restore&&sgp.recordPresent&&sgp.record.matches(sgp.serial,sgp.feature,utc!=0,utc)){
+  if(sgp.recordPresent&&sgp.record.matches(sgp.serial,sgp.feature,utc!=0,utc)){
     // get_iaq_baseline returns CO2eq, TVOC; set_iaq_baseline takes TVOC, CO2eq.
     const uint16_t words[]={sgp.record.tvoc,sgp.record.co2};
     if(!sgpWriteWords(0x201e,words,2)){sgp.errors++;return false;}
@@ -148,16 +145,16 @@ static void saveSgpBaseline(uint32_t now){
 static void pollSgp(uint32_t now){
   if(!due(now,nextSgp))return;
   const uint64_t utc=sensorUtc();
-  if(!sgpReady){nextSgp=now+1000;initSgp(now,true);return;}
+  if(!sgpReady){nextSgp=now+1000;initSgp(now);return;}
   if(sgp.restorePending&&utc){
     sgp.restorePending=false;
     if(sgp.record.matches(sgp.serial,sgp.feature,true,utc)){
-      nextSgp=now+1000;initSgp(now,true);return;
+      nextSgp=now+1000;initSgp(now);return;
     }
   }
   // The algorithm requires one measurement each second. A missed full slot
   // starts a fresh run; do not issue a burst of catch-up measurements.
-  if(uint32_t(now-sgp.lastMeasure)>=2000){nextSgp=now+1000;initSgp(now,true);return;}
+  if(uint32_t(now-sgp.lastMeasure)>=2000){nextSgp=now+1000;initSgp(now);return;}
   nextSgp+=1000;
   uint32_t humidityMg=0;uint16_t humidityWord=0;
   if(readings[TEMPERATURE].valid(now)&&readings[HUMIDITY].valid(now))

@@ -24,16 +24,16 @@ struct {bool valid(uint32_t){return false;}void push(uint8_t,uint32_t){}size_t p
 enum{PM25,CO2,TEMPERATURE,HUMIDITY,TVOC,HCHO,PM10,SENSOR_COUNT};static daikin::Sample readings[SENSOR_COUNT];static bool sgpReady=false,hchoPresent=false,hchoWaiting=false;static unsigned sgpSince,nextSample,nextSgp,hchoUsed,hchoSent;static uint8_t hchoFrame[9];static const char*pmModel;static DynamicJsonDocument config(2048);static bool due(uint32_t n,uint32_t d){return int32_t(n-d)>=0;}
 #include "../src/sensors.inc"
 int main(){
- sensorClockSynchronized=true;assert(initSgp(0,true));assert(sgp.identity);
+ sensorClockSynchronized=true;assert(initSgp(0));assert(sgp.identity);
  readings[TEMPERATURE].set(25,0);readings[HUMIDITY].set(50,0);
  nextSgp=1000;for(unsigned i=1;i<=3600;i++){clockMs=i*1000;readings[TEMPERATURE].at=readings[HUMIDITY].at=clockMs;pollSgp(clockMs);}
  assert(readings[TVOC].received&&readings[TVOC].value==0);assert(sgp.eligible&&Preferences::bytes.size()==24);
  assert(sgp.record.co2==0xabcd&&sgp.record.tvoc==0x1234);
- assert(initSgp(clockMs,true)&&sgp.restored);auto restore=thBus.writes.back();assert(restore[0]==0x20&&restore[1]==0x1e&&restore[2]==0x12&&restore[3]==0x34&&restore[5]==0xab&&restore[6]==0xcd);
- thBus.serial=456;assert(initSgp(clockMs,true)&&!sgp.restored);
- thBus.corrupt=true;assert(!initSgp(clockMs,true));thBus.corrupt=false;
- assert(initSgp(clockMs,true));sgp.restorePending=false;nextSgp=clockMs+1000;clockMs+=3000;pollSgp(clockMs);assert(!readings[TVOC].received&&!sgp.eligible);
- sensorClockSynchronized=false;assert(initSgp(clockMs,true)&&!sgp.restored);
+ assert(initSgp(clockMs)&&sgp.restored);auto restore=thBus.writes.back();assert(restore[0]==0x20&&restore[1]==0x1e&&restore[2]==0x12&&restore[3]==0x34&&restore[5]==0xab&&restore[6]==0xcd);
+ thBus.serial=456;assert(initSgp(clockMs)&&!sgp.restored);
+ thBus.corrupt=true;assert(!initSgp(clockMs));thBus.corrupt=false;
+ assert(initSgp(clockMs));sgp.restorePending=false;nextSgp=clockMs+1000;clockMs+=3000;pollSgp(clockMs);assert(!readings[TVOC].received&&!sgp.eligible);
+ sensorClockSynchronized=false;assert(initSgp(clockMs)&&!sgp.restored);
  failClear=true;assert(!resetSensorCalibration()&&!Preferences::bytes.empty());failClear=false;assert(resetSensorCalibration()&&Preferences::bytes.empty());assert(resetSensorCalibration()&&Preferences::bytes.empty());
  puts("PASS production SGP loop: hourly persistence, wire order/CRC, identity replacement, zero TVOC, gap and clock gates");
 }
