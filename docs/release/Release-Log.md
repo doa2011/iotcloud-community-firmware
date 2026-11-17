@@ -4,6 +4,39 @@
 
 ## v1.0.0-rc.7
 
+### 发布后补充 / Post-publication additions
+
+以下条目依据 RC6→RC7 实际源码差异补录。
+The following entries complete the RC6-to-RC7 source audit.
+
+- **S30M-V1B 假在线恢复 / Recover stalled S30M-V1B links**：修复 Wi-Fi 仍关联但单播接收停止、设备无法访问的问题：检查网关连通性并由 Wi-Fi 所有者执行受限自动重连。
+  Recover when Wi-Fi remains associated but unicast reception stalls and the device becomes unreachable, using gateway checks and bounded reconnects owned by the Wi-Fi service.
+
+- **S30M-V1B 高读取压力下的网络检查 / Nonblocking S30M-V1B link checks**：修复 TCP/IP 队列满时网络健康检查阻塞局域网接收的问题，避免高频 UDP 读取进一步拖住接收处理。
+  Keep link-health checks from blocking LAN reception when the TCP/IP queue is full, including under high-rate UDP reads.
+
+- **S30M-V1B 在线检查与升级 / S30M-V1B online update checks**：增加在线版本检查、升级状态与原生 RBL 升级入口；核对设备型号、镜像大小和 SHA-256，保留 STOCK_UA/RBL 格式。
+  Add online version checks, update status and native RBL updates, checking model, image size and SHA-256 while retaining STOCK_UA/RBL formats.
+
+- **TC1 长按不再触发 SDK 提前清参 / Prevent premature SDK resets on TC1**：禁用 SDK EasyLink 的独立按键回调，避免长按约 3 秒就清除参数分区、抢在社区固件的 5 秒/10 秒重置手势之前执行。
+  Disable the separate SDK EasyLink button callback so a roughly three-second hold cannot erase parameter partitions before the community firmware handles its five- and ten-second reset gestures.
+
+- **修正设备默认名称与型号显示 / Correct default names and displayed models**：网页标题、默认名称和发现信息使用实际整机型号，修复旧默认名称；保留用户自定义名称，S30M-V1B 不再显示 OpenBK 或模块名称。
+  Use actual product models in page titles, default names and discovery; migrate old defaults while preserving custom names. S30M-V1B no longer exposes OpenBK or its module name as its product name.
+
+- **G3 天气请求与内存修复 / Fix G3 weather requests and memory use**：修正天气服务请求与证书配置，降低响应解析的内存压力，并为 Open-Meteo 的 TLS 握手留出足够时间，改善天气长期占位符问题。
+  Correct weather-provider requests and certificate configuration, reduce response-parsing memory pressure and allow enough time for Open-Meteo TLS handshakes to improve weather availability.
+
+- **G3 摄像头来源切换后恢复 TLS 校验 / Restore TLS verification after camera changes**：修复复用摄像头连接时跳过证书校验的状态残留；从允许不校验证书的来源切回要求校验的 HTTPS 来源后，重新启用证书验证。
+  Clear the lingering insecure state on a reused camera connection so switching back to an HTTPS source that requires verification re-enables certificate checks.
+
+- **G3 屏幕升级期间的串口交接 / Fix UART handoff during G3 screen updates**：屏幕进入原始升级通道前排空旧媒体数据，升级期间拒绝业务回复和迟到视频帧，并按确认的重启事件回到启动波特率；这不等于解决部分设备的暖升级乱码故障。
+  Drain old media before raw screen-OTA handoff, reject business replies and late video frames during transfer, and return to boot baud after acknowledged MCU restarts. The separate warm-OTA corruption issue on some devices remains unresolved.
+
+- **G3 屏幕绘制与传输开销优化 / Reduce G3 rendering and transport overhead**：配套屏幕主控优化 JPEG、透明叠图、DMA 与增量绘制，降低空闲轮询开销；实际摄像头帧率仍受图像大小和屏幕处理速度限制，需独立升级配套屏幕主控。
+  The matching screen MCU improves JPEG, transparent overlays, DMA and incremental rendering, while reducing idle polling overhead. Camera frame rate still depends on image size and screen throughput; the matching screen MCU needs a separate update.
+
+
 **RC7 为候选测试版本，包含 RC6 以来的累计变更。升级前备份配置，按型号与变体选择镜像。**
 
 **RC7 is a release candidate with cumulative changes since RC6. Back up configuration and select the matching model and variant.**

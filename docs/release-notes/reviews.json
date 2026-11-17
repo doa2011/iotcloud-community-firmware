@@ -4927,12 +4927,21 @@
     },
     "v1.0.0-rc.7:b003": {
       "status": "approved",
-      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits. Post-publication audit supplements the cumulative upgrade statement with changes verified against released RC6..RC7 commits; the original source block remains unchanged.",
       "basis": [
         "v1.0.0-rc.7:b003"
       ],
       "change_refs": [
-        "rc7-upgrade-boundaries@1.0.0-rc.7"
+        "rc7-upgrade-boundaries@1.0.0-rc.7",
+        "rc7-s30-unicast-recovery@1.0.0-rc.7",
+        "rc7-s30-nonblocking-link-check@1.0.0-rc.7",
+        "rc7-s30-online-update@1.0.0-rc.7",
+        "rc7-tc1-easylink-reset-guard@1.0.0-rc.7",
+        "rc7-actual-model-default-names@1.0.0-rc.7",
+        "rc7-g3-weather-request-fixes@1.0.0-rc.7",
+        "rc7-g3-camera-tls-restore@1.0.0-rc.7",
+        "rc7-g3-ota-uart-handoff@1.0.0-rc.7",
+        "rc7-g3-render-throughput@1.0.0-rc.7"
       ],
       "block_sha256": "2e9b9a28ebbca9f85cacf223af9f74ab96f070adc9c80d213554352710fae682",
       "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
