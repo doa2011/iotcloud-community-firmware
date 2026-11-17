@@ -85,7 +85,7 @@ static bool publicReadCommand(const String &body,String &response,bool binaryErr
   if(!businessReadSnapshot.copy(data,false,millis())){busy();return true;}
   ph_writer writer;
   if(!phw_init_capacity(&writer,PH_WIRE_MSGPACK,data.length()+160)){busy();return true;}
-  ph_buf cached={const_cast<char*>(data.c_str()),data.length(),data.length()+1};
+  ph_buf cached={const_cast<char*>(data.c_str()),data.length(),data.length()+1,nullptr,nullptr,0};
   phw_begin(&writer,nullptr,false);if(*requestId)phw_text(&writer,"request_id",requestId);
   phw_text(&writer,"code","ok");phw_text(&writer,"message","ok");
   phw_cached_value(&writer,"data",&cached,8);phw_end(&writer);
