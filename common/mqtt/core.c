@@ -78,12 +78,25 @@ bool ph_mqtt_enqueue_route(ph_mqtt_core *s, unsigned kind, const void *topic, si
     return ph_mqtt_enqueue_generation(s, kind, topic, tn, payload, n, qos, retained, route, 0);
 }
 
-bool ph_mqtt_enqueue_generation(ph_mqtt_core *s, unsigned kind, const void *topic, size_t tn, const void *payload, size_t n, unsigned qos, bool retained, unsigned route, uint32_t generation) {
+static void release_item(ph_mqtt_core *s,ph_mqtt_item *i)
+{
+    if(i->release_owned)i->release_owned(i->owned);
+    s->hooks.release(s->hooks.context,i);
+}
+static bool enqueue(ph_mqtt_core *s, unsigned kind, const void *topic, size_t tn, const void *payload, size_t n, unsigned qos, bool retained, unsigned route, uint32_t generation,void *owned,void (*release_owned)(void *),size_t retained_bytes);
+bool ph_mqtt_enqueue_generation(ph_mqtt_core *s, unsigned kind, const void *topic, size_t tn, const void *payload, size_t n, unsigned qos, bool retained, unsigned route, uint32_t generation)
+{ return enqueue(s,kind,topic,tn,payload,n,qos,retained,route,generation,NULL,NULL,0); }
+bool ph_mqtt_enqueue_owned_generation(ph_mqtt_core *s,const void *topic,size_t tn,const void *payload,size_t n,unsigned qos,bool retained,uint32_t generation,void *owned,void (*release_owned)(void *),size_t retained_bytes)
+{
+    if(!owned || !release_owned || !payload || retained_bytes<n || retained_bytes>PH_MQTT_QUEUE_BYTES)return false;
+    return enqueue(s,PH_MQTT_SEND,topic,tn,payload,n,qos,retained,0,generation,owned,release_owned,retained_bytes);
+}
+static bool enqueue(ph_mqtt_core *s, unsigned kind, const void *topic, size_t tn, const void *payload, size_t n, unsigned qos, bool retained, unsigned route, uint32_t generation,void *owned,void (*release_owned)(void *),size_t retained_bytes) {
     if (kind > PH_MQTT_SEND || !topic || !tn || tn > PH_MQTT_TOPIC_BYTES || (!payload && n) || n > PH_MQTT_PAYLOAD_BYTES || qos > 1 || route > UINT16_MAX || memchr(topic, 0, tn))
         return false;
-    size_t size = sizeof(ph_mqtt_item) + tn + 1 + n + 1;
+    size_t size = sizeof(ph_mqtt_item) + tn + 1 + (owned?0:n+1);
     /* Include allocator header/alignment in the admission ledger. */
-    size_t charge = (size + 31u) &~(size_t) 15u;
+    size_t charge = ((size + 31u) &~(size_t) 15u) + retained_bytes;
     lock(s);
     unsigned cap = kind == PH_MQTT_COMMAND ? PH_MQTT_COMMAND_COUNT : PH_MQTT_SEND_COUNT;
     /* Only queued retained telemetry coalesces. Never replace an admitted
@@ -122,9 +135,12 @@ bool ph_mqtt_enqueue_generation(ph_mqtt_core *s, unsigned kind, const void *topi
     i->generation = s->generation;
     memcpy(i->data, topic, tn);
     i->data[tn] = 0;
-    if (n)
-        memcpy(i->data + tn + 1, payload, n);
-    i->data[tn + 1 + n] = 0;
+    i->owned=owned;i->release_owned=release_owned;
+    if(owned)i->payload=payload;
+    else {
+        if (n)memcpy(i->data + tn + 1, payload, n);
+        i->data[tn + 1 + n] = 0;
+    }
     s->bytes += charge;
     s->kind_bytes[kind] += charge;
     if (s->bytes > s->peak_bytes)
@@ -138,7 +154,7 @@ bool ph_mqtt_enqueue_generation(ph_mqtt_core *s, unsigned kind, const void *topi
             s->tail[kind] = i;
         s->bytes -= replace->charge;
         s->kind_bytes[kind] -= replace->charge;
-        s->hooks.release(s->hooks.context, replace);
+        release_item(s,replace);
     } else {
         if (s->tail[kind])
             s->tail[kind]->next = i;
@@ -294,7 +310,7 @@ void ph_mqtt_discard_route(ph_mqtt_core *s, unsigned route) {
     while (discard) {
         ph_mqtt_item *i = discard;
         discard = i->next;
-        s->hooks.release(s->hooks.context, i);
+        release_item(s,i);
     }
     lock(s);
     s->accepting = accepting;
@@ -334,7 +350,7 @@ void ph_mqtt_item_release(ph_mqtt_core *s, ph_mqtt_item *i) {
     s->bytes -= i->charge;
     s->kind_bytes[kind] -= i->charge;
     --s->count[kind];
-    s->hooks.release(s->hooks.context, i);
+    release_item(s,i);
     unlock(s);
 }
 
@@ -411,7 +427,7 @@ bool ph_mqtt_clear(ph_mqtt_core *s) {
         while (old[kind]) {
         ph_mqtt_item *i = old[kind];
         old[kind] = i->next;
-        s->hooks.release(s->hooks.context, i);
+        release_item(s,i);
     }
     lock(s);
     s->accepting = accepting;

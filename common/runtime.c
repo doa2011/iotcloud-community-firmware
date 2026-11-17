@@ -130,11 +130,13 @@ static bool peer_current(const feature_config_t *c, unsigned i) {
          !memcmp(configuration.peers[i].token, c->peers[i].token, 16);
 }
 
-static bool enqueue_mp(const char *topic,const ph_buf *wire,bool retain) {
+static bool enqueue_mp(const char *topic,ph_buf *wire,bool retain) {
  if(!wire)return false;char prefix[160];uint32_t generation;
  mico_rtos_lock_mutex(&namespace_lock);mqtt_format(prefix,sizeof(prefix),"phicomm/v2/%s/",feature_account.key);generation=mqtt_generation;mico_rtos_unlock_mutex(&namespace_lock);
  size_t n=strlen(prefix);if(strncmp(topic,prefix,n)||strlen(topic+n)>=128)return false;
- return ph_mqtt_enqueue_send_generation(topic,wire->buf,wire->len,1,retain,generation)==0;
+ ph_buf_retain(wire);
+ if(ph_mqtt_enqueue_buf_generation(topic,wire,1,retain,generation)==0)return true;
+ ph_buf_free(wire);return false;
 }
 static ph_buf *domain_get_wire_mp(const char *domain){
  ph_writer w;if(!phw_init_capacity(&w,PH_WIRE_MSGPACK,512))return NULL;

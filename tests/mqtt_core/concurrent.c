@@ -9,7 +9,7 @@ static ph_mqtt_core core;
 static pthread_mutex_t queue_lock=PTHREAD_MUTEX_INITIALIZER,memory_lock=PTHREAD_MUTEX_INITIALIZER;
 static pthread_t owner_thread;
 static size_t live,peak;
-static unsigned allocated,freed;
+static unsigned allocated,freed,owned_allocated,owned_freed;
 static bool stopping;
 static pthread_mutex_t schedule_lock=PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t schedule_condition=PTHREAD_COND_INITIALIZER;
@@ -44,11 +44,18 @@ static void release(void*p,void*q){
  sched_yield();pthread_mutex_lock(&memory_lock);assert(live>=*base);live-=*base;++freed;
  pthread_mutex_unlock(&memory_lock);free(base);
 }
+static void owned_release(void *p){
+ sched_yield();free(p);pthread_mutex_lock(&memory_lock);owned_freed++;pthread_mutex_unlock(&memory_lock);
+}
 static void *producer(void*p){
- unsigned kind=(uintptr_t)p?PH_MQTT_COMMAND:PH_MQTT_SEND;char payload[2900];memset(payload,'a',sizeof(payload));unsigned i=0;
+ unsigned kind=(uintptr_t)p==1?PH_MQTT_COMMAND:PH_MQTT_SEND;char payload[2900];memset(payload,'a',sizeof(payload));unsigned i=0;
  for(;;){pthread_mutex_lock(&memory_lock);bool done=stopping;pthread_mutex_unlock(&memory_lock);if(done)break;
   char topic[24];snprintf(topic,sizeof(topic),"producer/%u",i++%6);
-  ph_mqtt_enqueue(&core,kind,topic,strlen(topic),payload,sizeof(payload),1,false);
+  if((uintptr_t)p==2){
+   void *wire=malloc(sizeof(payload));assert(wire);memcpy(wire,payload,sizeof(payload));
+   pthread_mutex_lock(&memory_lock);owned_allocated++;pthread_mutex_unlock(&memory_lock);
+   if(!ph_mqtt_enqueue_owned_generation(&core,topic,strlen(topic),wire,sizeof(payload),1,true,0,wire,owned_release,sizeof(payload)+32))owned_release(wire);
+  }else ph_mqtt_enqueue(&core,kind,topic,strlen(topic),payload,sizeof(payload),1,false);
   ph_mqtt_diagnostics d;ph_mqtt_core_snapshot(&core,&d);assert(d.bytes+d.credit<=PH_MQTT_QUEUE_BYTES);
   sched_yield();
  }return NULL;
@@ -73,7 +80,7 @@ int main(void){
  assert(!pthread_join(reader,NULL));
  schedule_reset=false;ph_mqtt_core_accepting(&core,true);
  pthread_t producers[3];
- for(unsigned i=0;i<3;i++)assert(!pthread_create(&producers[i],NULL,producer,(void*)(uintptr_t)(i%2)));
+ for(unsigned i=0;i<3;i++)assert(!pthread_create(&producers[i],NULL,producer,(void*)(uintptr_t)i));
  for(unsigned i=0;i<3000;i++){
   /* Producers and snapshot readers must be able to enter the lock throughout
    * owner rebind, including while the mutable fields are reset. */
@@ -88,6 +95,6 @@ int main(void){
  }
  pthread_mutex_lock(&memory_lock);stopping=true;pthread_mutex_unlock(&memory_lock);
  for(unsigned i=0;i<3;i++)assert(!pthread_join(producers[i],NULL));
- assert(ph_mqtt_clear(&core));assert(!live&&allocated==freed);
+ assert(ph_mqtt_clear(&core));assert(!live&&allocated==freed&&owned_allocated==owned_freed);
  printf("actual common queue: 3 concurrent producers/snapshot readers and 3000 clears/rebinds; charged peak=%zu <= %u; all %u allocations released\n",peak,PH_MQTT_QUEUE_BYTES,allocated);
 }

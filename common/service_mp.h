@@ -46,6 +46,10 @@ ph_buf *service_mqtt_command_mp(const void *data, size_t length);
 ph_buf *service_lan_command_mp(const void *data,size_t length,const ph_auth_context *);
 ph_buf *service_lan_try_command_mp(const void *,size_t,const ph_auth_context *,bool *admitted);
 ph_buf *service_query_mp(const char *action);
+/* Transport snapshots (including HTTP/MQTT command/query replies) are frozen:
+ * read only until ph_buf_free. Cache eviction never invalidates a live reply.
+ * service_query_mp/service_command_mp retain their independent mutable output. */
+ph_buf *service_snapshot_mp(const char *action);
 /* Same validated .get classification as dispatch; never admits a mutation. */
 bool service_readonly_mp(const void *,size_t);
 ph_buf *service_error_mp(const char *request_id, const char *code);

@@ -178,7 +178,7 @@ static bool pollBusinessStatusCache(uint32_t now){
   if(!encodeBusinessHttpEnvelope(wire,http)){businessStatusBuildFailure=4;return false;}
 #else
   ph_writer envelope;if(!phw_init_capacity(&envelope,PH_WIRE_MSGPACK,n+64)){businessStatusBuildFailure=3;return false;}
-  ph_buf cached={const_cast<char*>(wire.c_str()),wire.length(),wire.length()+1};
+  ph_buf cached={const_cast<char*>(wire.c_str()),wire.length(),wire.length()+1,nullptr,nullptr,0};
   phw_begin(&envelope,nullptr,false);phw_text(&envelope,"code","ok");
   phw_cached_value(&envelope,"data",&cached,8);phw_end(&envelope);
   ph_buf *encoded=phw_take(&envelope);

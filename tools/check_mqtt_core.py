@@ -44,7 +44,7 @@ def mqtt_paths(frames,model,symbols=None):
     incoming=owner+['ph_mqtt_poll',callback]
     dispatch=incoming+['service_mqtt_input','service_mqtt_command_mp']+dispatch_frames(frames,symbols)
     paths={}
-    transport=['ph_mqtt_publish','ingress','ph_mqtt_enqueue_route','ph_mqtt_enqueue_generation']
+    transport=['ph_mqtt_publish','ingress','ph_mqtt_enqueue_route','ph_mqtt_enqueue_generation']+extra(['enqueue'])
     for name,tail in [('connect',['open_session','ph_mqtt_connect']),('subscribe',['subscribe_plan','ph_mqtt_subscribe']),('yield',['ph_mqtt_yield'])]:
         paths['MQTT '+name]=(owner+tail+transport[1:],reserve)
     paths['MQTT bootstrap']=(owner+extra(['announce','ph_mqtt_discovery_mp','publish_wait'])+transport,reserve)
@@ -62,10 +62,16 @@ def mqtt_paths(frames,model,symbols=None):
     if model=='TC1':paths.update(tc1_product_paths(frames,'MQTT business',dispatch,reserve,symbols))
     paths.update(receipt_paths(frames,'MQTT receipt',dispatch,reserve,symbols))
     paths.update(diagnostic_paths(frames,model,'MQTT command diagnostics',dispatch,reserve))
-    periodic=cycle+extra(['states_step','states','snapshot_step'])+['service_mqtt_snapshot']+extra(['publish_query'])+['service_query_mp']+extra(['mp_query'])+dispatch_frames(frames,symbols,wrapper=False)
+    periodic=cycle+extra(['states_step','states','snapshot_step'])+['service_mqtt_snapshot']+extra(['publish_query'])+['service_snapshot_mp']+extra(['mp_query'])+dispatch_frames(frames,symbols,wrapper=False)
     for label,prefix in [('command',dispatch),('periodic',periodic)]:
         paths.update(status_paths(frames,model,'MQTT '+label+' status',prefix+['mp_cached','service_product_status_mp'],reserve))
+        frozen=prefix+extra(['mp_cached_envelope'])
+        paths.update(writer_paths(frames,'MQTT '+label+' frozen header',frozen,reserve,symbols,kinds={'string','null','begin'},finalize=False))
+        paths['MQTT '+label+' cache lease']=(frozen+extra(['ph_buf_prefix','ph_buf_unique','ph_buf_retain'])+['ph_wire_malloc'],reserve)
+        paths.update(writer_paths(frames,'MQTT '+label+' capabilities sizing',prefix+['mp_cached','service_product_capabilities_mp'],reserve,symbols,finalize=False))
         paths['MQTT '+label+' cache']=(prefix+['mp_envelope','phw_cached_value']+extra(['phw_prefix','phw_bytes'])+['ph_buf_reserve','ph_wire_malloc'],reserve)
+    paths['MQTT owned producer queue']=(cycle+extra(['feature_mqtt_service','virtual_service','enqueue_mp'])+['ph_mqtt_enqueue_buf_generation','ph_mqtt_enqueue_owned_generation']+extra(['enqueue'])+['ph_wire_malloc'],reserve)
+    paths['MQTT owned queue release']=(owner+['ph_mqtt_poll','ph_mqtt_item_release']+extra(['release_item','release_buf'])+['ph_buf_free','ph_wire_free'],reserve)
     # HA owns a fixed 1536-byte bridge until its synchronous command returns.
     ha=incoming+extra(['ha_command_input'])
     paths['HA input grammar']=(ha+extra(['ha_command_pack'])+['hac_value']*8+extra(['hac_string','hac_u16','hac_ws'])+['phw_text']+extra(['phw_text_n','phw_prefix','phw_quote','phw_bytes']),reserve)

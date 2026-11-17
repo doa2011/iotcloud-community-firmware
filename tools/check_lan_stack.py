@@ -67,6 +67,7 @@ def lan_paths(frames,model,symbols=None):
  paths.update(status_paths(frames,model,'LAN full status',dispatch+['mp_cached','service_product_status_mp'],LAN_RESERVE,symbols=symbols))
  paths.update(feature_read_paths(frames,model,'LAN feature config',dispatch,LAN_RESERVE,symbols))
  paths.update(diagnostic_paths(frames,model,'LAN diagnostics',dispatch,LAN_RESERVE,symbols))
+ paths.update(writer_paths(frames,'LAN capabilities sizing',dispatch+['mp_cached','service_product_capabilities_mp'],LAN_RESERVE,symbols,finalize=False))
  for helper in (('service_product_capabilities_mp','service_product_info_mp') if model=='TC1' else ('service_product_capabilities_mp','service_product_info_mp','service_product_mp')):
   paths.update(writer_paths(frames,'LAN '+helper,dispatch+[helper],LAN_RESERVE,symbols))
  paths.update(writer_paths(frames,'LAN envelope',dispatch+['mp_envelope'],LAN_RESERVE,symbols))

@@ -68,8 +68,8 @@ static int namespace_lock;static uint32_t mqtt_generation=41;
 static void mico_rtos_lock_mutex(int*p){(void)p;}
 static void mico_rtos_unlock_mutex(int*p){(void)p;}
 static unsigned queued;
-static int ph_mqtt_enqueue_send_generation(const char*t,const void*b,size_t n,unsigned qos,bool retain,uint32_t generation){
- assert(t&&n==6&&((const unsigned char*)b)[5]==0&&qos==1&&!retain&&generation==41);queued++;return 0;
+static int ph_mqtt_enqueue_buf_generation(const char*t,ph_buf *b,unsigned qos,bool retain,uint32_t generation){
+ assert(t&&b->len==6&&((const unsigned char*)b->buf)[5]==0&&qos==1&&!retain&&generation==41);queued++;ph_buf_free(b);return 0;
 }
 static mqtt_account_t mqtt_snapshot(void){return account;}
 '''

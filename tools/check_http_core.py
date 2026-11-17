@@ -81,7 +81,7 @@ def linked_symbols(output):
 def check_symbols(symbols):
     required=('ph_http_server_step','ph_http_parser_feed','ph_http_start',
               'ph_mqtt_session_run','ph_mqtt_poll','ph_mqtt_enqueue_generation',
-              'service_command_mp','service_query_mp','service_product_mp',
+              'service_command_mp','service_snapshot_mp','service_product_mp',
               'service_http_command_mp','service_http_query_mp',
               'service_product_status_mp','service_product_diagnostics_mp','device_diagnostics_mp','phv_parse',
               'phw_cached_value','phw_number','ph_buf_reserve')
@@ -221,6 +221,10 @@ def http_paths(frames,model,symbols=None):
         for key,(names,reserve) in feature_read_paths(frames,model,'HTTP '+label+' feature config',dispatch,HTTP_RESERVE,symbols).items():paths[key]=(reserve,names)
         status=dispatch+['mp_cached','service_product_status_mp']
         for key,(names,reserve) in status_paths(frames,model,'HTTP '+label+' full status',status,HTTP_RESERVE,symbols=symbols).items():paths[key]=(reserve,names)
+        frozen=dispatch+extra(['mp_cached_envelope'])
+        for key,(names,reserve) in writer_paths(frames,'HTTP '+label+' frozen header',frozen,HTTP_RESERVE,symbols,kinds={'string','null','begin'},finalize=False).items():paths[key]=(reserve,names)
+        paths['HTTP '+label+' cache lease']=(HTTP_RESERVE,frozen+extra(['ph_buf_prefix','ph_buf_unique','ph_buf_retain'])+['ph_wire_malloc'])
+        for key,(names,reserve) in writer_paths(frames,'HTTP '+label+' capabilities sizing',dispatch+['mp_cached','service_product_capabilities_mp'],HTTP_RESERVE,symbols,finalize=False).items():paths[key]=(reserve,names)
         cached=dispatch+['mp_envelope','phw_cached_value']+extra(['phw_prefix','phw_quote','phw_head','phw_bytes'])
         paths['HTTP '+label+' cached status copy']=(HTTP_RESERVE,cached+['ph_buf_reserve','ph_wire_malloc'])
         for key,(names,reserve) in receipt_paths(frames,'HTTP '+label+' receipt',dispatch,HTTP_RESERVE,symbols).items():paths[key]=(reserve,names)
