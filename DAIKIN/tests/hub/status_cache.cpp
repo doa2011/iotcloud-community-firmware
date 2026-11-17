@@ -291,7 +291,7 @@ static void concurrentCopies(){
 #ifdef IOTCLOUD_BRY88_SCREEN
 static void exactBusinessEnvelope(const String &wire,const String &actual){
  ph_writer reference;assert(phw_init_capacity(&reference,PH_WIRE_MSGPACK,wire.length()+64));
- ph_buf cached={const_cast<char*>(wire.c_str()),wire.length(),wire.length()+1};
+ ph_buf cached={const_cast<char*>(wire.c_str()),wire.length(),wire.length()+1,nullptr,nullptr,0};
  phw_begin(&reference,nullptr,false);phw_text(&reference,"code","ok");
  phw_cached_value(&reference,"data",&cached,8);phw_end(&reference);
  ph_buf *encoded=phw_take(&reference);assert(encoded);
