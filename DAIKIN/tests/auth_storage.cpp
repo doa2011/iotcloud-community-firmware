@@ -38,6 +38,7 @@ static const int ESP_OK=0;static int nvs_get_stats(const char*,nvs_stats_t*s){*s
 static bool webPending=false,webDone=false,webAuthRequired=false,otaActive=false,hubHttpDeferred=false;static ph_auth_context webAuthContext;static int webMux=0,webOperation=0,hubHttpStatus=0;static String webResult,webBody;static char httpStatusBody[4096];static unsigned dispatched=0;
 static String execute(const String&){++dispatched;return "executed";}static String backupExecute(){++dispatched;return "backup";}static void hubApiExecute(){++dispatched;}static bool mqttStateJson(String&,char*,int,bool){++dispatched;return true;}
 static unsigned invalidations=0;static void invalidateBusinessStatusCache(){++invalidations;}static bool businessStatusReady=false;static String cachedHttpStatus(){return "cached";}
+static bool resetSensorCalibration(){return true;}
 #include "transaction.inc"
 static void boot(){localAuthReady=false;configRecovery=false;config=DynamicJsonDocument(16384);String wire=loadAuthConfigText();auto error=deserializeJson(config,wire.c_str(),wire.length());if(error)fprintf(stderr,"boot wire %s error %s\n",wire.c_str(),error.c_str());assert(!error);config.shrinkToFit();updatePassword();initLocalAuth();assert(localAuthReady&&!configRecovery);}
 static void compactCodec(){

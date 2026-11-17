@@ -340,7 +340,7 @@ jobs:
         if: matrix.variant == 'full'
         run: |
           python3 -m unittest DAIKIN.tests.test_ota_identity DAIKIN.tests.test_wire_msgpack \
-            DAIKIN.tests.test_web_auth DAIKIN.tests.test_lan_pairing DAIKIN.tests.test_auth_storage
+            DAIKIN.tests.test_web_auth DAIKIN.tests.test_lan_pairing DAIKIN.tests.test_auth_storage DAIKIN.tests.test_sensor_runtime
       - name: Test ESP32 protocol and actual embedded page
         if: matrix.variant == 'full'
         run: |
@@ -428,11 +428,22 @@ jobs:
           # Browser API fixtures cover management UX; production UDP and HAP
           # business paths run separately above, not through a simulated broker.
           node tests/hub-lan-management.mjs
+      - name: Identify released screen source for G3 integration tests
+        if: matrix.variant == 'g3'
+        id: screen-source
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          lock = json.loads(Path('screen-release.lock.json').read_text())
+          print(f"repository={lock['repository']}")
+          print(f"commit={lock['commit']}")
+          PY
       - uses: actions/checkout@v4
         if: matrix.variant == 'g3'
         with:
-          repository: phicomm-io/iotcloud-bry88bba15g-screenmcu
-          ref: 07b78366564ba7f73db765c264e002bd2451c1ea
+          repository: ${{ steps.screen-source.outputs.repository }}
+          ref: ${{ steps.screen-source.outputs.commit }}
           path: build/screen-source
       - uses: actions/checkout@v4
         if: matrix.variant == 'g3'

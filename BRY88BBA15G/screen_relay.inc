@@ -1,5 +1,6 @@
-/* One bounded socket worker. It never parses HTTP/JPEG and never writes UART.
- * A single MCU credit permits at most 512 TCP bytes to leave this worker. */
+/* One socket owner drains MJPEG independently of the bounded UART credit.
+ * Only the current JPEG and the latest complete pending JPEG are forwarded. */
+#include "screen_latest_frame.h"
 #include <freertos/queue.h>
 struct ScreenRelayItem {
   uint32_t connection = 0;
@@ -13,12 +14,27 @@ static TaskHandle_t screenRelayTask = nullptr;
 static volatile uint32_t screenRelayIdleWaits = 0, screenRelayPollWakeups = 0,
                          screenRelayJobsHandled = 0;
 static volatile bool screenRelayIdleBlocked = false;
-static void screenRelayPowerStatus(JsonObject pm) {
+static volatile uint32_t screenRelayReceived = 0, screenRelayReplaced = 0,
+  screenRelayRejected = 0, screenRelayCompleted = 0, screenRelayReceivedCrc = 0,
+  screenRelayCompletedCrc = 0, screenRelayCompletedAge = 0,
+  screenRelayMaxAge = 0, screenRelayBufferBytes = 0, screenRelayPeakBytes = 0;
+static void screenRelayPowerStatus(JsonObject pm, bool detailed) {
   pm["relay_worker_running"] = screenRelayTask != nullptr;
   pm["relay_idle_blocked"] = screenRelayIdleBlocked;
   pm["relay_idle_waits"] = screenRelayIdleWaits;
   pm["relay_timed_poll_wakeups"] = screenRelayPollWakeups;
   pm["relay_jobs_handled"] = screenRelayJobsHandled;
+  if (!detailed) return;
+  pm["relay_frames_received"] = screenRelayReceived;
+  pm["relay_frames_replaced"] = screenRelayReplaced;
+  pm["relay_frames_rejected"] = screenRelayRejected;
+  pm["relay_frames_acked"] = screenRelayCompleted;
+  pm["relay_received_jpeg_crc32"] = screenRelayReceivedCrc;
+  pm["relay_acked_jpeg_crc32"] = screenRelayCompletedCrc;
+  pm["relay_acked_age_ms"] = screenRelayCompletedAge;
+  pm["relay_max_acked_age_ms"] = screenRelayMaxAge;
+  pm["relay_buffer_bytes"] = screenRelayBufferBytes;
+  pm["relay_peak_buffer_bytes"] = screenRelayPeakBytes;
 }
 
 static struct {
@@ -33,7 +49,23 @@ static void screenRelayWorker(void *) {
   WiFiClientSecure secure;
   Client *socket = nullptr;
   uint32_t connection = 0;
-  bool credit = false;
+  bool credit = false, ended = false;
+  ScreenLatestFrame latest(32768, [](size_t capacity) {
+    return heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) >=
+           capacity + 24576;
+  });
+  auto status = [&]() {
+    screenRelayReceived = latest.received;
+    screenRelayReplaced = latest.replaced;
+    screenRelayRejected = latest.rejected;
+    screenRelayCompleted = latest.completed;
+    screenRelayReceivedCrc = latest.receivedCrc;
+    screenRelayCompletedCrc = latest.completedCrc;
+    screenRelayCompletedAge = latest.completedAge;
+    screenRelayMaxAge = latest.maxCompletedAge;
+    screenRelayBufferBytes = latest.bytes();
+    screenRelayPeakBytes = latest.peakBytes;
+  };
   auto report = [&](unsigned op, const uint8_t *data = nullptr, size_t n = 0) {
     ScreenRelayItem result;
     result.op = op;
@@ -46,9 +78,9 @@ static void screenRelayWorker(void *) {
   };
   for (;;) {
     ScreenRelayItem job;
-    // Without a socket or receive credit only a queued command can advance
-    // this owner. Sleep until that command rather than waking 100 times/s.
-    bool idle = !socket || !credit;
+    // An inactive owner sleeps until a command. An active stream drains
+    // upstream even when UART credit is outstanding.
+    bool idle = !socket;
     if (idle) screenRelayIdleWaits++;
     screenRelayIdleBlocked = idle;
     BaseType_t received = xQueueReceive(screenRelayJobs, &job,
@@ -62,6 +94,7 @@ static void screenRelayWorker(void *) {
         socket = nullptr;
         credit = false;
         connection = job.connection;
+        latest.clear(); status(); ended = false;
         bool tls = job.bytes[0], verify = job.bytes[1];
         unsigned port = job.bytes[2] | job.bytes[3] << 8;
         const char *host = (const char *)job.bytes + 4;
@@ -92,42 +125,61 @@ static void screenRelayWorker(void *) {
           secure.stop();
           socket = nullptr;
           credit = false;
-        } else if (job.op == MEDIA_SOCKET_ACK)
+          latest.clear();
+          status();
+        } else if (job.op == MEDIA_SOCKET_ACK) {
+          latest.ack(millis());
           credit = true;
+        }
         else if (job.op == MEDIA_NET_WRITE && socket) {
           if (socket->write(job.bytes, job.size) != job.size) {
             report(MEDIA_NET_ERROR);
             socket->stop();
             socket = nullptr;
             credit = false;
+            latest.clear(); status();
           }
         }
       }
     } else {
       screenRelayPollWakeups++;
     }
-    if (socket && credit) {
-      int available = socket->available();
-      if (available > 0) {
+    if (socket) {
+      // Drain several network chunks even while the MCU is decoding or waiting
+      // for UART ACK. Parsing/replacing occurs only at complete JPEG boundaries.
+      for (unsigned budget = 0; budget < 16 && !ended; ++budget) {
+        int available = socket->available();
+        if (available <= 0) {
+          if (!socket->connected()) ended = true;
+          break;
+        }
+        uint8_t bytes[MEDIA_CHUNK];
+        int n = socket->read(bytes, min(available, int(sizeof(bytes))));
+        if (n <= 0) break;
+        latest.feed(bytes, n, millis());
+        if (latest.error() || latest.ended()) ended = true;
+      }
+      if (latest.error() && latest.error() != 401) {
+        report(MEDIA_NET_ERROR);
+        socket->stop(); socket = nullptr; credit = false;
+        latest.clear();
+      } else if (credit) {
         ScreenRelayItem result;
         result.connection = connection;
         result.op = MEDIA_NET_WRITE;
-        int n = socket->read(result.bytes, min(available, int(MEDIA_CHUNK)));
-        if (n > 0) {
-          result.size = n;
+        result.size = latest.read(result.bytes, sizeof(result.bytes));
+        if (result.size) {
           credit = false;
-          if (xQueueSend(screenRelayResults, &result, pdMS_TO_TICKS(100)) !=
-              pdTRUE) {
-            socket->stop();
-            socket = nullptr;
+          if (xQueueSend(screenRelayResults, &result, pdMS_TO_TICKS(100)) != pdTRUE) {
+            socket->stop(); socket = nullptr; latest.clear();
           }
+        } else if (ended && latest.empty()) {
+          report(MEDIA_NET_CLOSED);
+          socket->stop(); socket = nullptr; credit = false;
+          latest.clear();
         }
-      } else if (!socket->connected()) {
-        report(MEDIA_NET_CLOSED);
-        socket->stop();
-        socket = nullptr;
-        credit = false;
       }
+      status();
     }
   }
 }

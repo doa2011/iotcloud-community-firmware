@@ -121,7 +121,8 @@ typedef struct {
   bool co2_supported, co2_valid;
   uint8_t fields;
   bool partial;
-  uint16_t field_age_ms[4];
+  uint32_t field_age_ms[4];
+  uint32_t pm25_max_age_ms;
 } feature_sample_t;
 static inline unsigned feature_sample_fields(const feature_sample_t *s) { return s->partial ? s->fields & 15u : 15u; }
 unsigned feature_sample_fresh_fields(const feature_sample_t *,uint32_t);

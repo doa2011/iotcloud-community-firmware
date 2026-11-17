@@ -26,6 +26,16 @@ See [stock backups](stock-backups#daikin-esp32-and-screen) for the original G2 U
 
 The OLED and internal GPIO26 indicator are currently unused. Existing hardware tests and the original UART backup use BRY88AB151K. Select stock AA/AB backups by their actual model.
 
+## Stock compensation and particulate power saving
+
+Matching firmware and frontend versions apply the stock PM2.5, CO₂ and formaldehyde curves. The web interface, MQTT, indicators and A1 automation use the same compensated readings. Published ranges are 1–300 µg/m³ for PM2.5, 400–3000 ppm for CO₂ and 0.01–0.5 mg/m³ for optional formaldehyde; diagnostics retain raw measurements. TVOC keeps the sensor's actual ppb readings, including zero, with humidity compensation and valid baseline restoration.
+
+The PM module uses the stock dynamic measurement mode. After startup, a reading updates only after at least 36 seconds and a valid completed measurement. Normal particulate readings remain valid for 120 seconds. Enable intermittent operation under **General settings → Night particulate power saving**; it is disabled by default. The preset is 23:00–07:00, UTC+8, with editable times and time zone. Equal start and end times disable the window. Before time synchronization, dynamic measurement continues.
+
+During the night window, measurement runs for about 59 seconds every 59 minutes. PM2.5 and PM10 update after a complete sample; measurement stops between these windows. Night readings remain valid for up to one hour while their displayed sample age keeps increasing. This reduces nighttime operation, but A1 also responds later to new particulate changes. Leave night power saving disabled when prompt automation is needed.
+
+Upgrade A1, M1 receivers and the frontend together to use the one-hour validity. Only the particulate sample lifetime is extended; communication failures still expire under the existing short timeouts, so an offline device does not remain an online data source.
+
 ## Indicator settings
 
 Open Settings → General → Indicator rules and enable the air quality indicators. CO₂, TVOC and PM each support up to two thresholds with steady on, always off, fast blink or slow blink. Select either PM2.5 or PM10 as the PM lamp's data source; only the selected measurement controls that lamp. Formaldehyde rules are available when its module is detected. Rules survive a restart. The highest matching threshold wins within a measurement; unmatched or stale readings turn its output off. TVOC / formaldehyde share one lamp, with priority given to fast blink, slow blink, steady on, then off.

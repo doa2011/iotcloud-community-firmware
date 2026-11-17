@@ -34,7 +34,7 @@ static bool screenMediaQuiesce() {
   bool quiet = bry::uartDiscardUntilQuiet(screenUart, [] { return millis(); },
                                         [](unsigned ms) { delay(ms); });
   stockFrame.reset();
-  screenMedia.parser.active = false;
+  media_reset(&screenMedia.parser);
   return quiet;
 }
 static bool screenMediaWrite(unsigned channel, uint32_t seq, const void *p,
@@ -73,7 +73,7 @@ static bool screenMediaBaud(uint32_t rate) {
   }
   if (ok)
     screenMedia.rate = rate;
-  screenMedia.parser.active = false;
+  media_reset(&screenMedia.parser);
   return ok;
 }
 static void screenMediaFallback() {
@@ -134,7 +134,15 @@ static void screenMediaSnapshot(const uint8_t *p, size_t n) {
       memcpy(screenMedia.snapshot + MEDIA_STATUS_QUEUE + i * MEDIA_STATUS_QUEUE_ITEM_BYTES,
              p + MEDIA_STATUS_QUEUE + i * 10, 10);
     memcpy(screenMedia.snapshot + MEDIA_STATUS_HISTORY, p + 272, 80);
-    memcpy(screenMedia.snapshot + MEDIA_STATUS_BYTES, p + 352, n - 352);
+    memcpy(screenMedia.snapshot + MEDIA_STATUS_BYTES, p + 352, 44);
+    if (n == 460) memcpy(screenMedia.snapshot + MEDIA_STATUS_BYTES + MEDIA_STREAM_STATUS_BYTES, p + 396, 64);
+  } else if (n == MEDIA_STATUS_BYTES + 44 || n == MEDIA_STATUS_BYTES + 44 + MEDIA_DECODER_DETAIL_BYTES) {
+    // Previous stream status had no decoded JPEG identity.
+    memset(screenMedia.snapshot, 0, sizeof(screenMedia.snapshot));
+    memcpy(screenMedia.snapshot, p, MEDIA_STATUS_BYTES + 44);
+    if (n > MEDIA_STATUS_BYTES + 44)
+      memcpy(screenMedia.snapshot + MEDIA_STATUS_BYTES + MEDIA_STREAM_STATUS_BYTES,
+             p + MEDIA_STATUS_BYTES + 44, MEDIA_DECODER_DETAIL_BYTES);
   } else if (n == MEDIA_STATUS_BYTES + MEDIA_STREAM_STATUS_BYTES ||
              n == sizeof(screenMedia.snapshot)) {
     memset(screenMedia.snapshot, 0, sizeof(screenMedia.snapshot));
@@ -199,6 +207,12 @@ static void screenMediaPacket(void *, unsigned channel, uint32_t session,
       screenMediaSnapshot(p + 2, n - 2);
   } else
     screenRelayPacket(channel, sequence, p, n);
+}
+static bool screenMediaResync(uint32_t now) {
+  bool binary = screenMedia.session && (screenMedia.ready || screenMedia.parser.active);
+  if (binary) media_resync(&screenMedia.parser, now);
+  else media_reset(&screenMedia.parser);
+  return binary;
 }
 static bool screenMediaFeed(unsigned c, uint32_t now) {
   // A heartbeat already in flight can arrive after OTA takes ownership.
@@ -487,6 +501,7 @@ static void screenStreamGet(JsonObject out) {
   out["pixel_crc32"] = media_u32(p + 20);
   out["error"] = media_u32(p + 24);
   out["actual_millifps"] = media_u32(p + 28);
+  out["decoded_jpeg_crc32"] = media_u32(p + 44);
   out["connection"] = media_u32(p + 36);
   out["notification_id"] = media_u32(p + 40);
   out["role"] = media_u32(p + 40) ? "notification" : "page";

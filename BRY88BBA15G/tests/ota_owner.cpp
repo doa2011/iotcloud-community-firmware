@@ -484,6 +484,22 @@ int main(int argc, char **argv) {
          status["diagnostic"]["control_expected"] == 0x80191b68 &&
          status["diagnostic"]["control_address"] == 0x801a44ac &&
          status["diagnostic"]["sensor_step"] == 15);
+  uint8_t loss[SCREEN_GUARD_DIAGNOSTIC_V4_BYTES] = {};
+  memcpy(loss, memory, sizeof(memory));loss[1] = 4;
+  for(unsigned i=0;i<4;i++)scene_put32(loss+82+i*4, i+7);
+  notice_size=screen_link_encode(notice,sizeof(notice),guard.session,1,loss,sizeof(loss));
+  assert(acceptDiagnostic(notice_size));
+  screenGuardStatus(status.to<JsonObject>(),false);
+  assert(!status["diagnostic"].containsKey("rx_loss_resets"));
+  screenGuardStatus(status.to<JsonObject>(),false,true);
+  assert(status["diagnostic"]["version"]==4 &&
+         status["diagnostic"]["hardware_rx_overruns"]==7 &&
+         status["diagnostic"]["ring_dropped_bytes"]==8 &&
+         status["diagnostic"]["rx_loss_resets"]==9 &&
+         status["diagnostic"]["last_rx_loss_ms"]==10);
+  screenGuard.hasDiagnostic=false;loss[1]=3;
+  notice_size=screen_link_encode(notice,sizeof(notice),guard.session,1,loss,sizeof(loss));
+  assert(acceptDiagnostic(notice_size)&&!screenGuard.hasDiagnostic);
   screenGuard.hasDiagnostic = false;
   memory[1] = 2; // A v2 header must not accept a v3-sized payload.
   notice_size = screen_link_encode(notice, sizeof(notice), guard.session, 1,
@@ -509,6 +525,8 @@ int main(int argc, char **argv) {
   notice_size = screen_link_encode(notice, sizeof(notice), guard.session, 1,
                                   memory, sizeof(memory));
   assert(acceptDiagnostic(notice_size) && screenGuard.hasDiagnostic);
+  screenGuardStatus(status.to<JsonObject>(), false);
+  assert(status["diagnostic"]["version"]==3 && !status["diagnostic"].containsKey("rx_loss_resets"));
   testMillis += 15000;
   screenGuardStatus(status.to<JsonObject>(), false);
   assert(!status["diagnostic"]["available"].as<bool>());

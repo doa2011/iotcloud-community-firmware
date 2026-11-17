@@ -34,14 +34,19 @@ identities, not release tags. The tagged core must match `VERSION`.
 
 Candidates are GitHub prereleases with `--latest=false`. They have immutable
 R2 assets under `/releases/<tag>/` and a separate `/releases/candidates.json`
-catalog. The current production Worker serves stable releases, so candidate
-assets are verified by authenticated API readback; public mirror verification
-remains a stable-release gate. Use GitHub prereleases or a separately published
-Pages candidate archive for manual downloads. Stage with `publish.py DIRECTORY`,
+catalog. The shared OTA Worker serves candidates through separate
+`/ota/candidate/<model>/<variant>/latest.json` and `latest.msgpack` routes,
+selected from `candidates.json`. Stable `/ota/v1/` routes continue to select
+`stable.json`; legacy routes retain their bridge behavior. Candidate assets
+are verified by authenticated API readback. Stage with `publish.py DIRECTORY`,
 make the GitHub prerelease public, then use `publish.py DIRECTORY --candidate`.
-`--promote` rejects candidates before any remote operation. Candidate workflows
-do not deploy the OTA Worker, publish Pages, replace `stable.json`, create the
-v1.0.0 bridge, or change legacy/v1 device `latest.json` manifests.
+`--promote` rejects candidates before any remote operation.
+
+Candidate workflows deploy the shared Worker so the candidate routes match the
+release, and publish Pages with `PHICOMM_PAGES_INCLUDE_CANDIDATES=1` to refresh
+Beta downloads from verified candidate assets. The stable release selection is
+preserved. Candidate publication never replaces `stable.json`, creates the
+v1.0.0 bridge, or selects a candidate for stable/legacy device manifests.
 
 For local note validation or a Pages candidate archive, explicitly run
 `archive_pages.py OUTPUT --include-candidates --candidates-r2`. This reads the
@@ -62,8 +67,8 @@ channel/source scope. It references independent hash-named catalog and manifest
 files in the same candidate directory. The combined catalog keeps its stable
 selection; neither `releases/index.json` nor the default note pointer is changed.
 `--verify-output OUTPUT --formal --include-candidates` verifies that independent
-snapshot. These files are for the local Pages archive; the stable mirror-note
-publisher does not publish the candidate pointer.
+snapshot. These files describe the separate candidate comparison snapshot; the stable
+mirror-note publisher does not publish the candidate pointer.
 
 ## Dual-format device metadata
 

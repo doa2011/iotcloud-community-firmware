@@ -138,6 +138,7 @@ static unsigned invalidations=0;static void invalidateBusinessStatusCache(){++in
 #include "baseline-save.inc"
 static bool resetConfiguration(){return false;}
 #else
+static bool resetSensorCalibration(){return true;}
 #include "save.inc"
 #endif
 static void boot(Nor &nor){bootNor(nor);configRecovery=false;localAuthReady=false;config=DynamicJsonDocument(configCapacity);String text=loadAuthConfigText();assert(!deserializeJson(config,text.c_str(),text.length()));config.shrinkToFit();updatePassword();initLocalAuth();assert(localAuthReady&&!configRecovery);}

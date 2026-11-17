@@ -277,7 +277,7 @@ void feature_local_sample(const feature_sample_t *s) {
     local_sample.sequence!=s->sequence||local_sample.boot!=s->boot||
     local_sample.received_ms!=s->received_ms||local_sample.age_ms!=s->age_ms||
     local_sample.valid!=s->valid||memcmp(&local_sample.co2,&s->co2,sizeof(s->co2))||
-    local_sample.co2_received_ms!=s->co2_received_ms||local_sample.co2_age_ms!=s->co2_age_ms||
+    local_sample.pm25_max_age_ms!=s->pm25_max_age_ms||local_sample.co2_received_ms!=s->co2_received_ms||local_sample.co2_age_ms!=s->co2_age_ms||
     local_sample.co2_supported!=s->co2_supported||local_sample.co2_valid!=s->co2_valid||
     local_sample.fields!=s->fields||local_sample.partial!=s->partial||
     memcmp(local_sample.field_age_ms,s->field_age_ms,sizeof(s->field_age_ms));

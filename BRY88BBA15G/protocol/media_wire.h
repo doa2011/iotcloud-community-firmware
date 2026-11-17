@@ -20,7 +20,7 @@
 #define MEDIA_TTL_MAX_MS 86400000u
 #define MEDIA_STATUS_HISTORY (MEDIA_STATUS_QUEUE + MEDIA_QUEUE * MEDIA_STATUS_QUEUE_ITEM_BYTES)
 #define MEDIA_STATUS_BYTES (MEDIA_STATUS_HISTORY + MEDIA_HISTORY * 5u)
-#define MEDIA_STREAM_STATUS_BYTES 44u
+#define MEDIA_STREAM_STATUS_BYTES 48u
 #define MEDIA_DECODER_DETAIL_BYTES 64u
 #define MEDIA_TAP_WINDOW_MS 350u
 /* Zero-delimited, escaped binary records are consumed before either text
@@ -113,7 +113,7 @@ typedef void (*media_packet_fn)(void *, unsigned, uint32_t, uint32_t,
 typedef struct {
   uint8_t bytes[MEDIA_PACKET_MAX + 18];
   uint16_t used;
-  bool active, escape, discard;
+  bool active, escape, discard, resync;
   uint32_t at, crc_errors, framing_errors;
   void *context;
   media_packet_fn packet;
@@ -123,6 +123,10 @@ uint32_t media_u32(const uint8_t *);
 void media_put32(uint8_t *, uint32_t);
 /* Returns true for every binary byte, including corrupt/oversize frames. */
 bool media_feed(media_parser *, unsigned, uint32_t);
+/* Known UART loss: discard partial bytes until a delimiter starts a clean record. */
+void media_resync(media_parser *, uint32_t);
+/* Release binary RX ownership without resetting dispatch or error counters. */
+void media_reset(media_parser *);
 size_t media_encode(uint8_t *, size_t, unsigned, uint32_t, uint32_t,
                     const void *, size_t);
 bool media_rate_valid(uint32_t);

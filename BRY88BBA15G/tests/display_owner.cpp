@@ -30,6 +30,7 @@ int main(){
  auto plans=params.createNestedArray("plans");auto p=plans.createNestedObject();p["name"]="night";p["enabled"]=true;p["days"]=16;p["start"]=1380;p["end"]=420;p["brightness"]=5;p["page"]=1;
  auto call=[&](){reply.clear();return screenPolicySet(params,reply.to<JsonObject>());};
  assert(!strcmp(call(),"accepted")&&screenDisplayPolicy.revision==2&&saved==1);
+ assert(!strcmp(call(),"ok")&&screenDisplayPolicy.revision==2&&saved==1);
  ms=10;screenPolicyPoll();display_policy decoded;assert(display_policy_decode(&decoded,sent.data(),sent.size()));assert(decoded.plans[0].days==16&&decoded.idle_brightness==8);
  screenPolicyAck=2;sent.clear();ms=5000;screenPolicyPoll();assert(sent.empty());
  screenBridge.session++;screenPolicyPoll();assert(!sent.empty());
@@ -37,11 +38,34 @@ int main(){
  p["start"]=420;assert(!strcmp(call(),"invalid_params"));p["start"]=1380;
  params["ceiling"]=-1;assert(!strcmp(call(),"invalid_params"));params["ceiling"]=40;
  p["page"]=7;assert(!strcmp(call(),"invalid_params"));p["page"]=1;
- save_ok=false;assert(!strcmp(call(),"storage_error")&&screenDisplayPolicy.revision==2);save_ok=true;
+ params["ceiling"]=41;save_ok=false;assert(!strcmp(call(),"storage_error")&&screenDisplayPolicy.revision==2);save_ok=true;params["ceiling"]=40;
  screenImage.active=true;assert(!strcmp(call(),"busy"));screenImage.active=false;
  auto old=screenScene;std::swap(screenScene.page[0],screenScene.page[1]);screenPolicyRemap(old,screenScene);
  assert(screenDisplayPolicy.idle_page==1&&screenDisplayPolicy.plans[0].page==0);
  old=screenScene;screenScene.page[0].enabled=false;screenPolicyRemap(old,screenScene);assert(screenDisplayPolicy.plans[0].page==255);
+ screenBridge.capabilities|=SCREEN_CAP_PAGE_POLICY;
+ uint32_t home=screenScene.page[1].id;params["home_page_id"]=home;
+ auto overrides=params.createNestedArray("page_overrides");auto entry=overrides.createNestedObject();entry["page_id"]=home;entry["external_minutes"]=0;entry["battery_minutes"]=5;entry["idle_brightness"]=0;
+ params["idle_page"]=255;p["page"]=255;
+ assert(!strcmp(call(),"accepted")&&screenDisplayPolicy.home_page_id==home&&screenDisplayPolicy.page_count==1);
+ unsigned revision=screenDisplayPolicy.revision,saveCount=saved;
+ assert(!strcmp(call(),"ok")&&screenDisplayPolicy.revision==revision&&saved==saveCount);
+ screenPolicyAck=0;screenPolicySentAt=0;screenPolicyPoll();assert(sent.size()==DISPLAY_POLICY_BYTES&&display_policy_decode(&decoded,sent.data(),sent.size())&&decoded.home_page_id==home&&decoded.page_overrides[0].battery_minutes==5);
+ screenPolicyGet(reply.to<JsonObject>(),false);assert(!reply.containsKey("page_overrides"));
+ entry["battery_minutes"]=1441;assert(!strcmp(call(),"invalid_params"));entry["battery_minutes"]=5;
+ params["home_page_id"]=UINT32_MAX;assert(!strcmp(call(),"invalid_params"));params["home_page_id"]=home;
+ auto duplicate=overrides.createNestedObject();duplicate["page_id"]=home;duplicate["external_minutes"]=1;duplicate["battery_minutes"]=1;duplicate["idle_brightness"]=0;
+ assert(!strcmp(call(),"invalid_params"));overrides.remove(1);
+ screenBridge.capabilities=SCREEN_CAP_DISPLAY;assert(!strcmp(call(),"unsupported"));
+ params.remove("home_page_id");params.remove("page_overrides");assert(!strcmp(call(),"ok")&&screenDisplayPolicy.home_page_id==home);
+ screenPolicyAck=0;screenPolicySentAt=0;screenPolicyPoll();assert(sent.size()==DISPLAY_POLICY_V1_BYTES&&display_policy_decode(&decoded,sent.data(),sent.size())&&decoded.home_page_id==0&&!decoded.page_count);
+ screenBridge.capabilities|=SCREEN_CAP_PAGE_POLICY;
+ old=screenScene;std::swap(screenScene.page[0],screenScene.page[1]);screenPolicyRemap(old,screenScene);assert(screenDisplayPolicy.home_page_id==home&&screenDisplayPolicy.page_overrides[0].page_id==home);
+ old=screenScene;screenScene.page[0].id=home+100;screenPolicyRemap(old,screenScene);assert(!screenDisplayPolicy.home_page_id&&!screenDisplayPolicy.page_count);
+ for(unsigned i=0;i<SCENE_PAGES;i++){screenDisplayPolicy.page_overrides[i].page_id=i+100;screenDisplayPolicy.page_overrides[i].external_minutes=1440;screenDisplayPolicy.page_overrides[i].battery_minutes=1440;screenDisplayPolicy.page_overrides[i].idle_brightness=100;auto &plan=screenDisplayPolicy.plans[i];memset(&plan,0,sizeof(plan));plan.enabled=true;plan.days=127;plan.start=1;plan.end=2;plan.page=255;memset(plan.name,'X'+i,31);}
+ screenDisplayPolicy.page_count=SCENE_PAGES;screenDisplayPolicy.count=DISPLAY_PLANS;
+ reply.clear();screenPolicyGet(reply.to<JsonObject>(),true);assert(!reply.overflowed()&&reply["page_overrides"].size()==8&&reply["plans"].size()==8);
+ printf("Display full detail pool %zu/%zu overflow=%d\n",reply.memoryUsage(),reply.capacity(),reply.overflowed());
  screenBridge.capabilities=0;assert(!strcmp(call(),"unsupported"));
  return 0;
 }

@@ -368,6 +368,19 @@ int main(void){
     assert(!v3_call("{\"revision\":1,\"slot\":0,\"value\":1234,\"unit\":\"ppm\",\"ttl_seconds\":20}",true,"invalid_params"));
 ''')
 
+    def test_pm_source_age_and_transport_lease_are_independent(self):
+        self.run_scenario(r'''
+#undef m1_display_source_sample
+    v3_begin();live.display.lanes[0].source=M1_DISPLAY_MQTT;live.display.lanes[0].ttl_seconds=20;
+    strcpy(live.display.lanes[0].device_id,"123456abcdef");strcpy(live.display.remote[0].field_id,"pm25");strcpy(live.display.remote[0].unit,"µg/m³");
+    ph_writer w;ph_value view;ph_buf *b;m1_display_value_t out;
+    assert(phw_init(&w,PH_WIRE_MSGPACK));ph_sensor_metadata_begin(&w,"123456abcdef",42,1);ph_sensor_descriptor_write(&w,"pm25","PM2.5","µg/m³");ph_sensor_finish(&w);b=phw_take(&w);assert(b&&phv_parse(PH_WIRE_MSGPACK,b->buf,b->len,&view));m1_display_source_metadata("123456abcdef",&view);ph_buf_free(b);
+    assert(phw_init(&w,PH_WIRE_MSGPACK));ph_sensor_snapshot_begin(&w,"123456abcdef",42,1,1);phw_begin(&w,"pm25",false);phw_bool(&w,"valid",true);phw_number(&w,"value",12);phw_u32(&w,"age_ms",1800000);phw_u32(&w,"max_age_ms",3600000);phw_end(&w);ph_sensor_finish(&w);b=phw_take(&w);assert(b&&phv_parse(PH_WIRE_MSGPACK,b->buf,b->len,&view));(m1_display_source_sample)("123456abcdef",&view);ph_buf_free(b);
+    m1_display_source_value(&live.display,0,&out);assert(out.valid&&out.age_ms==1800000&&out.ttl==20);
+    now+=19999;m1_display_source_value(&live.display,0,&out);assert(out.valid&&out.ttl==1);
+    now++;m1_display_source_value(&live.display,0,&out);assert(!out.valid);
+''')
+
     def test_local_and_typed_sources_still_apply_physical_policy(self):
         self.run_scenario(r'''
     v3_begin();live.display.lanes[0].source=M1_DISPLAY_LOCAL;

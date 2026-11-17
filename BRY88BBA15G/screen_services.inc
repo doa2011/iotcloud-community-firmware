@@ -44,7 +44,7 @@ static const char *screenWallpaperCommand(const String &,JsonObjectConst,JsonObj
 static display_policy screenDisplayPolicy;
 static uint32_t screenPolicySession, screenPolicyAck, screenPolicySentAt;
 static const char *screenPolicyError = "";
-static void screenPolicyGet(JsonObject);
+static void screenPolicyGet(JsonObject, bool detail = false);
 static const char *screenPolicySet(JsonObjectConst, JsonObject);
 static void screenPolicyPoll();
 static screen_scene screenScene;
@@ -381,6 +381,11 @@ static void screenLoad() {
         screenWeatherConfig.set(doc["weather"]);
         if(screenWeatherConfig.overflowed()){screenWeatherConfig.clear();screenConfigLoadError="invalid_weather_config";}
         screenSavedSettings.set(doc["settings"]);
+        if (screenSavedSettings.containsKey("tvoc_warmup_minutes")) {
+          JsonVariant value = screenSavedSettings["tvoc_warmup_minutes"];
+          if (!value.is<int>() || value.as<int>() < -1 || value.as<int>() == 0 || value.as<int>() > 60)
+            value.set(-1);
+        }
         int timezone = doc["timezone"] | 480;
         screenSchedule.timezone =
             timezone >= -720 && timezone <= 840 ? timezone : 480;

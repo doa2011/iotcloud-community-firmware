@@ -16,5 +16,10 @@ int main(void){
  s[0].received_ms=0xfffffff0;s[0].value[2]=0;
  assert(feature_sample_fresh(&s[0],10));
  s[0].fields=0;assert(!feature_sample_fresh(&s[0],10));
+ s[0].fields=4;s[0].received_ms=100;s[0].field_age_ms[2]=1800000;s[0].pm25_max_age_ms=3600000;
+ assert(feature_sample_fresh(&s[0],101));
+ assert(!feature_sample_fresh(&s[0],15100));
+ s[0].received_ms=16000;s[0].field_age_ms[2]=1815900;assert(feature_sample_fresh(&s[0],16001));
+ s[0].field_age_ms[2]=3599999;assert(!feature_sample_fresh(&s[0],16001));
  puts("Independent capability aggregation, missing fields, stale removal and zero values passed");
 }

@@ -16,6 +16,7 @@ static void sensorBody(JsonObject out){
   JsonObject values=out.createNestedObject("sensors");const uint32_t now=millis();
   for(unsigned i=0;i<SENSOR_COUNT;i++)if(sensorPresent(i)){
     JsonObject value=values.createNestedObject(keys[i]);bool valid=readings[i].valid(now);value["valid"]=valid;
+    if((i==PM25||i==PM10)&&readings[i].max_age_ms!=20000)value["max_age_ms"]=readings[i].max_age_ms;
     value["age_ms"]=readings[i].received?uint32_t(now-readings[i].at):0;
     if(valid)value["value"]=readings[i].value;else value["value"]=nullptr;
   }
@@ -61,6 +62,7 @@ static void __attribute__((noinline)) pollSessions(){
   if(reply.op==LAN_SAMPLE){
     reply.sample.boot=sensorBoot;if(!++sensorSequence)++sensorSequence;reply.sample.sequence=sensorSequence;reply.sample.co2_supported=true;
     const unsigned fields[5]={TEMPERATURE,HUMIDITY,PM25,HCHO,CO2};const double scales[5]={1000,1000,1000,1000000,1};uint32_t now=millis();
+    reply.sample.pm25_max_age_ms=readings[PM25].max_age_ms==20000?0:readings[PM25].max_age_ms;
     for(unsigned i=0;i<5;i++){const auto &r=readings[fields[i]];reply.sample.age_ms[i]=r.received?uint32_t(now-r.at):0;if(!sensorPresent(fields[i])||!r.valid(now))continue;double value=r.value*scales[i];if(!isfinite(value)||value<INT32_MIN||value>INT32_MAX)continue;int32_t scaled=int32_t(value+(value>=0?.5:-.5));if((i==0&&(scaled < -40000||scaled>125000))||(i==1&&(scaled<0||scaled>100000))||(i>=2&&scaled<0)||(i==4&&(scaled==0||scaled>65535)))continue;reply.sample.value[i]=scaled;reply.sample.fields|=1u<<i;}
   }
   char output[384];ph_buf buffer;ph_writer writer;if(!phw_init_fixed(&writer,PH_WIRE_MSGPACK,&buffer,output,sizeof(output))||!lan_encode(&writer,&reply))return;size_t length=phw_finish_fixed(&writer);if(length)lanSend(address.c_str(),output,length);

@@ -141,6 +141,17 @@ int main(){
   now=UINT32_MAX-500;snapshot.now_ms=now;sample.updated_ms=now-1200;
   observe(encoded(snapshot,full));temperature.loop();assert(temperature.number->iotcloudAvailable);
   now+=18800;temperature.loop();assert(!temperature.number->iotcloudAvailable); // Clock wrap.
+  // Native DAIKIN retains an old PM measurement while live snapshots renew only transport.
+  auto &local=hubHome.devices[1];local.model="daikin";now=50000;hubHome.tick(now);
+  DynamicJsonDocument pmState(1024);pmState["model"]="daikin";pmState["device_id"]=local.mac;
+  auto pmField=pmState["sensors"]["pm25"].to<JsonObject>();pmField["value"]=12;pmField["valid"]=true;pmField["unit"]="µg/m³";pmField["age_ms"]=1800000;pmField["max_age_ms"]=3600000;
+  auto ownObserve=[&](){std::string bytes;serializeMsgPack(pmState,bytes);hubHome.tick(now);hubHome.observe(local.base+"/state",bytes);};
+  ownObserve();assert(local.values[Home::PM25].fresh(now)&&local.values[Home::PM25].at==uint32_t(now-1800000));
+  now+=19999;assert(local.values[Home::PM25].fresh(now));now++;assert(!local.values[Home::PM25].fresh(now));
+  for(auto invalidLimit:{"3600000","bad"}){pmField["age_ms"]=0;pmField["max_age_ms"]=invalidLimit;ownObserve();assert(!local.values[Home::PM25].valid);}
+  for(unsigned invalidLimit:{0u,3600001u}){pmField["max_age_ms"]=invalidLimit;ownObserve();assert(!local.values[Home::PM25].valid);}
+  pmField["max_age_ms"]=nullptr;ownObserve();assert(!local.values[Home::PM25].valid);
+  pmField["max_age_ms"]=3600000;pmField.remove("age_ms");ownObserve();assert(!local.values[Home::PM25].valid);
   for(auto p:characteristics)delete p;
   puts("PASS real M1 encoder MP -> HubHome -> production HomeSensor: nested health, float/integer age, strict invalid rejection, independent CO2, exact expiry/wrap");
 }
