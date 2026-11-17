@@ -232,7 +232,7 @@ class HTTPMessagePackStackGate(unittest.TestCase):
     def test_symbols_require_real_core_and_forbid_json_bridges(self):
         required=['ph_http_server_step','ph_http_parser_feed','ph_http_start',
             'ph_mqtt_session_run','ph_mqtt_poll','ph_mqtt_enqueue_generation',
-            'service_command_mp','service_query_mp','service_product_mp',
+            'service_command_mp','service_snapshot_mp','service_product_mp',
             'service_http_command_mp','service_http_query_mp',
             'service_product_status_mp','service_product_diagnostics_mp','device_diagnostics_mp','phv_parse',
             'phw_cached_value','phw_number','ph_buf_reserve']
