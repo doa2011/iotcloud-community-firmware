@@ -11,7 +11,10 @@ class DeviceNames(fixture.NativePublish):
         super().setUpClass()
         build=Path(cls.temp.name)
         source=(ROOT/'DAIKIN/src/commands.inc').read_text()
-        (build/'commands-execute.inc').write_text('static const char *actions' + source.split('static const char *actions',1)[1])
+        # status_cache.cpp already includes the shared section validators.
+        dispatcher = fixture.section(ROOT/'DAIKIN/src/commands.inc', 'static const char *actions', 'static bool knownFields(')
+        dispatcher += 'static bool validConfig(' + source.split('static bool validConfig(',1)[1]
+        (build/'commands-execute.inc').write_text(dispatcher)
         objects=[str(build/(name+'.o')) for name in ('typed_wire','wire_buffer')]
         cls.binary=build/'device-names'
         subprocess.run(['c++','-std=c++11','-g','-O1','-Wall','-Wextra','-Werror',
