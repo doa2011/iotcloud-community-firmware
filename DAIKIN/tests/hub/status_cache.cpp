@@ -78,6 +78,7 @@ static bool mqttCommandReady = true;
 static void screenStatus(JsonObject out);
 static int screenTvocWarmup(uint32_t);
 static void screenPowerStatus(JsonObject,bool=false) {}
+static void screenUartDiagnostics(JsonObject) {}
 #endif
 #include "indicators.inc"
 static void sensorDiagnostics(JsonObject) {}

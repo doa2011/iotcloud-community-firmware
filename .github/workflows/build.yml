@@ -699,7 +699,6 @@ jobs:
             gh release download "$TAG_NAME" --dir existing
             for file in release/*.bin* release/*.rbl release/SHA256SUMS; do cmp "$file" "existing/$(basename "$file")"; done
           fi
-          python3 tools/release/deploy_worker.py
           python3 tools/release/publish.py release
           gh release edit "$TAG_NAME" --draft=false --prerelease --latest=false
           python3 tools/release/publish.py release --candidate
@@ -707,6 +706,7 @@ jobs:
         with:
           node-version: '24'
       - name: Build and publish public Pages allowlist
+        if: steps.release-channel.outputs.channel == 'stable'
         env:
           GH_TOKEN: ${{ secrets.PAGES_DEPLOY_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
