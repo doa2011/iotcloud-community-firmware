@@ -14437,8 +14437,8 @@
         "en": "Hub scheduling and HomeKit recovery"
       },
       "description": {
-        "zh-CN": "整理中枢读写请求、能力缓存、设备在线状态与错误反馈，修复 HomeKit 配对及服务恢复；内置 Broker 已移除，局域网设备使用配对 UDP，上游 MQTT 使用外部 Broker。可选 HomeKit 桥接仍为实验功能且默认关闭，不包含 Matter。",
-        "en": "Improve hub read/write scheduling, capability caching, device liveness and errors, and fix HomeKit pairing and service recovery. The embedded broker is removed: LAN peers use paired UDP and upstream MQTT uses an external broker. The optional HomeKit bridge remains experimental and off by default; Matter is not included."
+        "zh-CN": "整理中枢读写请求、能力缓存、设备在线状态与错误反馈，修复 HomeKit 配对及服务恢复；内置 Broker 已移除，局域网设备使用配对 UDP，上游 MQTT 使用外部 Broker。可选 HomeKit 桥接仍为实验功能且默认关闭，不包含 Matter。 精简中枢前端资源，以满足原厂 OTA 容量限制。",
+        "en": "Improve hub read/write scheduling, capability caching, device liveness and errors, and fix HomeKit pairing and service recovery. The embedded broker is removed: LAN peers use paired UDP and upstream MQTT uses an external broker. The optional HomeKit bridge remains experimental and off by default; Matter is not included. Trim hub frontend resources to fit the stock OTA capacity limit."
       },
       "scope": {
         "models": [
@@ -14467,8 +14467,8 @@
         "state": "active"
       },
       "ota_summary": {
-        "zh-CN": "整理中枢读写请求、能力缓存、设备在线状态与错误反馈，修复 HomeKit 配对及服务恢复；内置 Broker 已移除，局域网设备使用配对 UDP，上游 MQTT 使用外部 Broker。可选 HomeKit 桥接仍为实验功能且默认关闭，不包含 Matter。",
-        "en": "Improve hub read/write scheduling, capability caching, device liveness and errors, and fix HomeKit pairing and service recovery. The embedded broker is removed: LAN peers use paired UDP and upstream MQTT uses an external broker. The optional HomeKit bridge remains experimental and off by default; Matter is not included."
+        "zh-CN": "整理中枢读写请求、能力缓存、设备在线状态与错误反馈，修复 HomeKit 配对及服务恢复；内置 Broker 已移除，局域网设备使用配对 UDP，上游 MQTT 使用外部 Broker。可选 HomeKit 桥接仍为实验功能且默认关闭，不包含 Matter。 精简中枢前端资源，以满足原厂 OTA 容量限制。",
+        "en": "Improve hub read/write scheduling, capability caching, device liveness and errors, and fix HomeKit pairing and service recovery. The embedded broker is removed: LAN peers use paired UDP and upstream MQTT uses an external broker. The optional HomeKit bridge remains experimental and off by default; Matter is not included. Trim hub frontend resources to fit the stock OTA capacity limit."
       },
       "summary_complete": true,
       "source_refs": [
@@ -14487,9 +14487,9 @@
       "translation_review": {
         "status": "approved",
         "reviewer": "/root/finish_integration",
-        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
-        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
-        "reviewed_content_sha256": "70f72a975714ca458259ddfef1df09a6b27427ad1699d902fa9eabe96e8c7133"
+        "reason": "Author reviewed both languages including Hub frontend trimming against the final source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:54:44.895962+00:00",
+        "reviewed_content_sha256": "30d3fed067d3381957dd141ab75a3bdc0625462b0cff134d048e3daa15ad882a"
       }
     },
     {

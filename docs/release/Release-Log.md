@@ -11,8 +11,8 @@
 - **升级范围与独立主控 / Upgrade scope and separate MCUs**：RC7 累计包含 RC6 之后的有效功能与修复。升级前备份配置并选择对应型号、变体。Wi-Fi OTA 不会自动升级 M1 传感器主控或 G3 屏幕；M1 新增 CRC 修复属于独立、尚未发布的主控更新，不包含在本 Wi-Fi 固件中。原厂 M1 17.x 迁移仍不推荐，G1 适配尚未确认。
   RC7 includes the effective additions and fixes since RC6. Back up configuration and select the matching model and variant. Wi-Fi OTA does not automatically update the M1 sensor MCU or G3 screen. The new M1 CRC fix belongs to a separate, unreleased sensor MCU update and is not bundled in this Wi-Fi firmware. Migration from stock M1 17.x remains discouraged; G1 compatibility remains unconfirmed.
 
-- **中枢请求调度与 HomeKit 恢复 / Hub scheduling and HomeKit recovery**：整理中枢读写请求、能力缓存、设备在线状态与错误反馈，修复 HomeKit 配对及服务恢复；内置 Broker 已移除，局域网设备使用配对 UDP，上游 MQTT 使用外部 Broker。可选 HomeKit 桥接仍为实验功能且默认关闭，不包含 Matter。
-  Improve hub read/write scheduling, capability caching, device liveness and errors, and fix HomeKit pairing and service recovery. The embedded broker is removed: LAN peers use paired UDP and upstream MQTT uses an external broker. The optional HomeKit bridge remains experimental and off by default; Matter is not included.
+- **中枢请求调度与 HomeKit 恢复 / Hub scheduling and HomeKit recovery**：整理中枢读写请求、能力缓存、设备在线状态与错误反馈，修复 HomeKit 配对及服务恢复；内置 Broker 已移除，局域网设备使用配对 UDP，上游 MQTT 使用外部 Broker。可选 HomeKit 桥接仍为实验功能且默认关闭，不包含 Matter。 精简中枢前端资源，以满足原厂 OTA 容量限制。
+  Improve hub read/write scheduling, capability caching, device liveness and errors, and fix HomeKit pairing and service recovery. The embedded broker is removed: LAN peers use paired UDP and upstream MQTT uses an external broker. The optional HomeKit bridge remains experimental and off by default; Matter is not included. Trim hub frontend resources to fit the stock OTA capacity limit.
 
 - **中枢计量与家庭显示 / Hub metering and Home display**：完善 TC1、S30、A1 及空气传感器在中枢中的型号、名称、计量与家庭服务映射；功率更新不刷新其它传感器的采样时间，避免用重复状态维持旧读数。
   Complete model, name, metering and Home service mappings for TC1, S30, A1 and air sensors. Power updates do not refresh other sensors’ sample timestamps, preventing repeated status from keeping old readings alive.
