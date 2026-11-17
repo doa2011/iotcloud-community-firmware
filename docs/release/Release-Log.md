@@ -2,242 +2,53 @@
 
 各版本的功能、修复与升级要求。
 
-## v1.0.0
+## v1.0.0-rc.7
 
-**v1.0.0 正式版累计包含自 v0.9.27 以来的功能和修复。升级前备份配置，按型号和变体选择镜像。Wi-Fi 固件、前端、云平台、M1 传感器主控与 G3 屏幕分别更新。M1 显示扩展仍需独立的 v1.0.0-rc 主控；原厂 17.x 暂不建议迁移。G1 适配尚未确认。**
+**RC7 为候选测试版本，包含 RC6 以来的累计变更。升级前备份配置，按型号与变体选择镜像。**
 
-**v1.0.0 accumulates features and fixes since v0.9.27. Back up configuration and select the matching model and variant. Wi-Fi firmware, frontend, cloud platform, M1 sensor controller and G3 screen update separately. M1 display extensions still require the separate v1.0.0-rc sensor controller; migration from stock 17.x is discouraged. G1 compatibility remains unconfirmed.**
+**RC7 is a release candidate with cumulative changes since RC6. Back up configuration and select the matching model and variant.**
 
-- **设备网页与配网文案国际化 / Internationalized device and setup pages**：整理设备操作页面和配网页的中英文文案，保留原有界面风格。精简版保留自身配网页面，完整操作页由独立前端提供。
-  Expand Chinese and English text coverage in device and setup pages while retaining the existing visual style. Slim images retain their setup pages; the independent frontend provides full device controls.
+- **升级范围与独立主控 / Upgrade scope and separate MCUs**：RC7 累计包含 RC6 之后的有效功能与修复。升级前备份配置并选择对应型号、变体。Wi-Fi OTA 不会自动升级 M1 传感器主控或 G3 屏幕；M1 新增 CRC 修复属于独立、尚未发布的主控更新，不包含在本 Wi-Fi 固件中。原厂 M1 17.x 迁移仍不推荐，G1 适配尚未确认。
+  RC7 includes the effective additions and fixes since RC6. Back up configuration and select the matching model and variant. Wi-Fi OTA does not automatically update the M1 sensor MCU or G3 screen. The new M1 CRC fix belongs to a separate, unreleased sensor MCU update and is not bundled in this Wi-Fi firmware. Migration from stock M1 17.x remains discouraged; G1 compatibility remains unconfirmed.
 
-- **平台界面、服务反馈与邮件国际化 / Internationalized platform, service messages and email**：管理平台界面、服务成功或错误反馈及邮件模板使用中英文文案；程序继续使用稳定错误码。平台服务单独部署，不随设备 OTA 更新。
-  The management platform, success and error messages, and email templates use Chinese and English text. Applications continue to use stable error codes. Platform services are deployed separately from device OTA updates.
+- **中枢请求调度与 HomeKit 恢复 / Hub scheduling and HomeKit recovery**：整理中枢读写请求、能力缓存、设备在线状态与错误反馈，修复 HomeKit 配对及服务恢复；内置 Broker 已移除，局域网设备使用配对 UDP，上游 MQTT 使用外部 Broker。可选 HomeKit 桥接仍为实验功能且默认关闭，不包含 Matter。
+  Improve hub read/write scheduling, capability caching, device liveness and errors, and fix HomeKit pairing and service recovery. The embedded broker is removed: LAN peers use paired UDP and upstream MQTT uses an external broker. The optional HomeKit bridge remains experimental and off by default; Matter is not included.
 
-- **独立设备语言与 MQTT 名称 / Separate device language and MQTT names**：保存设备语言，按该语言重新发布 MQTT / Home Assistant 实体名称。浏览器语言单独设置，实体标识、唯一 ID 和主题保持不变。
-  Persist the device language and republish MQTT and Home Assistant entity names in that language. Browser language is configured separately; entity identifiers, unique IDs and topics remain unchanged.
+- **中枢计量与家庭显示 / Hub metering and Home display**：完善 TC1、S30、A1 及空气传感器在中枢中的型号、名称、计量与家庭服务映射；功率更新不刷新其它传感器的采样时间，避免用重复状态维持旧读数。
+  Complete model, name, metering and Home service mappings for TC1, S30, A1 and air sensors. Power updates do not refresh other sensors’ sample timestamps, preventing repeated status from keeping old readings alive.
 
-- **按需展开本地连接 / Expand Local connection on demand**：独立设备管理前端、平台与 Pages 演示统一使用 Local connection 按钮，点击后显示 IP 与密码输入并可折叠，保持现有风格。
-  The independent device-management frontend, platform and Pages demos use a Local connection button that reveals collapsible IP and password inputs while retaining the existing style.
+- **M1 内存与主控上传缓存 / M1 memory and MCU upload buffers**：减少 M1 解码过程中的复制，并在主控上传结束后释放上传缓存；保持现有主控升级协议和校验流程。
+  Reduce M1 decoder copies and release sensor-MCU upload buffers after transfer, retaining the existing MCU update protocol and verification.
 
-- **限制新用户名与 MQTT 别名长度 / Limit new usernames and MQTT aliases**：新平台用户名和 MQTT 别名为 3–32 个 ASCII 字母、数字、下划线、点或连字符。已有长账号保留登录，可添加短 MQTT 别名；邮箱登录独立处理。此约束不替代设备连接第三方 Broker 的账号规则。
-  New platform usernames and MQTT aliases contain 3–32 ASCII letters, digits, underscores, dots or hyphens. Existing long accounts retain login and may add a short MQTT alias. Email login is handled separately. This does not replace account rules for third-party brokers.
+- **原厂依据的传感器补偿与校准 / Factory-informed sensor compensation and calibration**：将可核实的原厂传感器校准、补偿及初始化行为用于 M1 与大金 G2/G3，保留原始数据和有效性判定。读数偏移、恢复与清除按各型号能力执行；M1 主控端改动仍需独立升级。不能把软件补偿当成标准气体标定。
+  Apply verified factory calibration, compensation and initialization behavior to M1 and Daikin G2/G3 while retaining raw data and validity checks. Offsets, restoration and reset follow model capabilities; M1 MCU-side changes still require a separate update. Software compensation does not replace reference-gas calibration.
 
-- **分别显示 Wi-Fi 与传感器 MCU 版本 / Show Wi-Fi and sensor MCU versions separately**：分别显示联网模块和传感器 MCU 的原始版本，无法读取时显示未知。原厂 11.x 优先推荐开源主控；17.1.2.3 / 17.x 暂不建议迁移。Wi-Fi OTA 不包含主控升级。
-  Show the original Wi-Fi module and sensor MCU versions separately, or unknown when unreadable. The open-source sensor MCU is recommended first for stock 11.x; migration from 17.1.2.3 or 17.x is not currently recommended. Wi-Fi OTA does not update the sensor MCU.
+- **PM 休眠与真实采样年龄 / PM sleep and true sample age**：大金 G2 支持 PM 夜间停机与恢复。PM 读数按声明有效期保留真实采样年龄，白天最多 120 秒、夜间最多 1 小时；通信失联仍按短时限失效。M1、局域网、中枢与前端不再用转发或重复回包把旧采样变新。
+  Daikin G2 supports scheduled PM shutdown and resume. PM samples retain their true age within the declared lifetime, up to 120 seconds by day or one hour at night; short communication timeouts still apply. M1, LAN, hub and frontend forwarding or repeated replies no longer make old samples appear new.
 
-- **传感器 MCU 的 PM2.5 平滑 / PM2.5 smoothing in the sensor MCU**：需单独升级开源传感器 MCU：PM2.5 使用三点中值与自适应平滑抑制尖峰，持续升高时快速跟随；原始传感器帧仍可查询。本项不包含在 Wi-Fi OTA 中。
-  Requires a separate open-source sensor MCU update: a three-sample median and adaptive smoothing suppress PM2.5 spikes while following sustained increases quickly. Raw sensor frames remain available. This feature is not included in Wi-Fi OTA.
+- **G3 媒体、推送与通知队列 / G3 media, push and notification queues**：完善 JPEG/MJPEG、URL 来源、上传和推送流程，支持稳定通知更新、队列策略及独立过期时间；资源上传与激活检查能力、容量和校验值。摄像头流保留正在发送帧，以最新完整帧替换待发送旧帧，减少积压。
+  Complete JPEG/MJPEG, URL sources, upload and push flows with stable notification updates, queue policies and independent expiry. Resource upload and activation check capabilities, capacity and digests. Camera streaming preserves the in-flight frame and replaces queued old frames with the latest complete frame to reduce backlog.
 
-- **可选的甲醛与 PM2.5 蜂鸣报警 / Optional formaldehyde and PM2.5 buzzer alarms**：甲醛、PM2.5 超阈值蜂鸣报警分别开关，默认关闭。需支持该能力的开源传感器 MCU；色灯、闹钟和手动提示音分别控制。
-  Enable formaldehyde and PM2.5 threshold buzzer alarms separately; both are off by default. A capable open-source sensor MCU is required. Lamp colors, scheduled alarms and manual tones remain separate controls.
+- **摄像头位置与区域适配 / Camera position and region fitting**：从摄像头设置直接打开已有组件，调整位置、大小和画面适配。整行摄像头铺满区域宽度；完整显示模式靠区域顶部，裁剪模式保留居中。网页预览与配套屏幕渲染同步。
+  Open the existing camera widget from camera settings to adjust position, size and picture fit. Full-row cameras fill the region width; contain mode aligns to the top while cover remains centered. Web preview and the matching screen renderer agree.
 
-- **双击停止闹钟与整体切换读数 / Double-press alarm stop and whole-display switching**：配套新版开源传感器 MCU 后，单击开关屏幕。闹钟响铃时，双击只停止闹钟；未响铃时，按配置同时切换甲醛和 PM2.5 区域的原始 / 用户读数。
-  With the matching new open-source sensor MCU, a single press toggles the screen. When an alarm is ringing, a double press only stops it. Otherwise, when configured, it switches both formaldehyde and PM2.5 regions between original and user readings.
+- **指定主页与每页熄屏策略 / Selectable home and per-page standby**：可指定双击返回的主页，并按页独立设置电池与外电等待时间及熄屏亮度；未独立配置的页面继承全局，每周计划继续优先。页面排序保留稳定标识，删除页自动清理引用。旧屏幕仅开放其支持的设置；实际保存改变才递增策略修订号。
+  Choose the page reached by double tap and set each page’s battery/external-power idle delays and brightness. Pages without overrides inherit global settings; weekly plans retain priority. Stable page IDs survive reordering and deleted references are pruned. Older screens expose only supported settings; policy revisions advance only for actual changes.
 
-- **分段长按重新配网与恢复出厂 / Separate long-press reprovisioning and factory reset**：配套新版开源传感器 MCU 后，按住 3 秒至未满 10 秒松手，清除 Wi-Fi 与网页密码并保留 MQTT 等设置；按满 10 秒恢复出厂，主控独立音乐保留。保存成功后两颗 MCU 一起重启，离线也可使用。
-  With the matching new open-source sensor MCU, release after holding for at least 3 but under 10 seconds to clear Wi-Fi and the web password while keeping MQTT and other settings. Hold for 10 seconds to factory-reset network-module settings; independent sensor MCU music is retained. Both MCUs restart after settings are saved, including while offline.
+- **TVOC 预热倒计时与时长 / TVOC warmup countdown and duration**：显示真实测量预热倒计时，支持原厂自动或自定义 1–60 分钟，禁止跳过。修改后按已运行时间重算，不重启测量，也不伪造有效读数。预热中的已识别硬件可结束启动加载；失联或未知状态不显示误导倒计时。设置保存于 ESP 并在屏幕新会话时重放，手动校准等待时间保持独立。
+  Show measured warmup remaining time and select factory automatic timing or a custom 1–60 minutes; skipping is rejected. Changes use elapsed measurement time without restarting measurement or fabricating valid readings. Identified warming hardware can complete startup loading; unknown/offline states show no misleading countdown. ESP persists and replays settings on a new screen session; manual calibration timing remains separate.
 
-- **双区域用户读数与独立有效期 / User readings and independent expiry for both regions**：甲醛 / PM2.5 两区域分别选择本机传感器、已配对局域网设备、已授权 MQTT 设备或 API，独立配置颜色和有效期，双击整体切换。缺失、过期、离线或无效时仅对应区域回退，不改变原始采集和报警。需配套支持此功能的独立传感器主控。
-  Configure local sensors, paired LAN devices, authorized MQTT devices or API data separately for the formaldehyde and PM2.5 regions, with independent colors and expiry. Double-press switches both regions together. Missing, expired, offline or invalid data restores only its region without changing acquisition or alarms. A capable separately updated sensor MCU is required.
+- **串口丢失恢复与状态内存 / UART loss recovery and bounded status memory**：观察到串口硬件溢出或接收环丢字节时，由接收所有者丢弃残片并在边界重同步，保留 CRC、会话与序号验证。维护查询兼容 v3/v4 诊断，额外丢失统计不扩充普通状态；减少视频期间状态编码的内存峰值。
+  After observed UART overrun or receive-ring loss, the receive owner discards fragments and resynchronizes at a boundary while preserving CRC, session and sequence validation. Maintenance queries accept v3/v4 diagnostics; extra loss counters stay out of ordinary status. Reduce status-encoding memory peaks during video.
 
-- **发布 TC1 功率与 A1 生效输出数据 / Publish TC1 power and effective A1 fan output**：为 M1 用户读数提供带身份、新鲜度与有效标记的 TC1 功率和 A1 主风机生效输出数据。A1 为 0–100% 的当前输出，新风变体相同，不表示 RPM；不可用读数不伪装成零。
-  Provide M1 user readings with TC1 power and effective A1 primary-fan output carrying identity, freshness and validity. A1 reports the current 0–100% output, including the fresh-air variant, rather than RPM. Unavailable readings are not represented as zero.
+- **时间同步回退 / Time synchronization fallback**：NTP 配置增加 time.windows.com 作为第三来源。完全断电后时间需等待网络授时，天气在时间有效后首次获取；同步恢复后向屏幕下发时间与天气。
+  Add time.windows.com as a third NTP source. After complete power loss, time waits for network synchronization and weather starts fetching once time is valid; synchronized time and weather are then delivered to the screen.
 
-- **按物理屏幕选择数字模式与原厂标识 / Display modes and native legends for the physical screen**：PM 区域仅三位整数，最高 999；甲醛区域可选整数、千位自动缩放、两位小数、一位小数末位补零或固定除以 1000。小数点固定在第一位之后；字样与原生单位分别显隐，单位仍为 mg/m³ 和 µg/m³。本地 / MQTT 正数溢出按模式上限显示。
-  The PM region supports three integer digits up to 999. The formaldehyde region offers integer, automatic kilo scaling, two decimals, one decimal with a trailing zero, or fixed division by 1000. Its decimal point is fixed after the first digit. Legends and native units have separate visibility controls; the units remain mg/m³ and µg/m³. Positive local or MQTT overflow is limited to the selected mode maximum.
+- **G3 暖升级已知问题 / Known G3 warm-OTA issue**：部分设备在屏幕 MCU 暖升级安装阶段卡住或出现乱码，需要断开 USB 与电池两路电源后重新上电；只拔 USB 或只重启 ESP 不等于完整断电。最终候选屏幕主控构建仍待实机验收。默认 UART 保持 115200；高波特率和高帧率实验不作为可靠性承诺。升级前保留恢复方法与备份。
+  Some devices stall or show garbled output during screen-MCU warm-OTA installation and need complete power removal from both USB and battery before restart. Removing USB alone or restarting only ESP is not complete power removal. The final candidate screen-MCU build still awaits device acceptance. UART remains at 115200 by default; high-baud and high-frame-rate experiments are not a reliability guarantee. Retain recovery access and backups before updating.
 
-- **每区域九段灯独立配置 / Nine independent lamp segments per region**：每区域左中右三个灯位的红、绿、黄九段可独立开关，并可在同一位置同时开启多色；也可按显示转换前的原始物理值和两个阈值自动配色。
-  Control the red, green and yellow segments independently at each of three positions in each region, including multiple colors at one position. Alternatively, apply two thresholds to the original physical value before display conversion.
-
-- **API 直接写入数字与完整灯段 / Write raw digits and complete lamp segments through the API**：display_value.set 按已保存的 API 区域配置接收 0–999 整数、小数点、字样、原生单位显隐及九段灯，不缩放、舍入、钳位或套用阈值配色；PM 禁止小数点。小数或越界数字拒绝。写入需匹配修订号与有效期，TTL 0 单独清除该区域。
-  For a saved API-region configuration, display_value.set accepts an integer from 0 to 999, decimal point, legend and native-unit visibility, and all nine lamp segments. It does not scale, round, clamp or apply threshold colors. PM decimal points, fractional numbers and out-of-range digits are rejected. Writes must match the revision and expiry; TTL 0 clears only that region.
-
-- **显示能力协商、修订校验与配置迁移 / Display negotiation, revision checks and configuration migration**：新显示配置使用 revision/CAS，并支持带冒号或连续形式、大小写不敏感的 MAC。先探测主控能力再启用新接口，保留冻结的旧 API / UART；支持已定义旧配置与备份迁移，未知未来布局进入恢复路径。
-  New display configuration uses revision/CAS checks and accepts compact or colon-separated MAC addresses in either case. Probe the sensor MCU before enabling new interfaces and retain the frozen legacy API and UART behavior. Defined older configurations and backups migrate; unknown future layouts enter recovery.
-
-- **独立大金中枢与共用网页登录 / Separate DAIKIN hub and shared web login**：独立 hub 变体在传感器功能上增加局域网设备发现、配对与管理。中枢共用设备网页密码和会话；未设密码可直接进入，已有密码仍需认证。中枢用户名用于主题命名空间，不提供云端邮箱注册或 GitHub 登录。
-  The separate hub variant adds LAN discovery, pairing and management to sensor functions. It shares the device web password and session: an unset password permits direct access, while an existing password requires authentication. The hub username remains a topic namespace; cloud email registration and GitHub login are not included.
-
-- **中枢设备与服务网页设置 / Hub device and service settings**：从设备网页打开中枢管理，设置局域网设备、上游 MQTT、巴法云映射与可选 Apple 家庭；控制页与中枢页共用设备网页登录会话。
-  Open Hub management from the device page to configure LAN devices, upstream MQTT, Bemfa mappings and optional Apple Home. Control and hub pages share the device web session.
-
-- **移除中枢内置 MQTT Broker / Remove the embedded hub MQTT broker**：中枢不再提供本地 TCP 1883 或 WebSocket MQTT Broker。设备、Home Assistant 和其它 MQTT 客户端改用外部 Broker；中枢通过配对 UDP 管理设备。
-  The hub no longer provides a local TCP 1883 or WebSocket MQTT broker. Devices, Home Assistant and other MQTT clients use an external broker; the hub manages devices over paired UDP.
-
-- **上游 MQTT 与巴法云转发 / Upstream MQTT and Bemfa forwarding**：中枢作为上游 MQTT 客户端工作，按方向和主题映射转发事件，并支持巴法云设备映射。局域网设备通过 mDNS 发现和配对 UDP 连接，不再依赖内置 Broker。
-  The hub acts as an upstream MQTT client, forwarding events by direction and topic mapping and supporting Bemfa device mappings. LAN devices use mDNS discovery and paired UDP instead of an embedded broker.
-
-- **可选 HomeKit HAP 桥接 / Optional HomeKit HAP bridge**：默认关闭的实验性 HAP 桥接支持 TC1 六路开关、S30 插座、A1 净化器及新风、灯与 M1 / 大金 G2 / G3 的有效传感器。净化器采用标准 AirPurifier 服务；与灯编组后的主体图标由 Apple 家庭决定。HomeKit 配对独立保存，不包含在普通配置备份中；不包含 Matter。
-  Experimental HAP bridging is off by default and supports six TC1 switches, S30 sockets, A1 purifiers and fresh-air variants, lights and valid M1 / DAIKIN G2 / G3 sensors. Purifiers use the standard AirPurifier service; Apple Home controls the primary icon when grouped with a light. HomeKit pairing is stored separately and excluded from ordinary configuration backups. Matter is not included.
-
-- **明确确认后从普通版切换中枢 / Explicitly confirmed conversion from full to hub**：声明支持的新 full 可通过本地 HTTP、网页密码、匹配实际 OTA 容量的 hub 签名镜像和明确确认切换，保留联网配置。普通升级仍隔离变体，不支持直接 hub → full OTA。
-  A new full image advertising this capability can switch to hub over local HTTP using the web password, a signed hub image that fits the installed OTA slot, and explicit confirmation. Network settings are retained. Ordinary updates remain variant-isolated; direct hub-to-full OTA is unsupported.
-
-- **完整配置备份、校验恢复与迁移保护 / Complete configuration backup, validated restore and migration protection**：通过有网页密码的局域网 HTTP 下载或恢复完整配置，先核对机型、变体、配置版本及内容。保留已支持的旧配置迁移；不支持布局保留原存储并要求确认后清空。M1 MCU 音乐和 HomeKit 配对不在普通 Wi-Fi 配置备份中。
-  Download or restore complete configuration over local HTTP protected by the web password after validating the model, variant, configuration version and contents. Retain supported older-configuration migration paths. Unsupported layouts preserve storage and require confirmation before clearing it. M1 MCU music and HomeKit pairing are excluded from ordinary Wi-Fi configuration backups.
-
-- **在升级页核对跨版本差异 / Check cross-version differences within the update page**：TC1、A1、M1 的设备升级页由浏览器直接获取并校验结构化发布资料，计算当前到目标版本的差异；资料不可用时说明原因并额外确认后才能继续。已有官网差异入口保留。
-  On TC1, A1 and M1, the browser fetches and verifies structured release data in the device update page and computes changes from the current to the target version. If data is unavailable, the page explains the reason and requires additional confirmation before proceeding. The existing website comparison link remains available.
-
-- **EMW3080 release 分配保留 8 KiB / 8 KiB allocation reserve for EMW3080 release images**：A1 / M1 release 的内存分配保留底线调整为 8 KiB。不适用于 TC1 的 EMW3031 或大金 ESP32。
-  A1 and M1 release images lower the memory allocation reserve to 8 KiB. This does not apply to TC1’s EMW3031 or Daikin’s ESP32.
-
-- **开源、归档与跨仓库开发规范 / Open source, archives and cross-repository development rules**：归档 v0.9.x，整理 CI、Issue / PR 模板与接口、配置迁移及固定依赖的贡献规范。维护代码采用 GPL-3.0，第三方声明保留；这些仓库与开发资料变更不属于设备 OTA 功能。
-  Archive v0.9.x and organize CI, issue and PR templates, and contribution rules for interfaces, configuration migration and pinned dependencies. Maintained code uses GPL-3.0 while third-party notices are retained. Repository and development-material changes are separate from device OTA features.
-
-- **按设备组织指南与集中开发者协议 / Device-organized guides and shared developer protocols**：用户指南按 M1 / A1 / TC1 / 大金组织安装、升级、使用与恢复，保持 Pages 风格；接口、协议、配置兼容性和样例集中提供中英文开发者 Pages。
-  Organize installation, updates, daily use and recovery guides by M1, A1, TC1 and Daikin while retaining the Pages style. Centralized Chinese and English developer Pages document interfaces, protocols, configuration compatibility and examples.
-
-- **双区域来源、数字与九段灯设置页 / Settings for two display regions, digits and nine lamp segments**：设备完整网页可为甲醛、PM 区域独立选择来源、有效期、数字模式、字样 / 单位及九段灯，并设置双击整体切换；显示传感器 MCU 支持情况和确认状态，提供固定玻璃布局预览。应用新显示需使用支持该能力的 MCU。
-  The full device page configures each formaldehyde or PM region’s source, expiry, display mode, legend and unit visibility, and nine lamp segments, plus whole-display switching on double press. It shows sensor MCU support and confirmation status and previews the fixed glass layout. Applying the new display requires a capable MCU.
-
-- **分别设置两种传感器蜂鸣报警 / Separate controls for both sensor buzzer alarms**：网页分别提供甲醛和 PM2.5 超阈值蜂鸣开关，默认关闭，保存后核对配置；不支持的旧主控明确显示能力限制。
-  The page provides separate formaldehyde and PM2.5 threshold buzzer switches, both off by default, and checks saved configuration. Older unsupported sensor MCUs show the capability limitation.
-
-- **中枢本机自动显示在设备列表 / Show the hub itself in the device list**：中枢自动出现在自己的设备列表，可查看本机传感器并进入设备设置。本机项不占用 12 个外部设备名额，不能被当作外部设备删除或重复注册。
-  The hub automatically appears in its own device list, where its local sensors and device settings are accessible. The self entry does not consume any of the 12 external-device slots and cannot be removed or registered again as an external device.
-
-- **中枢管理不再强制先设网页密码 / Make the device web password optional for hub setup**：中枢管理不强制预先设置网页密码；未设密码直接进入，已有密码必须认证。中枢共用设备网页登录，不再保留独立的中枢登录密码；UDP 配对与外部 Broker 凭据仍分别配置。
-  Hub management does not require setting a web password first. An unset password permits direct access; an existing password requires authentication. The hub shares device web login without a separate hub login password. UDP pairing and external-broker credentials remain separate.
-
-- **普通版切换中枢无需预先设置网页密码 / Allow full-to-hub conversion without first setting a web password**：声明转换能力的新版 full，可在局域网网页选择匹配的 hub 签名包并明确确认切换，无需先设置网页密码；已有密码时仍需鉴权。机型、签名和实际 OTA 容量检查继续有效，联网配置保留，普通 OTA 继续隔离变体且不支持直接 hub → full OTA。
-  A new full image advertising conversion support can switch through its LAN web page using a matching signed hub image and explicit confirmation, without first setting a web password. An existing password still requires authentication. Model, signature and installed OTA-slot checks remain in force, network settings are retained, ordinary updates remain variant-isolated, and direct hub-to-full OTA is unsupported.
-
-- **HomeKit 设置后继续刷新真实状态 / Refresh HomeKit status after settings changes**：调整 HomeKit 开关或重置配对后，网页在等待重启期间继续检查状态，服务恢复后显示当前状态，会话失效时提示重新登录。等待期间不重复提交开关或重置请求，也不显示过期配对码。
-  After changing the HomeKit switch or resetting pairing, the page continues checking status while the hub restarts, shows the current state when the service returns, and prompts for sign-in if the session expires. It does not replay the change or reset request, or display stale pairing codes while waiting.
-
-- **设备按字段发布通用数值 / Publish generic numeric fields**：设备以 MessagePack schema 3 分别发布保留的 metadata 描述和非保留的 state 实时值，按字段 ID 声明名称、类型和单位，并携带有效性与帧龄。TC1 功率、A1 生效风机输出以及大金 / M1 读数使用 number；A1 输出为 0–100%，不是 RPM。无效值不伪装成零。
-  Devices use MessagePack schema 3 with retained metadata and non-retained state snapshots. Field IDs declare names, types and units; readings carry validity and age. TC1 power, effective A1 fan output and DAIKIN / M1 readings use number fields. A1 output is 0–100%, not RPM. Invalid values are not represented as zero.
-
-- **M1 按设备和字段选择数值来源 / Select M1 numeric sources by device and field**：M1 显示配置 schema 4 按“设备 + 字段”选择来源，不再按设备型号适配。来源设备增加数值字段后，无需新增型号映射；M1 仅接受类型和单位匹配的 `number`。缺失、无效或 `unknown` 等非数值字段不再沿用旧读数；协议保留未来类型扩展。
-  M1 display-profile schema 4 selects a source by device and field, rather than adapting to its model. New numeric fields do not need another model mapping. M1 accepts only `number` fields matching the configured type and unit. Missing, invalid, `unknown` or other nonnumeric fields revoke the old reading; the protocol reserves future type extensions.
-
-- **M1 恢复模式不再误报网络重置成功 / Reject network-only resets during M1 configuration recovery**：配置不兼容并要求确认清空时，M1 不再将仅重置网络误报为成功或向主控发送成功确认。原始存储继续保留，需在网页明确确认完整清空后重新配网；完整清空仍校验存储提交，失败可重试，结果不确定时继续阻止写入。本次不增加未知第三方配置布局的自动迁移。
-  When an incompatible configuration requires confirmation, M1 rejects a network-only reset instead of reporting success or acknowledging success to the controller. Stored bytes remain intact until a full clear is explicitly confirmed in the page. Full clearing still checks the storage commit, allows retry after failure and blocks further writes when the commit result is uncertain. No automatic migration for unknown third-party layouts is added.
-
-- **恢复完整网页的重启与恢复入口 / Restore the full maintenance page**：修复完整网页“重启与恢复”页内容未挂载的问题，使重启、备份和完整清空按钮能够显示。A1 触摸按键长按无响应的问题仍需单独排查。
-  Fix missing content in the full Reboot and recovery page so its reboot, backup and full-clear controls are shown. The A1 Wi-Fi touch-key hold issue remains a separate investigation.
-
-- **清空后刷新恢复状态并继续配网 / Refresh recovery state after clearing and resume setup**：完整网页与精简配网页在恢复过程中重新读取状态，明确确认清空后等待重启与重连，再退出旧迁移提示并更新表单，无需另开页面。等待时阻止重复提交，失败可重试；重启后仍需恢复时提示清空结果未确认。普通刷新保留未保存输入。
-  The full and minimal setup pages refresh recovery state. After an explicitly confirmed clear, they wait for restart and reconnection before retiring the old migration warning and updating the form in the same tab. Duplicate submissions are blocked while waiting, failures can be retried, and a restart that still requires recovery is reported as an unconfirmed clear. Ordinary refreshes preserve unsaved input.
-
-- **A1 新增短触组合恢复手势 / Add A1 recovery sequences for touch panels with short holds**：A1 Wi-Fi 键新增保留恢复组合：短按两次，第 3 次按住 1–2 秒后松手重置网络；短按三次，第 4 次按住 1–2 秒后松手恢复出厂。每次短按须松手，相邻触碰间隔小于 0.3 秒，最终按住至少 1 秒、不足 5 秒，面板报告松开才触发。绕过童锁，不执行本组连击或最终长按的自定义动作；原 5 秒 / 10 秒恢复手势保留。恢复出厂清除用户设置。此补充手势仍为测试功能。
-  A1 reserves two Wi-Fi recovery sequences: tap twice, hold the third touch for 1–2 seconds and release to reset networking; tap three times, hold the fourth touch for 1–2 seconds and release to factory reset. Release each short tap, leave less than 0.3 seconds between touches and hold the final touch for at least 1 second and less than 5 seconds. Recovery runs only when the panel reports release, bypasses child lock and suppresses custom click and hold actions for this sequence. Existing 5 / 10 second recovery holds remain. Factory reset clears user settings. These alternative sequences remain experimental.
-
-- **HTTP、设备 MQTT 与 UDP 统一二进制接口 / Use binary HTTP, device MQTT and UDP interfaces**：设备业务默认使用 MessagePack，内部使用类型化参数视图和直接输出；不再保留旧 JSON 业务接口。Home Assistant 独立保留精简 JSON。升级时必须使用本版配套网页及支持发现协议的云平台；旧 JSON 调用方需改造。
-  Device business APIs default to MessagePack with typed parameter views and direct output. Legacy JSON business interfaces are removed; Home Assistant keeps a separate compact JSON path. Use the matching frontend and a discovery-aware cloud platform; migrate custom JSON clients.
-
-- **完整业务状态缓存与独立诊断 / Cache complete business state and separate diagnostics**：完整状态保持可读；状态变化标记后合并编码，无变化时复用缓存。运行时、HTTP、面板及串口诊断通过 diagnostics.get 按需读取，采用所有设备共用的固定数字字段编号，缺失字段跳过。原生 MQTT 与 HA 分别记录发送进度，命令回执独立处理。
-  The complete business snapshot remains available. Changes are coalesced before encoding and unchanged snapshots are reused. Read runtime, HTTP, panel and serial diagnostics on demand with diagnostics.get and shared numeric field IDs, skipping absent fields. Native MQTT and HA track delivery separately; command receipts remain independent.
-
-- **减少重复读取并保留切页内容 / Coordinate reads and retain content during tab changes**：公共 HTTP 请求串行合并，优先写操作并进行有限确认；合并重复读取、取消过期只读请求并隔离旧响应，不取消已发出的写操作。联动页保留旧内容和未保存表单，成组数据原子更新；修复登录布局及 busy/503 处理。A1 本地刷新圆环动画，A1/M1 普通状态约每 5 秒读取，调速后短时加快确认。
-  The shared HTTP queue coalesces reads, prioritizes writes and bounds confirmation. It cancels stale reads and isolates late responses without cancelling issued writes. Automation pages retain existing content and unsaved forms and apply grouped updates atomically. Login layout and busy/503 handling are corrected. A1 animates locally; ordinary A1/M1 state reads run about every five seconds with brief faster confirmation after control.
-
-- **修复 busy 分类与 MQTT 内存回退 / Correct busy errors and MQTT memory fallback**：A1 将非法参数、版本冲突和存储失败与资源繁忙区分，避免误报 busy。修复 MQTT 缩小接收缓冲失败时的断连处理，保留订阅状态，避免重放保留的工作消息；TC1 二进制 MQTT 不再因消息包含 NUL 字节而拒收。HTTP 最多保留两个等待请求，过载仍有界返回。
-  A1 distinguishes invalid parameters, revision conflicts and storage failures from resource contention. MQTT buffer-shrink failure handling preserves subscriptions and avoids replaying retained work. TC1 accepts embedded NUL bytes in binary MQTT messages. HTTP queues at most two waiting requests and returns bounded overload errors.
-
-- **mDNS 发现与经过配对的 UDP 通信 / Discover with mDNS and communicate over paired UDP**：内网业务使用统一二进制封包及有界参数解析，支持管理密码配对和已有 MQTT 下发传感器会话授权。同步请求仅借用输入数据，异步操作持有独立数据；精简 mDNS/UDP 的重复逻辑，同时保留发现、配对和重新发现路径。
-  LAN business uses shared binary packets and bounded parsing. It supports administration-password pairing and existing MQTT-granted sensor sessions. Synchronous requests borrow input only during processing; asynchronous work owns its data. Shared mDNS/UDP logic reduces duplication while retaining discovery, pairing and rediscovery.
-
-- **中枢移除内置 Broker，改用 mDNS 与 UDP / Replace the embedded hub broker with mDNS and UDP**：中枢通过 mDNS 自动发现、UDP 配对及通信，提供统一网页设备管理，保留上游 MQTT、巴法云与实验性 HomeKit 桥接。本地 Home Assistant 及 MQTT 客户端须连接外部 Broker。修复配对存储、转发归属/关联、有限队列及空闲 HTTP 连接回收；旧内置 Broker 配置不能继续作为局域网连接入口。
-  The hub discovers devices with mDNS, pairs and communicates over UDP, and provides shared web management. Upstream MQTT, Bemfa and experimental HomeKit bridging remain available. Local Home Assistant and MQTT clients must use an external broker. Pair storage, forwarding ownership/correlation, bounded queues and idle HTTP reclamation are corrected. The former embedded broker is no longer a LAN endpoint.
-
-- **可选网页认证与受保护的配置迁移 / Optional web authentication and protected configuration migration**：未设管理密码时直接进入网页且不占登录会话；设密码后使用 token 会话，保留 admin Basic 访问。密码变化、退出及重启按设备认证策略处理。已识别的 0.9.x 配置布局迁移保留原有设置；未知或无法可靠写入的布局进入配置恢复，不盲目覆盖。请在升级前备份，并按各机型迁移/恢复说明操作。
-  An unset administration password permits direct web access without consuming login sessions. Configured passwords use token sessions while retaining admin Basic access. Password changes, logout and restart follow device authentication rules. Recognized 0.9.x configuration layouts preserve settings during migration; unknown layouts or unsafe writes enter recovery instead of being overwritten. Back up before upgrading and follow the model-specific migration and recovery guide.
-
-- **精简资源、固定工具链与 iotcloud 主机名 / Trim resources, pin compilers and use iotcloud hostnames**：配套前端按设备能力裁剪，精简未用资源及格式化依赖；MXCHIP 发布构建使用固定 GCC14 编译器及原 GCC5 运行库，S30 使用 GCC5。DHCP 主机名使用 iotcloud、真实型号及本机有效工厂 MAC 尾号，A1/M1/TC1 协议身份统一为 openiot。
-  The matching frontend is trimmed by device capability and unused resources and formatting dependencies are reduced. MXCHIP release builds use pinned GCC14 with the existing GCC5 runtime; S30 uses GCC5. DHCP hostnames include iotcloud, the actual model and a valid factory-MAC suffix. A1/M1/TC1 protocol identities use openiot.
-
-- **新增 S30-V1B 计量插座与原厂免拆安装 / Add the S30-V1B metering socket and stock network installation**：新增 ORVIBO S30-V1B（BL2028N/BK7231N/HLW8032）：复用公共网页与二进制 HTTP/MQTT/UDP，提供开关、功率/电压/电流/累计电量及持久化倍率设置。默认采用原厂分区布局，发布原生 RBL 和从 0x11000 写入的 STOCK_UA；原厂 2M.1220 已实测正常网络 OTA 首次安装，首次社区启动需重新配网。保留 S30M_V1B_ 热点前缀；灯语及 5 秒/10 秒松手恢复手势见操作说明。网页仅支持 URL OTA。
-  Add ORVIBO S30-V1B (BL2028N/BK7231N/HLW8032) using the shared web UI and binary HTTP/MQTT/UDP services. It provides outlet control, power, voltage, current, energy and persistent meter multipliers. Native RBL and STOCK_UA images use the stock partition layout; write STOCK_UA at 0x11000. First network installation from stock 2M.1220 was physically verified; configure Wi-Fi again on community first boot. The AP retains S30M_V1B_. See the operation guide for LEDs and release-triggered 5/10-second recovery. Web OTA accepts a URL only.
-
-- **大金中枢共用网页认证 / Shared device and hub authentication**：中枢不再单独设置账号密码，改用设备 WebUI 管理密码和会话；未设管理密码时直接进入。同一标签页刷新、切换控制页与中枢页复用有效会话，退出和密码变更清除会话。已有中枢用户名、设备列表、配对与转发设置保留；旧中枢密码停用，用户名继续作为主题命名空间。UDP 配对及外部 MQTT broker 认证继续独立配置。
-  The DAIKIN hub uses the device WebUI administration password and session instead of a separate account password. With no password it opens directly. Refreshing or switching between the control and hub pages in the same tab reuses the session; sign-out and password changes clear it. Existing hub usernames, devices, pairing and forwarding settings are retained. The old hub password is retired, while the username remains the topic namespace. UDP pairing and external MQTT broker authentication remain separate.
-
-- **中枢设备参数、功率与 HomeKit 读数 / Hub device state, power and HomeKit readings**：中枢网页通过 HTTP→UDP 读取已配对设备状态并发送控制，浏览器只需访问中枢。TC1 列表补齐功率，新读数到达时不再短暂显示空白，计量数据过期时隐藏读数；M1 优先读取首屏状态，初始能力读取失败后恢复可用控件。HomeKit 按 M1 实际传感器有效位更新温湿度与 PM2.5。请求串行合并并校验设备身份与响应编号，过期响应不会覆盖新设备，已发出的写操作不自动重放。远端页面提供已实现的控制与诊断；网络、认证、自动化、升级及备份从目标设备本地网页操作。
-  The hub reads paired-device state and sends controls over HTTP-to-UDP; the browser only needs to reach the hub. TC1 list cards no longer briefly hide power when a new reading arrives, and hide expired meter readings. M1 prioritizes the initial state and restores supported controls after a failed first capability read. HomeKit uses M1 sensor-validity flags for temperature, humidity and PM2.5. Requests are serialized and coalesced, with device identity and response-ID checks. Stale replies cannot replace another device, and issued writes are never automatically replayed. Remote pages expose supported controls and diagnostics. Use the target device’s local page for network settings, authentication, automation, upgrades and backups.
-
-- **HTTP 鉴权与控制回执 / HTTP authorization and control receipts**：HTTP 在排队、业务执行和回复时重新核对认证，退出、密码变化或过期后，排队请求不能继续沿用旧权限。控制回执采用有限预留，TC1 在执行前准备回复空间，减少执行成功却无法确认的情况；收包、按钮与 MQTT 心跳保持独立调度。A1/M1 的连接上限诊断改为报告实际请求值。
-  HTTP checks credentials again while queued, at execution and at reply delivery. Requests cannot retain old permissions after sign-out, expiry or a password change. Control receipts use bounded reservations, and TC1 prepares reply space before execution. Packet reception, local buttons and MQTT heartbeats keep their own scheduling. A1/M1 diagnostics report the actual requested TCP connection limit.
-
-- **TC1 MQTT 与 S30 二进制局域网修复 / TC1 MQTT and S30 binary LAN fixes**：TC1 周期上报交由 MQTT owner 线程调度，避免额外上报线程与控制争用。S30 接入共享 UDP v4 的类型化解析、密码配对、原子认证保存及有界回执；可选 SENSOR 订阅被 broker 拒绝时不再断开主 MQTT 连接，并按退避重试。云后端补齐 S30 精确 SENSOR 命令主题 ACL，同时拒绝跨账户与通配符订阅。
-  TC1 periodic telemetry runs on the MQTT owner thread to reduce contention. S30 uses the shared typed UDP v4 parser, password pairing, atomic authentication persistence and bounded receipts. A rejected optional SENSOR subscription no longer disconnects the main MQTT connection and retries with backoff. The cloud backend permits the exact S30 SENSOR command topic while rejecting cross-account and wildcard subscriptions.
-
-- **中枢配对持久化与路由一致性 / Consistent hub pairing storage and routing**：中枢将设备配对凭据与确认的 UDP 路由一起提交，存储失败时不提前启用路由，移除配对流程中的临时密码写入。修复旧配置占用存储导致的中枢写入失败，保留有效配置与配对数据。
-  The hub commits pairing credentials and the confirmed UDP route together. Failed storage does not activate a route, and temporary password writes are removed. Legacy configuration storage is reclaimed while retaining valid settings and pairing data.
-
-- **网页状态与 UTC 时区 / Web state and UTC settings**：修复状态代次更新后仍沿用旧快照的问题；设置保存后重新取得对应完整状态。UTC 时区的零分钟偏移按原值显示和保存，不再误变成 UTC+8。
-  Fix stale snapshots after a state-generation change, and fetch the corresponding complete state after saving settings. A UTC offset of zero displays and saves correctly instead of becoming UTC+8.
-
-- **设备名称与 HomeKit 同步 / Device names and HomeKit synchronization**：设备提供只修改名称的 name.set。中枢同步设备名和 TC1 / S30 插口名，并通知家庭控制器刷新配置，保留既有配对与标识。A1 / M1 / 大金支持经 ConfiguredName 改名，持久化并读回确认后更新；插口名称只读。Apple 家庭普通重命名是本地别名。需要 Hub v1.0.0 及目标设备 rc.6 或更新兼容版本。
-  Devices provide name.set to change only the name. The hub synchronizes device names and TC1 / S30 socket names, notifies home controllers to refresh configuration and retains pairings and identities. A1 / M1 / DAIKIN support ConfiguredName writes with persistence and readback; socket names are read-only. Ordinary Apple Home renames are local aliases. Requires hub v1.0.0 and target devices running rc.6 or a newer compatible release.
-
-- **修复中枢 HomeKit 处理时重启 / Fix hub restarts while processing HomeKit data**：修复中枢处理 HomeKit 数据时主循环栈占用过大导致的重启。
-  Fix hub restarts caused by excessive main-loop stack use when processing HomeKit data.
-
-- **S30 来电保持、功率规则与 M1 远程读数 / S30 power restoration, power rules and M1 readings**：S30 增加来电关闭／开启／保持和最多 8 条本地功率规则；功率严格高于或低于阈值、持续指定秒数后开关，0 秒为立即触发。规则无需 MQTT 或校时，本地按键优先。S30 通过 MessagePack schema 3 发布电压、电流、功率和累计电量的字段描述与数值；同一外部 broker、同一账户的 M1 可独立订阅显示，网页可关闭。保持恢复最近一次已保存的输出，规则计时不跨重启恢复。
-  S30 adds off, on and restore power-on modes and up to eight local power rules. Power strictly above or below a threshold for the specified number of seconds triggers switching; zero seconds means immediate triggering. Rules need neither MQTT nor a synced clock, and local buttons take priority. MessagePack schema 3 publishes voltage, current, power and energy metadata and readings for M1 devices on the same external broker and account without an open web page. Restore uses the last saved output; rule timers restart after reboot.
-
-- **TC1 本地功率条件自动化 / TC1 local power-condition automation**：TC1 增加最多 8 条总功率条件规则，可对单路或全部插座执行开／关，支持高于／低于阈值及立即／持续触发。条件连续满足期间只执行一次，条件解除后重新计时；无效采样中断计时，本地按键优先。原有定时任务与二进制备份格式保留。
-  TC1 adds up to eight total-power rules targeting one or all outlets, with above/below thresholds and immediate or sustained triggering. Each continuous matching condition triggers once and rearms after the condition clears. Invalid samples interrupt timing, and local buttons take priority. Existing timed tasks and binary backup layouts are retained.
-
-- **S30 Wi-Fi 扫描与配置升级 / S30 Wi-Fi scanning and settings migration**：修复 S30 扫描结果长度、释放与 STA 状态处理，保存配置完成后才执行延迟重启。新配置使用独立 PBL4，自动读取已识别的 PBL1／2／3 布局，保留网络、管理密码、双向配对、名称、计量倍率和累计量。连接清理保留 MQTT 认证／ACL 失败原因，便于排查断连。
-  Fix S30 scan-result bounds, allocation release and STA state handling, and defer reboot until settings are saved. The distinct PBL4 layout imports recognized PBL1/2/3 records while retaining networks, administration password, inbound and outbound pairing, names, meter multipliers and energy. MQTT cleanup retains authentication and ACL failure reasons for troubleshooting.
-
-- **网页在线升级按钮与版本路径 / Web update availability and upgrade path**：在线升级仅在检查成功、版本明确且确有可用更新时显示安装按钮，点击时再次核对状态；已是最新版、检查失败或信息缺失时不会安装。保留升级差异确认，并提示 0.9.x 经 1.0.0 升级至后续稳定版的路径。
-  Online updates show Install only after a successful check identifies an available version, and recheck availability on click. Up-to-date, failed or incomplete results cannot start installation. The change confirmation remains, with guidance to upgrade 0.9.x through 1.0.0 before later stable releases.
-
-- **大金 G3 屏幕与传感器支持 / Daikin G3 screen and sensor support**：新增带屏幕 BRY88BBA15G 的 ESP32 固件和独立屏幕 MCU，支持原厂协议与能力协商的扩展协议、传感器读数、电池状态、RTC 校时、触摸换页、模块启停和启动维护窗口。新增媒体与显示策略需配套 v1.0.0 屏幕 MCU 和 WebUI。
-  Adds ESP32 firmware and a separate screen MCU for BRY88BBA15G, with stock and capability-negotiated extended protocols, sensor readings, battery status, RTC synchronization, touch page navigation, module control and a startup maintenance window. New media and display policies require matching v1.0.0 screen MCU and WebUI.
-
-- **可编排屏幕、天气与提醒 / Screen composition, weather and reminders**：网页可组合时钟、数值、文字、折线和堆叠图表、天气与提醒，按真实屏幕比例预览。支持六组主题、组件配色、壁纸、语言、亮度和每周调光计划；外部字库失败时降级显示，通信和恢复服务继续工作。新增布局（行 × 列）：天气 1×4、2×4，时钟 1×4，reading 1×2；网页预览与 MCU 同步。
-  Compose clocks, readings, text, line and stacked charts, weather and reminders with a preview at the real screen aspect ratio. Includes six themes, per-widget colors, wallpaper, language, brightness and weekly dimming. Font resource failures degrade display while communication and recovery services remain available. New layouts (rows × columns): weather 1×4 and 2×4, clock 1×4, and reading 1×2, with matching WebUI and MCU rendering.
-
-- **ESP32、屏幕和字库在线更新 / Online updates for ESP32, screen and font**：ESP32 可从 GitHub、国内和国际镜像检查并安装签名更新，RC 构建使用独立候选通道。屏幕和字库可在局域网页资源页检查、下载并校验后安装；屏幕大文件上传需要本地直连。免拆迁移先更新 ESP32 并保留原厂屏幕，再按需直接安装社区屏幕应用，保留原厂引导区。安装工具与固件从同一版本下载页配套获取，或使用更新的兼容版本。
-  ESP32 can check and install signed updates from GitHub, China and global mirrors; RC builds use a separate candidate channel. Screen applications and fonts can be checked, downloaded and verified from the LAN resource page; large screen uploads require direct LAN access. Wireless migration updates ESP32 first while preserving the stock screen, then optionally installs the community screen application directly while preserving the stock boot region. Get matching tools and firmware from the same release download page, or use a newer compatible release.
-
-- **M1 校时恢复重试 / M1 clock recovery retries**：主控时间读回暂时失败时有界重试，网络校时失败后独立安排重试，减少短暂通信异常造成的时间不同步。
-  Retries transient MCU clock readback failures within a bound and schedules network time retries independently, reducing clock desynchronization after temporary communication failures.
-
-- **S30 定时、功率自动化与原厂安装 / S30 schedules, power automation and stock installation**：S30 的插座定时和功率自动化与 TC1 行为对齐，补齐原厂 HTTP 80 端口 OTA 安装工具及教程；继续使用原生 RBL/STOCK_UA 镜像。
-  Aligns S30 socket schedules and power automation with TC1 and adds a stock OTA installer using HTTP port 80 with instructions. S30 continues to use native RBL/STOCK_UA images.
-
-- **统一网页与 G3 演示 / Shared WebUI and G3 demos**：更新公共网页的插座自动化和功率刷新，新增 G3 布局、亮度、天气、提醒与在线更新设置，提供屏幕设计和设备网页演示。大金下载分为已验证 G2 与带屏幕 G3，G1 适配尚未确认。
-  Updates shared socket automation and power refresh, adds G3 layout, brightness, weather, reminder and online update settings, and provides screen design and device WebUI demos. Daikin downloads distinguish verified G2 from the G3 display model; G1 compatibility remains unconfirmed.
-
-- **G3 NOR 与壁纸上传修复 / G3 NOR and wallpaper upload fixes**：修复壁纸上传失败，以及上传后 PM2.5/TVOC 读数未恢复、后续 OTA 受阻的问题。NOR 默认使用四线硬件 SFC。
-  Fixes wallpaper upload failures and the PM2.5/TVOC readings failing to resume afterward, which also blocked later OTA uploads. NOR defaults to hardware quad SFC.
-
-- **G3 原厂天气与 Linux 迁移 / G3 stock weather and Linux migration**：保留原厂屏幕 MCU 时，ESP32 将真实当前天气转换为原厂温度、湿度和天气图标；室外 PM2.5 保留缺测。新增 Linux 蓝牙配网脚本，免拆迁移教程补齐实际 STA MAC、2.4 GHz Wi-Fi 和原厂网关应答步骤。修复 ESP32 以 80 MHz 运行时 TLS 握手超时导致的天气缺测。
-  With the stock screen MCU, ESP32 converts real current weather into factory temperature, humidity and condition fields; outdoor PM2.5 remains missing. Adds Linux Bluetooth provisioning and documents the actual STA MAC, 2.4 GHz Wi-Fi and factory gateway responses for wireless migration. Fixes missing weather caused by TLS handshake timeouts with the ESP32 running at 80 MHz.
-
-- **G3 启动与在线升级负载 / G3 startup and online update load**：ESP32 按原厂使用 10–80 MHz 动态调频和自动轻睡眠，Wi-Fi 稳定后关闭恢复热点；MCU 空闲时浅层等待，并协调 ESP32 唤醒。屏幕先完成字库加载再开启传感器，降低初始化并发负载。修复 OTA 准备失败和上传中断；支持屏幕正常运行时连续更新，完成后恢复传感器。
-  ESP32 follows the stock 10–80 MHz dynamic frequency and automatic light-sleep policy, closing the recovery access point after Wi-Fi stabilizes. The MCU waits in shallow sleep while idle and coordinates ESP32 wake. The screen loads fonts before enabling sensors to reduce concurrent startup load. Fixes OTA preparation failures and interrupted uploads. Consecutive updates work while the screen runs normally, with sensors resuming afterward.
-
-- **G3 充电与网络图标 / G3 charging and network icons**：电池图标在 USB 供电时显示闪电，联网圆点改为 Wi-Fi 图标，断网时显示斜线。修正外部供电与电池对应的熄屏时间选择，网页预览同步屏幕显示。修复拔掉 USB 后充电图标仍亮的问题。
-  The battery icon shows a lightning mark while powered by USB. A Wi-Fi icon replaces the network dot and shows a slash while offline. Corrects the external-power and battery screen-timeout selection and keeps the WebUI preview aligned with the display. Fixes the charging icon remaining on after USB is disconnected.
-
-- **G3 长按关机 / G3 long-press shutdown**：修复长按关机后立即重新启动。关机后等待松键，USB 保持供电时需重新长按约 2 秒开机；短按切页和唤醒保持可用。从熄屏开始持续长按也可关机，不再只执行唤醒。最小维护黑屏状态下也支持长按关机和重新开机；传输固件时禁止按键关机。
-  Fixes immediate restart after a long-press shutdown. Shutdown waits for key release; when USB keeps the MCU powered, a new press of about 2 seconds turns it on. Short-press paging and wake remain available. A sustained press from a sleeping display now shuts down instead of only waking it. Long-press shutdown and restart also work in minimal recovery with a black display; power-key shutdown is disabled during firmware transfer.
-
-- **G3 屏幕网页直接安装 / G3 direct screen installation from the WebUI**：首次从原厂屏幕安装和后续社区屏幕升级均可直接选择在线安装或上传文件。一次确认后自动校验、传输并激活，确认新 MCU 正常启动后显示安装成功。修复首次安装后偶发黑屏，以及在线下载误报参数无效的问题。更新提示的换行不再显示为问号。
-  Both first installation from stock screen firmware and later community updates support online installation or file upload. One confirmation starts verification, transfer and activation; success appears after the new MCU starts normally. Fixes intermittent black screens after first installation and invalid-parameter errors during online downloads. Update-message line breaks no longer appear as question marks.
-
-- **G3 云端实时读数 / G3 live cloud readings**：同时连接局域网和 MQTT 时，云端卡片和详情页使用较新的传感器读数，避免旧局域网快照使 G3 显示无数据；按硬件型号选择 G3 详情页。
-  When LAN and MQTT are both connected, cloud cards and details use the newer sensor readings, preventing an older LAN snapshot from leaving G3 with no data. The G3 detail page is selected by hardware identity.
-
-- **G3 传感器校准 / G3 sensor calibration**：新增原厂 CO₂ 400 ppm 与 TVOC 校准入口。网页简要说明预热和参考环境条件，显示采样及发送、应答状态，发命令前可取消。TVOC 完整厂家校准条件尚未公开，页面同步说明。
-  Adds factory CO₂ 400 ppm and TVOC calibration controls. The WebUI explains warmup and reference conditions, reports sampling, command transmission and acknowledgement, and permits cancellation before transmission. Complete manufacturer conditions for TVOC calibration remain unpublished and are identified in the UI.
-
-- **中枢请求调度与 HomeKit 状态恢复 / Hub request scheduling and HomeKit recovery**：修复 HTTP / UDP 请求的回执匹配、忙状态处理和设备状态刷新，约束临时内存与等待队列；过期或其它设备的响应不能覆盖当前状态，已发送控制不自动重放。补齐 S30、A1 新风与 G3 的能力和有效传感器映射。
-  Fix HTTP / UDP receipt matching, busy handling and device-state refresh with bounded temporary memory and waiting queues. Expired or other-device responses cannot replace current state, and issued controls are not automatically replayed. Complete capability and valid-sensor mapping for S30, A1 fresh-air variants and G3.
-
-- **中枢计量与 Apple 家庭显示边界 / Hub metering and Apple Home display support**：中枢网页显示 TC1 功率与 S30 电压、电流、功率、电量，计量失效或过期时清除旧值。HAP 通过 Eve 自定义特征提供整机 W / kWh；Apple 家庭不显示这些自定义读数，支持相应特征的第三方客户端可读取。
-  Hub web pages show TC1 power and S30 voltage, current, power and energy, clearing invalid or expired readings. HAP exposes whole-device W / kWh through Eve custom characteristics. Apple Home does not display these custom readings; third-party clients supporting them can read the data.
-
-- **G3 媒体、推送与显示策略 / G3 media, push and display policies**：配套 v1.0.0 ESP32、屏幕 MCU 与 WebUI 支持 JPEG / MJPEG 媒体、URL 来源和上传 / 推送流程、通知队列与过期以及显示策略。资源上传和激活前核对能力、容量及校验值；屏幕、恢复镜像和字库使用同一发布的固定资产。
-  Matching v1.0.0 ESP32 firmware, screen MCU and WebUI support JPEG / MJPEG media, URL sources and upload / push workflows, notification queues and expiry, and display policies. Check capabilities, capacity and digests before uploading or activating resources. Use pinned screen, recovery and font assets from the same release.
+- **下载与升级资产核验 / Download and update asset verification**：更新免拆迁移说明和分型号下载，核对所选镜像版本、变体与校验值。S30 继续使用原生 RBL/STOCK_UA；G3 屏幕、恢复镜像、字库与 ESP 资源分别固定来源，不能混用其它型号或版本资产。
+  Update migration guides and model-specific downloads with selected image version, variant and digest checks. S30 retains native RBL/STOCK_UA images. G3 screen, recovery, font and ESP resources have separate pinned provenance; do not mix assets from other models or releases.
 
 ## v1.0.0-rc.6
 

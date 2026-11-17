@@ -14363,6 +14363,894 @@
       "source_refs": [
         "v1.0.0:b079"
       ]
+    },
+    {
+      "change_id": "rc7-upgrade-boundaries",
+      "title": {
+        "zh-CN": "升级范围与独立主控",
+        "en": "Upgrade scope and separate MCUs"
+      },
+      "description": {
+        "zh-CN": "RC7 累计包含 RC6 之后的有效功能与修复。升级前备份配置并选择对应型号、变体。Wi-Fi OTA 不会自动升级 M1 传感器主控或 G3 屏幕；M1 新增 CRC 修复属于独立、尚未发布的主控更新，不包含在本 Wi-Fi 固件中。原厂 M1 17.x 迁移仍不推荐，G1 适配尚未确认。",
+        "en": "RC7 includes the effective additions and fixes since RC6. Back up configuration and select the matching model and variant. Wi-Fi OTA does not automatically update the M1 sensor MCU or G3 screen. The new M1 CRC fix belongs to a separate, unreleased sensor MCU update and is not bundled in this Wi-Fi firmware. Migration from stock M1 17.x remains discouraged; G1 compatibility remains unconfirmed."
+      },
+      "scope": {
+        "models": [
+          "m1",
+          "daikin",
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "breaking",
+      "critical": true,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "RC7 累计包含 RC6 之后的有效功能与修复。升级前备份配置并选择对应型号、变体。Wi-Fi OTA 不会自动升级 M1 传感器主控或 G3 屏幕；M1 新增 CRC 修复属于独立、尚未发布的主控更新，不包含在本 Wi-Fi 固件中。原厂 M1 17.x 迁移仍不推荐，G1 适配尚未确认。",
+        "en": "RC7 includes the effective additions and fixes since RC6. Back up configuration and select the matching model and variant. Wi-Fi OTA does not automatically update the M1 sensor MCU or G3 screen. The new M1 CRC fix belongs to a separate, unreleased sensor MCU update and is not bundled in this Wi-Fi firmware. Migration from stock M1 17.x remains discouraged; G1 compatibility remains unconfirmed."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b003"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "screen-release.lock.json",
+          "docs/public/m1-mcu-update.md"
+        ],
+        "firmware_source_sha256": {
+          "screen-release.lock.json": "55bb94d6a428d0bceb2a2aa8b5bd260dabe4fe5264cd978dcc596b605e073d59",
+          "docs/public/m1-mcu-update.md": "535c80c717d0d3149cda625126b5cdff41a7cfe855d0ef8484ddc32b4f854b1c"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "36c603dbbe71dbf5496c36f96b16f7c151e51a708fa290d35cf64522e86b932b"
+      }
+    },
+    {
+      "change_id": "hub-request-and-homekit-recovery",
+      "title": {
+        "zh-CN": "中枢请求调度与 HomeKit 恢复",
+        "en": "Hub scheduling and HomeKit recovery"
+      },
+      "description": {
+        "zh-CN": "整理中枢读写请求、能力缓存、设备在线状态与错误反馈，修复 HomeKit 配对及服务恢复；内置 Broker 已移除，局域网设备使用配对 UDP，上游 MQTT 使用外部 Broker。可选 HomeKit 桥接仍为实验功能且默认关闭，不包含 Matter。",
+        "en": "Improve hub read/write scheduling, capability caching, device liveness and errors, and fix HomeKit pairing and service recovery. The embedded broker is removed: LAN peers use paired UDP and upstream MQTT uses an external broker. The optional HomeKit bridge remains experimental and off by default; Matter is not included."
+      },
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "feature",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "整理中枢读写请求、能力缓存、设备在线状态与错误反馈，修复 HomeKit 配对及服务恢复；内置 Broker 已移除，局域网设备使用配对 UDP，上游 MQTT 使用外部 Broker。可选 HomeKit 桥接仍为实验功能且默认关闭，不包含 Matter。",
+        "en": "Improve hub read/write scheduling, capability caching, device liveness and errors, and fix HomeKit pairing and service recovery. The embedded broker is removed: LAN peers use paired UDP and upstream MQTT uses an external broker. The optional HomeKit bridge remains experimental and off by default; Matter is not included."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b004"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "DAIKIN/include/hub_home.h",
+          "DAIKIN/src/home.inc"
+        ],
+        "firmware_source_sha256": {
+          "DAIKIN/include/hub_home.h": "227fa3d035bab68c1c6d49483164de86e35ac16f1766dc677c2c5684548b2d95",
+          "DAIKIN/src/home.inc": "64efdd64777d798ac07aad946ef283c8decd06be899307ef6824cbf66efaede1"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "70f72a975714ca458259ddfef1df09a6b27427ad1699d902fa9eabe96e8c7133"
+      }
+    },
+    {
+      "change_id": "hub-power-energy-display",
+      "title": {
+        "zh-CN": "中枢计量与家庭显示",
+        "en": "Hub metering and Home display"
+      },
+      "description": {
+        "zh-CN": "完善 TC1、S30、A1 及空气传感器在中枢中的型号、名称、计量与家庭服务映射；功率更新不刷新其它传感器的采样时间，避免用重复状态维持旧读数。",
+        "en": "Complete model, name, metering and Home service mappings for TC1, S30, A1 and air sensors. Power updates do not refresh other sensors’ sample timestamps, preventing repeated status from keeping old readings alive."
+      },
+      "scope": {
+        "models": [
+          "daikin"
+        ],
+        "variants": [
+          "full",
+          "hub"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "feature",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "完善 TC1、S30、A1 及空气传感器在中枢中的型号、名称、计量与家庭服务映射；功率更新不刷新其它传感器的采样时间，避免用重复状态维持旧读数。",
+        "en": "Complete model, name, metering and Home service mappings for TC1, S30, A1 and air sensors. Power updates do not refresh other sensors’ sample timestamps, preventing repeated status from keeping old readings alive."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b005"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "DAIKIN/include/hub_home.h",
+          "DAIKIN/src/home.inc"
+        ],
+        "firmware_source_sha256": {
+          "DAIKIN/include/hub_home.h": "227fa3d035bab68c1c6d49483164de86e35ac16f1766dc677c2c5684548b2d95",
+          "DAIKIN/src/home.inc": "64efdd64777d798ac07aad946ef283c8decd06be899307ef6824cbf66efaede1"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "1cf9d5e8006200b80421c1f3da61579fb3224cc810d7e8e957d7fa296759e280"
+      }
+    },
+    {
+      "change_id": "rc7-m1-memory",
+      "title": {
+        "zh-CN": "M1 内存与主控上传缓存",
+        "en": "M1 memory and MCU upload buffers"
+      },
+      "description": {
+        "zh-CN": "减少 M1 解码过程中的复制，并在主控上传结束后释放上传缓存；保持现有主控升级协议和校验流程。",
+        "en": "Reduce M1 decoder copies and release sensor-MCU upload buffers after transfer, retaining the existing MCU update protocol and verification."
+      },
+      "scope": {
+        "models": [
+          "m1"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "bugfix",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "减少 M1 解码过程中的复制，并在主控上传结束后释放上传缓存；保持现有主控升级协议和校验流程。",
+        "en": "Reduce M1 decoder copies and release sensor-MCU upload buffers after transfer, retaining the existing MCU update protocol and verification."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b006"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "M1/http.c",
+          "common/config_mp.inc"
+        ],
+        "firmware_source_sha256": {
+          "M1/http.c": "70b235476fe2e6cb5cb0c3740b6653291a25baee0d350189a47e1ac9d1d61ff4",
+          "common/config_mp.inc": "04583bd7ff4c6493186e7a9ac18418e5a9289b06fa55d5787679e4d9eaab17c5"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "c57fa352cd92e68941066dcfd3faafa968c1f40904b93a2c6ef3a99570e5c1dd"
+      }
+    },
+    {
+      "change_id": "rc7-sensor-compensation",
+      "title": {
+        "zh-CN": "原厂依据的传感器补偿与校准",
+        "en": "Factory-informed sensor compensation and calibration"
+      },
+      "description": {
+        "zh-CN": "将可核实的原厂传感器校准、补偿及初始化行为用于 M1 与大金 G2/G3，保留原始数据和有效性判定。读数偏移、恢复与清除按各型号能力执行；M1 主控端改动仍需独立升级。不能把软件补偿当成标准气体标定。",
+        "en": "Apply verified factory calibration, compensation and initialization behavior to M1 and Daikin G2/G3 while retaining raw data and validity checks. Offsets, restoration and reset follow model capabilities; M1 MCU-side changes still require a separate update. Software compensation does not replace reference-gas calibration."
+      },
+      "scope": {
+        "models": [
+          "m1",
+          "daikin",
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "bugfix",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "将可核实的原厂传感器校准、补偿及初始化行为用于 M1 与大金 G2/G3，保留原始数据和有效性判定。读数偏移、恢复与清除按各型号能力执行；M1 主控端改动仍需独立升级。不能把软件补偿当成标准气体标定。",
+        "en": "Apply verified factory calibration, compensation and initialization behavior to M1 and Daikin G2/G3 while retaining raw data and validity checks. Offsets, restoration and reset follow model capabilities; M1 MCU-side changes still require a separate update. Software compensation does not replace reference-gas calibration."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b007"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "M1/scd40.c",
+          "DAIKIN/src/sensors.inc",
+          "DAIKIN/include/sensor_compensation.h"
+        ],
+        "firmware_source_sha256": {
+          "M1/scd40.c": "95bac04d9c169ccf421eb54d502d60236ac6c1d9b917d274706d35fe7011355f",
+          "DAIKIN/src/sensors.inc": "320de14ee862d86828c26c0a1a6118dbac5201177144834f67baca984abceb55",
+          "DAIKIN/include/sensor_compensation.h": "5e37747f0a7d8063348d9d1d2ff6ebbe007056945e906f8e3f4df0d8bb5991d0"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "03f89f4b4f824d688857b01f4b31ba1f922047e53181903861dcd2b26eb2bc4a"
+      }
+    },
+    {
+      "change_id": "rc7-pm-power-age",
+      "title": {
+        "zh-CN": "PM 休眠与真实采样年龄",
+        "en": "PM sleep and true sample age"
+      },
+      "description": {
+        "zh-CN": "大金 G2 支持 PM 夜间停机与恢复。PM 读数按声明有效期保留真实采样年龄，白天最多 120 秒、夜间最多 1 小时；通信失联仍按短时限失效。M1、局域网、中枢与前端不再用转发或重复回包把旧采样变新。",
+        "en": "Daikin G2 supports scheduled PM shutdown and resume. PM samples retain their true age within the declared lifetime, up to 120 seconds by day or one hour at night; short communication timeouts still apply. M1, LAN, hub and frontend forwarding or repeated replies no longer make old samples appear new."
+      },
+      "scope": {
+        "models": [
+          "m1",
+          "daikin",
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "bugfix",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "大金 G2 支持 PM 夜间停机与恢复。PM 读数按声明有效期保留真实采样年龄，白天最多 120 秒、夜间最多 1 小时；通信失联仍按短时限失效。M1、局域网、中枢与前端不再用转发或重复回包把旧采样变新。",
+        "en": "Daikin G2 supports scheduled PM shutdown and resume. PM samples retain their true age within the declared lifetime, up to 120 seconds by day or one hour at night; short communication timeouts still apply. M1, LAN, hub and frontend forwarding or repeated replies no longer make old samples appear new."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b008"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "M1/display_source.c",
+          "common/lan_sensor.inc",
+          "DAIKIN/src/sensors.inc"
+        ],
+        "firmware_source_sha256": {
+          "M1/display_source.c": "2078f51ecca105e882fa75ceaf61d95bee147ec77548b46e271240b773755217",
+          "common/lan_sensor.inc": "ea2fb0a291813ef9290c0b6bd178965f47511dfc327b25b7e28b5fe1f36f2197",
+          "DAIKIN/src/sensors.inc": "320de14ee862d86828c26c0a1a6118dbac5201177144834f67baca984abceb55"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "0f53662360a34e24aa1fbb9ce7eca398c0c4d29a07e9e71d915801c66df88bf1"
+      }
+    },
+    {
+      "change_id": "g3-media-push-display-policy",
+      "title": {
+        "zh-CN": "G3 媒体、推送与通知队列",
+        "en": "G3 media, push and notification queues"
+      },
+      "description": {
+        "zh-CN": "完善 JPEG/MJPEG、URL 来源、上传和推送流程，支持稳定通知更新、队列策略及独立过期时间；资源上传与激活检查能力、容量和校验值。摄像头流保留正在发送帧，以最新完整帧替换待发送旧帧，减少积压。",
+        "en": "Complete JPEG/MJPEG, URL sources, upload and push flows with stable notification updates, queue policies and independent expiry. Resource upload and activation check capabilities, capacity and digests. Camera streaming preserves the in-flight frame and replaces queued old frames with the latest complete frame to reduce backlog."
+      },
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "feature",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "完善 JPEG/MJPEG、URL 来源、上传和推送流程，支持稳定通知更新、队列策略及独立过期时间；资源上传与激活检查能力、容量和校验值。摄像头流保留正在发送帧，以最新完整帧替换待发送旧帧，减少积压。",
+        "en": "Complete JPEG/MJPEG, URL sources, upload and push flows with stable notification updates, queue policies and independent expiry. Resource upload and activation check capabilities, capacity and digests. Camera streaming preserves the in-flight frame and replaces queued old frames with the latest complete frame to reduce backlog."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b009"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "BRY88BBA15G/screen_media.inc",
+          "BRY88BBA15G/screen_latest_frame.h",
+          "BRY88BBA15G/screen_relay.inc"
+        ],
+        "firmware_source_sha256": {
+          "BRY88BBA15G/screen_media.inc": "eb3c1c4cb9cf23d6baf0563ec26169330742c5c5fbd51c932c149272d1f7214f",
+          "BRY88BBA15G/screen_latest_frame.h": "2d94d917f1da5726b4c06377737e7e1f97087707db02e418da26e5e79d327d40",
+          "BRY88BBA15G/screen_relay.inc": "5a2571ea1425c29edb620e4ebbb55fc7c5362964523ce7e8abdc49a08479fceb"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "e2ec9c74c8ea6a2005ba0fb818bc9c0dd42c2d96bcdfe9cb84f766af1a2fef22"
+      }
+    },
+    {
+      "change_id": "rc7-g3-camera-layout",
+      "title": {
+        "zh-CN": "摄像头位置与区域适配",
+        "en": "Camera position and region fitting"
+      },
+      "description": {
+        "zh-CN": "从摄像头设置直接打开已有组件，调整位置、大小和画面适配。整行摄像头铺满区域宽度；完整显示模式靠区域顶部，裁剪模式保留居中。网页预览与配套屏幕渲染同步。",
+        "en": "Open the existing camera widget from camera settings to adjust position, size and picture fit. Full-row cameras fill the region width; contain mode aligns to the top while cover remains centered. Web preview and the matching screen renderer agree."
+      },
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "feature",
+      "critical": false,
+      "component": "bundled_web",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "从摄像头设置直接打开已有组件，调整位置、大小和画面适配。整行摄像头铺满区域宽度；完整显示模式靠区域顶部，裁剪模式保留居中。网页预览与配套屏幕渲染同步。",
+        "en": "Open the existing camera widget from camera settings to adjust position, size and picture fit. Full-row cameras fill the region width; contain mode aligns to the top while cover remains centered. Web preview and the matching screen renderer agree."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b010"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "frontend.lock.json"
+        ],
+        "firmware_source_sha256": {
+          "frontend.lock.json": "6e00c5a2107b42c34d7d8e5693ec89003c9cfbf9d4b6c976179dd61c096cda06"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "416ddcaefa27c234186ef9cb7e0c78db371789cda05016a8f9727ceb871fd2cf"
+      }
+    },
+    {
+      "change_id": "rc7-g3-home-standby",
+      "title": {
+        "zh-CN": "指定主页与每页熄屏策略",
+        "en": "Selectable home and per-page standby"
+      },
+      "description": {
+        "zh-CN": "可指定双击返回的主页，并按页独立设置电池与外电等待时间及熄屏亮度；未独立配置的页面继承全局，每周计划继续优先。页面排序保留稳定标识，删除页自动清理引用。旧屏幕仅开放其支持的设置；实际保存改变才递增策略修订号。",
+        "en": "Choose the page reached by double tap and set each page’s battery/external-power idle delays and brightness. Pages without overrides inherit global settings; weekly plans retain priority. Stable page IDs survive reordering and deleted references are pruned. Older screens expose only supported settings; policy revisions advance only for actual changes."
+      },
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "feature",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "可指定双击返回的主页，并按页独立设置电池与外电等待时间及熄屏亮度；未独立配置的页面继承全局，每周计划继续优先。页面排序保留稳定标识，删除页自动清理引用。旧屏幕仅开放其支持的设置；实际保存改变才递增策略修订号。",
+        "en": "Choose the page reached by double tap and set each page’s battery/external-power idle delays and brightness. Pages without overrides inherit global settings; weekly plans retain priority. Stable page IDs survive reordering and deleted references are pruned. Older screens expose only supported settings; policy revisions advance only for actual changes."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b011"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "BRY88BBA15G/display_policy.inc",
+          "BRY88BBA15G/protocol/display_policy.c"
+        ],
+        "firmware_source_sha256": {
+          "BRY88BBA15G/display_policy.inc": "f62d4ae64bf35837480e77b1edf3f370fe1d06752fdbd3638a2a931d4d28d717",
+          "BRY88BBA15G/protocol/display_policy.c": "3a3df2eff9f1766e2b3671fe91b538836fff419e7b310571cfb16f60cf5d3ae4"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "f43c817792489cbfa08918f3aefb49abd674ea7d8512f18ab83330294871cfe4"
+      }
+    },
+    {
+      "change_id": "rc7-g3-tvoc-warmup",
+      "title": {
+        "zh-CN": "TVOC 预热倒计时与时长",
+        "en": "TVOC warmup countdown and duration"
+      },
+      "description": {
+        "zh-CN": "显示真实测量预热倒计时，支持原厂自动或自定义 1–60 分钟，禁止跳过。修改后按已运行时间重算，不重启测量，也不伪造有效读数。预热中的已识别硬件可结束启动加载；失联或未知状态不显示误导倒计时。设置保存于 ESP 并在屏幕新会话时重放，手动校准等待时间保持独立。",
+        "en": "Show measured warmup remaining time and select factory automatic timing or a custom 1–60 minutes; skipping is rejected. Changes use elapsed measurement time without restarting measurement or fabricating valid readings. Identified warming hardware can complete startup loading; unknown/offline states show no misleading countdown. ESP persists and replays settings on a new screen session; manual calibration timing remains separate."
+      },
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "feature",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "显示真实测量预热倒计时，支持原厂自动或自定义 1–60 分钟，禁止跳过。修改后按已运行时间重算，不重启测量，也不伪造有效读数。预热中的已识别硬件可结束启动加载；失联或未知状态不显示误导倒计时。设置保存于 ESP 并在屏幕新会话时重放，手动校准等待时间保持独立。",
+        "en": "Show measured warmup remaining time and select factory automatic timing or a custom 1–60 minutes; skipping is rejected. Changes use elapsed measurement time without restarting measurement or fabricating valid readings. Identified warming hardware can complete startup loading; unknown/offline states show no misleading countdown. ESP persists and replays settings on a new screen session; manual calibration timing remains separate."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b012"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "BRY88BBA15G/runtime.inc",
+          "BRY88BBA15G/screen_services.inc",
+          "BRY88BBA15G/protocol/screen_caps.h"
+        ],
+        "firmware_source_sha256": {
+          "BRY88BBA15G/runtime.inc": "bbaf91395f3635067ed56991d4a3f11adcc3ff03b595b7838a66c0c2d17ab892",
+          "BRY88BBA15G/screen_services.inc": "03c28751a11a4172309b111afc8542aee9214a9e68e59eef1eda4c15f5273455",
+          "BRY88BBA15G/protocol/screen_caps.h": "4a557a4cad904360131788120ec23e5726aeb5d67faf9e988536e4cddc1152cc"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "040983c5d66653445225673ba70aea18ace04f74c152f6b0733d21a36e55abc9"
+      }
+    },
+    {
+      "change_id": "rc7-g3-uart-status",
+      "title": {
+        "zh-CN": "串口丢失恢复与状态内存",
+        "en": "UART loss recovery and bounded status memory"
+      },
+      "description": {
+        "zh-CN": "观察到串口硬件溢出或接收环丢字节时，由接收所有者丢弃残片并在边界重同步，保留 CRC、会话与序号验证。维护查询兼容 v3/v4 诊断，额外丢失统计不扩充普通状态；减少视频期间状态编码的内存峰值。",
+        "en": "After observed UART overrun or receive-ring loss, the receive owner discards fragments and resynchronizes at a boundary while preserving CRC, session and sequence validation. Maintenance queries accept v3/v4 diagnostics; extra loss counters stay out of ordinary status. Reduce status-encoding memory peaks during video."
+      },
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "bugfix",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "观察到串口硬件溢出或接收环丢字节时，由接收所有者丢弃残片并在边界重同步，保留 CRC、会话与序号验证。维护查询兼容 v3/v4 诊断，额外丢失统计不扩充普通状态；减少视频期间状态编码的内存峰值。",
+        "en": "After observed UART overrun or receive-ring loss, the receive owner discards fragments and resynchronizes at a boundary while preserving CRC, session and sequence validation. Maintenance queries accept v3/v4 diagnostics; extra loss counters stay out of ordinary status. Reduce status-encoding memory peaks during video."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b013"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "BRY88BBA15G/runtime.inc",
+          "BRY88BBA15G/protocol/media_wire.c",
+          "BRY88BBA15G/screen_guard.inc"
+        ],
+        "firmware_source_sha256": {
+          "BRY88BBA15G/runtime.inc": "bbaf91395f3635067ed56991d4a3f11adcc3ff03b595b7838a66c0c2d17ab892",
+          "BRY88BBA15G/protocol/media_wire.c": "48d210f59731439d6ed0781cb548a1a0f16b5ac1d60c0c43b63d06cca8d35538",
+          "BRY88BBA15G/screen_guard.inc": "c6951dade3cac57af79e0965629dd9bca4110920db5efb38ea2aa3322aa6fef4"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "20d1ae05f08097c6748c87a12afe130b489bf9c1dcfa3dee338568acde15de37"
+      }
+    },
+    {
+      "change_id": "rc7-g3-time-weather",
+      "title": {
+        "zh-CN": "时间同步回退",
+        "en": "Time synchronization fallback"
+      },
+      "description": {
+        "zh-CN": "NTP 配置增加 time.windows.com 作为第三来源。完全断电后时间需等待网络授时，天气在时间有效后首次获取；同步恢复后向屏幕下发时间与天气。",
+        "en": "Add time.windows.com as a third NTP source. After complete power loss, time waits for network synchronization and weather starts fetching once time is valid; synchronized time and weather are then delivered to the screen."
+      },
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "bugfix",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "NTP 配置增加 time.windows.com 作为第三来源。完全断电后时间需等待网络授时，天气在时间有效后首次获取；同步恢复后向屏幕下发时间与天气。",
+        "en": "Add time.windows.com as a third NTP source. After complete power loss, time waits for network synchronization and weather starts fetching once time is valid; synchronized time and weather are then delivered to the screen."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b014"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "BRY88BBA15G/screen_clock.inc"
+        ],
+        "firmware_source_sha256": {
+          "BRY88BBA15G/screen_clock.inc": "5e6404f156693b4764c528bdce9731974c2bd09ca63ddc1b5e3681d91dfbefa1"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "e7e459fbfbc6530e5cf786e1ccecd3f664a2c9ea587b4944dc42b6f63f9287bc"
+      }
+    },
+    {
+      "change_id": "rc7-g3-ota-known-issue",
+      "title": {
+        "zh-CN": "G3 暖升级已知问题",
+        "en": "Known G3 warm-OTA issue"
+      },
+      "description": {
+        "zh-CN": "部分设备在屏幕 MCU 暖升级安装阶段卡住或出现乱码，需要断开 USB 与电池两路电源后重新上电；只拔 USB 或只重启 ESP 不等于完整断电。最终候选屏幕主控构建仍待实机验收。默认 UART 保持 115200；高波特率和高帧率实验不作为可靠性承诺。升级前保留恢复方法与备份。",
+        "en": "Some devices stall or show garbled output during screen-MCU warm-OTA installation and need complete power removal from both USB and battery before restart. Removing USB alone or restarting only ESP is not complete power removal. The final candidate screen-MCU build still awaits device acceptance. UART remains at 115200 by default; high-baud and high-frame-rate experiments are not a reliability guarantee. Retain recovery access and backups before updating."
+      },
+      "scope": {
+        "models": [
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "breaking",
+      "critical": true,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "部分设备在屏幕 MCU 暖升级安装阶段卡住或出现乱码，需要断开 USB 与电池两路电源后重新上电；只拔 USB 或只重启 ESP 不等于完整断电。最终候选屏幕主控构建仍待实机验收。默认 UART 保持 115200；高波特率和高帧率实验不作为可靠性承诺。升级前保留恢复方法与备份。",
+        "en": "Some devices stall or show garbled output during screen-MCU warm-OTA installation and need complete power removal from both USB and battery before restart. Removing USB alone or restarting only ESP is not complete power removal. The final candidate screen-MCU build still awaits device acceptance. UART remains at 115200 by default; high-baud and high-frame-rate experiments are not a reliability guarantee. Retain recovery access and backups before updating."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b015"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "BRY88BBA15G/screen_ota.inc",
+          "BRY88BBA15G/screen_startup.inc"
+        ],
+        "firmware_source_sha256": {
+          "BRY88BBA15G/screen_ota.inc": "20d234fc3f41ba427031052ab3e267bd34d227f6753569ec4dea5c1dbc97bf85",
+          "BRY88BBA15G/screen_startup.inc": "df71a7ed766224c9faeacd8fbfc6b78649c73d8bd54072556955d05d8e263ac9"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "128bf6a77325c223fbdd0bce20b8679f0336bf034b19a4793d69d9c94075a998"
+      }
+    },
+    {
+      "change_id": "rc7-release-native-assets",
+      "title": {
+        "zh-CN": "下载与升级资产核验",
+        "en": "Download and update asset verification"
+      },
+      "description": {
+        "zh-CN": "更新免拆迁移说明和分型号下载，核对所选镜像版本、变体与校验值。S30 继续使用原生 RBL/STOCK_UA；G3 屏幕、恢复镜像、字库与 ESP 资源分别固定来源，不能混用其它型号或版本资产。",
+        "en": "Update migration guides and model-specific downloads with selected image version, variant and digest checks. S30 retains native RBL/STOCK_UA images. G3 screen, recovery, font and ESP resources have separate pinned provenance; do not mix assets from other models or releases."
+      },
+      "scope": {
+        "models": [
+          "a1",
+          "m1",
+          "tc1",
+          "s30",
+          "daikin",
+          "bry88bba15g"
+        ],
+        "variants": [
+          "full",
+          "no-frontend-resources",
+          "fresh-air",
+          "fresh-air-no-frontend-resources"
+        ],
+        "hardware": [
+          "*"
+        ],
+        "branches": [
+          "main"
+        ],
+        "channels": [
+          "candidate"
+        ]
+      },
+      "type": "bugfix",
+      "critical": false,
+      "component": "firmware",
+      "version": "1.0.0-rc.7",
+      "review_status": "approved",
+      "lifecycle": {
+        "state": "active"
+      },
+      "ota_summary": {
+        "zh-CN": "更新免拆迁移说明和分型号下载，核对所选镜像版本、变体与校验值。S30 继续使用原生 RBL/STOCK_UA；G3 屏幕、恢复镜像、字库与 ESP 资源分别固定来源，不能混用其它型号或版本资产。",
+        "en": "Update migration guides and model-specific downloads with selected image version, variant and digest checks. S30 retains native RBL/STOCK_UA images. G3 screen, recovery, font and ESP resources have separate pinned provenance; do not mix assets from other models or releases."
+      },
+      "summary_complete": true,
+      "source_refs": [
+        "v1.0.0-rc.7:b016"
+      ],
+      "evidence": {
+        "firmware_sources": [
+          "tools/release/screen_assets.py",
+          "tools/release/s30_assets.py"
+        ],
+        "firmware_source_sha256": {
+          "tools/release/screen_assets.py": "770d568cfcb82691fe806d83251c92d31a5527d2817ccf7cddacf28e6c0f88a0",
+          "tools/release/s30_assets.py": "d9dc22b25e3c473e13bfd08beeaa820513b83ca85f32f358efab0d818f31723b"
+        }
+      },
+      "translation_review": {
+        "status": "approved",
+        "reviewer": "/root/finish_integration",
+        "reason": "Author reviewed both languages against current source and retained acceptance limits; not independent review.",
+        "reviewed_utc": "2026-11-17T03:44:54.712888+00:00",
+        "reviewed_content_sha256": "09c1cc187521d3b865780f62b17002677b144b368fd392bf0d8e500b175c54c1"
+      }
     }
   ],
   "merges": []
