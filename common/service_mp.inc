@@ -115,6 +115,19 @@ static const char *mp_message(const char *code)
         !strcmp(code,"busy")?"设备忙":!strcmp(code,"unsupported")?"不支持此功能":
         !strcmp(code,"conflict")?"请求编号冲突":!strcmp(code,"not_found")?"未找到目标":!strcmp(code,"storage_error")?"配置保存失败":"参数无效";
 }
+/* Build the envelope header without walking/copying its already frozen data.
+ * A second outstanding lease or a long request id uses an independent copy. */
+static ph_buf *mp_cached_envelope(const char *id,const char *code,ph_buf *data)
+{
+    char header[128];ph_buf fixed;ph_writer w;
+    phw_init_fixed(&w,PH_WIRE_MSGPACK,&fixed,header,sizeof(header));
+    phw_begin(&w,NULL,false);
+    if(id && *id)phw_text(&w,"request_id",id);
+    phw_text(&w,"code",code);phw_text(&w,"message",mp_message(code));
+    phw_null(&w,"data");phw_end(&w);
+    size_t n=phw_finish_fixed(&w);
+    return n && data->len<=PHW_MAX_BYTES-(n-1)?ph_buf_prefix(data,header,n-1):NULL;
+}
 static ph_buf *mp_envelope(const char *id,const char *code,const ph_buf *data)
 {
     ph_writer w;
@@ -181,12 +194,23 @@ static ph_buf *mp_cached(unsigned index)
        mp_cache[index].freshness==freshness)return mp_cache[index].payload;
     ph_writer w;
     ph_buf *previous=mp_cache[index].payload;
-    /* Every reference stays under command_lock; no transport borrows cache
-     * storage. Invalidate before overwriting, so any failed capture discards
-     * its partial bytes and a later read captures current state again. */
+    /* An asynchronous transport may retain the old frozen snapshot. Rebuild
+     * separately until its last lease has been released. */
     mp_cache[index].payload=NULL;
+    if(previous && !ph_buf_unique(previous)){ph_buf_free(previous);previous=NULL;}
+    size_t capacity=128;
+    if(index){
+        ph_buf measured;ph_writer measure;
+        phw_init_measure(&measure,PH_WIRE_MSGPACK,&measured);
+        service_product_capabilities_mp(&measure,update_capability_names,false);
+        size_t n=phw_finish_fixed(&measure);
+        if(!n){ph_buf_free(previous);return NULL;}capacity=n+1;
+    }
     if(previous){memset(&w,0,sizeof(w));w.format=PH_WIRE_MSGPACK;w.wire=previous;previous->len=0;previous->buf[0]=0;}
-    else if(!phw_init(&w,PH_WIRE_MSGPACK))return NULL;
+    else{
+        memset(&w,0,sizeof(w));w.format=PH_WIRE_MSGPACK;
+        w.wire=ph_buf_new_headroom(capacity,64);if(!w.wire)return NULL;
+    }
     if(index==0)service_product_status_mp(&w);
     else service_product_capabilities_mp(&w,update_capability_names,false);
     ph_buf *next=phw_take(&w);if(!next)return NULL;
@@ -201,7 +225,7 @@ static bool service_lan_context_valid(const ph_auth_context *context)
         (context->source==PH_AUTH_UDP_PAIR||context->source==PH_AUTH_UDP_MQTT)&&
         ph_auth_context_valid(context,PH_AUTH_SCOPE_CONTROL);
 }
-static ph_buf *mp_dispatch_authenticated(mp_request *r,const void *raw,size_t length,bool mqtt,const ph_auth_context *lan,bool *admitted,const ph_auth_context *http)
+static ph_buf *mp_dispatch_authenticated(mp_request *r,const void *raw,size_t length,bool mqtt,const ph_auth_context *lan,bool *admitted,const ph_auth_context *http,bool frozen)
 {
     const char *action=r->action,*code="invalid_params";const ph_value *p=&r->params;
     bool query=strlen(action)>4&&!strcmp(action+strlen(action)-4,".get");
@@ -264,7 +288,9 @@ static ph_buf *mp_dispatch_authenticated(mp_request *r,const void *raw,size_t le
     }
     if(!payload && !w.wire && !phw_init(&w,PH_WIRE_MSGPACK)){service_command_leave();return NULL;}
     if(!payload){if(!w.depth && !w.wire->len)mp_empty(&w);payload=phw_take(&w);owned=true;}else phw_discard(&w);
-    response=payload?mp_envelope(r->id,code,payload):NULL;if(owned)ph_buf_free(payload);
+    if(payload && frozen && !owned)response=mp_cached_envelope(r->id,code,payload);
+    if(!response)response=payload?mp_envelope(r->id,code,payload):NULL;
+    if(owned)ph_buf_free(payload);
     if(record_receipt){mp_receipt *saved=&mp_receipts[mp_receipt_next++%8];mp_receipt_frame *previous=saved->response;saved->response=NULL;mp_receipt_release(previous);memset(saved,0,sizeof(*saved));strcpy(saved->id,receipt_key);memcpy(saved->digest,digest,32);saved->response=mp_receipt_save(response);saved->lan=lan!=NULL;}
     service_command_leave();
     /* Command events refresh status for both accepted and rejected writes.
@@ -275,14 +301,14 @@ static ph_buf *mp_dispatch_authenticated(mp_request *r,const void *raw,size_t le
     return response;
 }
 static ph_buf *mp_dispatch(mp_request *r,const void *raw,size_t length,bool mqtt,const ph_auth_context *lan,bool *admitted)
-{return mp_dispatch_authenticated(r,raw,length,mqtt,lan,admitted,NULL);}
+{return mp_dispatch_authenticated(r,raw,length,mqtt,lan,admitted,NULL,false);}
 ph_buf *service_command_mp(const void *data,size_t length)
 {mp_request r;if(!mp_decode(data,length,&r))return service_error_mp(r.id,"invalid_params");return mp_dispatch(&r,data,length,false,NULL,NULL);}
 ph_buf *service_http_command_mp(const void *data,size_t length,const ph_auth_context *context)
-{mp_request r;if(!mp_decode(data,length,&r))return service_error_mp(r.id,"invalid_params");if(!context)return service_error_mp(r.id,"unauthorized");return mp_dispatch_authenticated(&r,data,length,false,NULL,NULL,context);}
+{mp_request r;if(!mp_decode(data,length,&r))return service_error_mp(r.id,"invalid_params");if(!context)return service_error_mp(r.id,"unauthorized");return mp_dispatch_authenticated(&r,data,length,false,NULL,NULL,context,true);}
 ph_buf *service_mqtt_command_mp(const void *data,size_t length)
-{mp_request r;if(!mp_decode(data,length,&r))return service_error_mp(r.id,"invalid_params");return mp_dispatch(&r,data,length,true,NULL,NULL);}
-static ph_buf *mp_query(const char *action,const ph_auth_context *http)
+{mp_request r;if(!mp_decode(data,length,&r))return service_error_mp(r.id,"invalid_params");return mp_dispatch_authenticated(&r,data,length,true,NULL,NULL,NULL,true);}
+static ph_buf *mp_query(const char *action,const ph_auth_context *http,bool frozen)
 {
     static const unsigned char empty_map=0x80;
     mp_request r={0};
@@ -292,11 +318,12 @@ static ph_buf *mp_query(const char *action,const ph_auth_context *http)
     if(!phv_parse(PH_WIRE_MSGPACK,&empty_map,1,&r.params))return NULL;
     /* Internal queries already have typed parameters. Do not serialize and
      * parse a synthetic request just to enter the same dispatcher. */
-    return mp_dispatch_authenticated(&r,NULL,0,false,NULL,NULL,http);
+    return mp_dispatch_authenticated(&r,NULL,0,false,NULL,NULL,http,frozen);
 }
-ph_buf *service_query_mp(const char *action){return mp_query(action,NULL);}
+ph_buf *service_query_mp(const char *action){return mp_query(action,NULL,false);}
+ph_buf *service_snapshot_mp(const char *action){return mp_query(action,NULL,true);}
 ph_buf *service_http_query_mp(const char *action,const ph_auth_context *context)
-{return context?mp_query(action,context):service_error_mp(NULL,"unauthorized");}
+{return context?mp_query(action,context,true):service_error_mp(NULL,"unauthorized");}
 bool service_readonly_mp(const void *data,size_t length)
 {
     mp_request r;if(!mp_decode(data,length,&r))return false;

@@ -26,8 +26,11 @@ struct ph_mqtt_item {
     uint16_t topic_length, route;
     uint8_t kind, qos;
     bool retained;
-    /* NUL-terminated topic followed by length bytes and one trailing NUL.
-     * The terminators do not turn arbitrary MQTT payload into a C string. */
+    const void *payload;
+    void *owned;
+    void (*release_owned)(void *);
+    /* NUL-terminated topic. Copied payload follows with one trailing NUL;
+     * owned payload lives separately. Neither implies a payload C string. */
     char data[];
 };
 typedef struct {
@@ -111,6 +114,11 @@ void ph_mqtt_protocol_end(ph_mqtt_core *);
 bool ph_mqtt_enqueue(ph_mqtt_core *, unsigned, const void *, size_t, const void *, size_t, unsigned, bool);
 bool ph_mqtt_enqueue_route(ph_mqtt_core *, unsigned, const void *, size_t, const void *, size_t, unsigned, bool, unsigned);
 bool ph_mqtt_enqueue_generation(ph_mqtt_core *, unsigned, const void *, size_t, const void *, size_t, unsigned, bool, unsigned, uint32_t);
+/* Success transfers immutable payload ownership; rejection leaves it with
+ * the caller. retained_bytes includes all backing allocations and overhead.
+ * release_owned runs exactly once and must not re-enter this queue. */
+bool ph_mqtt_enqueue_owned_generation(ph_mqtt_core *,const void *,size_t,
+    const void *,size_t,unsigned,bool,uint32_t,void *,void (*)(void *),size_t);
 /* Owner rollback of a new subscription: only queued input for this route. */
 void ph_mqtt_discard_route(ph_mqtt_core *, unsigned);
 ph_mqtt_item *ph_mqtt_pop(ph_mqtt_core *, unsigned);
@@ -129,7 +137,7 @@ static inline const char *ph_mqtt_item_topic(const ph_mqtt_item *i) {
 }
 
 static inline const void *ph_mqtt_item_payload(const ph_mqtt_item *i) {
-    return i->data + i->topic_length + 1;
+    return i->payload ? i->payload : i->data + i->topic_length + 1;
 }
 /* Streaming framing guard runs BEFORE the pinned library can realloc for a
  * received Remaining Length. Failure poisons this connection until teardown;

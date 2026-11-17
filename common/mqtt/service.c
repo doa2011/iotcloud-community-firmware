@@ -30,7 +30,7 @@ int service_mqtt_input(service_mqtt_sender sender,const mqtt_account_t *scope,co
 }
 static int publish_query(service_mqtt_sender sender,const mqtt_account_t *scope,const char *action,const char *leaf)
 {
-    ph_buf *wire=service_query_mp(action);if(!wire)return snapshot_wait();
+    ph_buf *wire=service_snapshot_mp(action);if(!wire)return snapshot_wait();
     char topic[MQTT_TOPIC_MAX];mqtt_leaf(scope,leaf,topic,sizeof(topic));
     int rc=sender(topic,wire->buf,wire->len,true);ph_buf_free(wire);return rc;
 }

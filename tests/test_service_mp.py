@@ -15,6 +15,36 @@ ROOT=Path(__file__).resolve().parents[1]
 SOURCE=Path(os.environ.get('NATIVE_MP_ROOT',ROOT))
 
 class NativeService(unittest.TestCase):
+ def test_frozen_snapshot_leases_eviction_and_fallback(self):
+  self.run_c(r'''
+int main(void){
+ service_init();status_payload_bytes=1690;
+ ph_buf *a=service_snapshot_mp("status.get");code(a,"ok");assert(a->owner);
+ size_t n=a->len;char saved[2000];assert(n<sizeof(saved));memcpy(saved,a->buf,n);
+ /* Outstanding leases and mutable callers receive independent storage. */
+ ph_buf *b=service_snapshot_mp("status.get");code(b,"ok");assert(!b->owner);
+ ph_buf *mutable=service_query_mp("status.get");assert(!mutable->owner);
+ memset(mutable->buf,0,mutable->len);ph_buf_free(mutable);
+ service_cache_changed(SERVICE_CACHE_STATUS);
+ fail_capture=true;ph_buf *failed=service_snapshot_mp("status.get");
+ code(failed,"busy");ph_buf_free(failed);assert(!memcmp(a->buf,saved,n));
+ ph_buf *c=service_snapshot_mp("status.get");code(c,"ok");assert(c->owner);
+ assert(!memcmp(a->buf,saved,n));assert(service_cache_evict());
+ code(a,"ok");code(b,"ok");code(c,"ok");
+ ph_buf_retain(a);ph_buf_free(a);code(a,"ok");ph_buf_free(a);ph_buf_free(b);ph_buf_free(c);
+ assert(!live_blocks);
+ /* IDs larger than reserved headroom fall back without truncation. */
+ ph_buf *r=request("status.get","0123456789012345678901234567890123456789012345678901234567890123",-1);
+ a=service_mqtt_command_mp(r->buf,r->len);code(a,"ok");assert(!a->owner);
+ ph_buf_free(a);ph_buf_free(r);service_cache_evict();assert(!live_blocks);
+ for(long budget=0;budget<12;budget++){
+  allocation_budget=budget;a=service_snapshot_mp("status.get");allocation_budget=-1;
+  if(a){code(a,"ok");ph_buf_free(a);}service_cache_evict();assert(!live_blocks);
+ }
+ return 0;
+}
+''')
+
  def run_c(self,body,runs=1,ota=False,ilp32=False,worker_prefix=None,release=False,fixture=None,fixture_headers=None):
   with tempfile.TemporaryDirectory(prefix='service-mp-') as temporary:
    t=Path(temporary);(t/'generated').mkdir();(t/'generated/build_ota.h').write_text('')

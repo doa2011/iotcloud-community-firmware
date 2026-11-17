@@ -1011,6 +1011,14 @@ uint32_t ph_mqtt_send_generation(void) { return ctx_ph_mqtt_send_generation(&pri
 #ifdef PHICOMM_BEMFA
 uint32_t bm_send_generation(void) { return ctx_ph_mqtt_send_generation(secondary_port); }
 #endif
+static void release_buf(void *p){ph_buf_free(p);}
+int ph_mqtt_enqueue_buf_generation(const char *topic,ph_buf *wire,unsigned qos,bool retain,uint32_t generation)
+{
+    port_state *ctx=&primary_port;
+    if(!initialized(ctx) || !topic || !generation || !wire)return MQTT_FAILURE;
+    return ph_mqtt_enqueue_owned_generation(&ctx->core,topic,strnlen(topic,PH_MQTT_TOPIC_BYTES+1),
+        wire->buf,wire->len,qos,retain,generation,wire,release_buf,ph_buf_owned_bytes(wire))?MQTT_SUCCESS:MQTT_FAILURE;
+}
 int ph_mqtt_enqueue_send_generation(const char *topic, const void *payload, size_t n, unsigned qos, bool retain, uint32_t generation) { return ctx_ph_mqtt_enqueue_send_generation(&primary_port, topic, payload, n, qos, retain, generation); }
 #ifdef PHICOMM_BEMFA
 int bm_enqueue_send_generation(const char *topic, const void *payload, size_t n, unsigned qos, bool retain, uint32_t generation) { return ctx_ph_mqtt_enqueue_send_generation(secondary_port, topic, payload, n, qos, retain, generation); }

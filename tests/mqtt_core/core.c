@@ -16,6 +16,31 @@ static uint32_t now(void *p){return ((fixture*)p)->now;}
 static bool permit(void *p,size_t n){assert(n<=PH_MQTT_QUEUE_BYTES);return !((fixture*)p)->low;}
 static void *allocate(void *p,size_t n){fixture*f=p;f->allocations++;return f->fail_at==f->allocations?NULL:malloc(n);}
 static void release(void*p,void*q){((fixture*)p)->frees++;free(q);}
+static unsigned owned_releases;
+static void owned_free(void *p){owned_releases++;free(p);}
+static void owned_queue(void){
+ fixture f={.owner=true};ph_mqtt_hooks h={&f,lock,unlock,owner,now,permit,allocate,release};ph_mqtt_core s;
+ assert(ph_mqtt_core_init(&s,&h));
+ char *wire=malloc(1771);memset(wire,0x95,1771);
+ unsigned generation=s.generation;
+ /* Admission failures preserve caller ownership and allocate no queue item. */
+ assert(!ph_mqtt_enqueue_owned_generation(&s,"x",1,wire,1771,1,true,generation+1,wire,owned_free,1840));
+ f.low=true;assert(!ph_mqtt_enqueue_owned_generation(&s,"x",1,wire,1771,1,true,generation,wire,owned_free,1840));f.low=false;
+ f.fail_at=f.allocations+1;assert(!ph_mqtt_enqueue_owned_generation(&s,"x",1,wire,1771,1,true,generation,wire,owned_free,1840));f.fail_at=0;
+ assert(!owned_releases);
+ assert(ph_mqtt_enqueue_owned_generation(&s,"x",1,wire,1771,1,true,generation,wire,owned_free,1840));
+ assert(s.bytes>=1840 && s.bytes<2000);
+ ph_mqtt_item *item=ph_mqtt_pop(&s,PH_MQTT_SEND);
+ assert(ph_mqtt_item_payload(item)==wire && item->length==1771);
+ assert(!ph_mqtt_clear(&s));ph_mqtt_item_release(&s,item);assert(owned_releases==1&&!s.bytes);
+ wire=malloc(1771);
+ assert(ph_mqtt_enqueue_owned_generation(&s,"x",1,wire,1771,1,true,generation,wire,owned_free,1840));
+ assert(ph_mqtt_enqueue(&s,PH_MQTT_SEND,"x",1,"replacement",11,1,true));assert(owned_releases==2);
+ wire=malloc(1771);
+ assert(ph_mqtt_enqueue_owned_generation(&s,"x",1,wire,1771,1,true,generation,wire,owned_free,1840));
+ assert(ph_mqtt_clear(&s));assert(owned_releases==3&&!s.bytes);
+ assert(f.allocations==f.frees+1);
+}
 static void framing(void){
  ph_mqtt_rx r;unsigned char ok[]={0x30,3,0,1,'a',0xd0,0};
  for(size_t split=0;split<=sizeof(ok);split++){
@@ -97,5 +122,5 @@ int main(void){
  ph_mqtt_core_snapshot(&s,&d);assert(d.ingress_dropped==UINT32_MAX&&d.busy_overflow==UINT32_MAX);
  assert(ph_mqtt_core_reset(&s));ph_mqtt_core_snapshot(&s,&d);
  assert(!d.ingress_dropped&&!d.busy_overflow);
- framing();routes();puts("actual common MQTT core: bounds, route rollback, owner/depth, in-flight/credit cleanup and fragmented RX framing PASS");
+ framing();routes();owned_queue();puts("actual common MQTT core: bounds, route rollback, owner/depth, in-flight/credit cleanup and fragmented RX framing PASS");
 }

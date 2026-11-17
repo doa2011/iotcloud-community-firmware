@@ -101,6 +101,11 @@ int ph_mqtt_enqueue_send_generation(const char*t,const void*b,size_t n,unsigned 
  ph_mqtt_send_generation();if(!g)return -1;
  return ph_mqtt_enqueue_generation(&test_mqtt_queue,PH_MQTT_SEND,t,strlen(t),b,n,qos,r,0,g)?0:-1;
 }
+static void qbuf_free(void *p){ph_buf_free(p);}
+int ph_mqtt_enqueue_buf_generation(const char*t,ph_buf*b,unsigned qos,bool r,uint32_t g){
+ ph_mqtt_send_generation();if(!g)return -1;
+ return ph_mqtt_enqueue_owned_generation(&test_mqtt_queue,t,strlen(t),b->buf,b->len,qos,r,g,b,qbuf_free,ph_buf_owned_bytes(b))?0:-1;
+}
 #define json_object_new_object runtime_new_object
 #include "../common/runtime.c"
 #undef json_object_new_object

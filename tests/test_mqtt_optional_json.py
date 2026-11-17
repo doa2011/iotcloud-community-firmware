@@ -138,7 +138,7 @@ static int publish_bytes(const char *topic,const void *data,size_t length,bool r
  assert(strstr(topic,"/state")&&retained);ph_value v;assert(phv_parse(PH_WIRE_MSGPACK,data,length,&v)&&v.kind==PHV_MAP);
  assert(memchr(data,0,length));return snapshot_result;
 }
-static ph_buf *service_query_mp(const char *action){
+static ph_buf *service_snapshot_mp(const char *action){
  assert(!strcmp(action,"status.get"));snapshots++;
  if(snapshot_result==PH_MQTT_MORE)return NULL;
  ph_writer w;assert(phw_init(&w,PH_WIRE_MSGPACK));phw_begin(&w,NULL,false);
