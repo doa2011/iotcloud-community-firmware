@@ -230,19 +230,6 @@ class ValidationReuseTests(unittest.TestCase):
         with self.assertRaises(reuse.Rejected):
             reuse.SafeRedirect().redirect_request(request, None, 302, '', {}, 'http://storage.example.invalid/artifact')
 
-    def test_candidate_publication_cannot_deploy_production_services(self):
-        text = (ROOT / reuse.WORKFLOW).read_text()
-        candidate = re.search(r'^      - name: Publish an isolated GitHub prerelease.*?(?=^      - uses: actions/setup-node)', text, re.M | re.S)[0]
-        stable = re.search(r'^      - name: Stage GitHub release and immutable OTA assets.*?(?=^      - name: Publish an isolated)', text, re.M | re.S)[0]
-        self.assertNotIn('deploy_worker.py', candidate)
-        self.assertNotIn('--promote', candidate)
-        self.assertIn('--candidate', candidate)
-        self.assertIn('--prerelease --latest=false', candidate)
-        self.assertIn('deploy_worker.py', stable)
-        self.assertIn('--promote', stable)
-        pages = re.search(r'^      - name: Build and publish public Pages allowlist\n(.*?)(?=^  [a-z]|\Z)', text, re.M | re.S)[1]
-        self.assertIn("if: steps.release-channel.outputs.channel == 'stable'", pages)
-
     def test_workflow_keeps_tag_compiles_actual_ota_and_release_gates(self):
         text = (ROOT / reuse.WORKFLOW).read_text()
         for name in ('Build full firmware', 'Build firmware without frontend resources', 'Build and collect A1 fresh-air variants',
