@@ -4,6 +4,7 @@
  * All factory topics/JSON terminate here; none are forwarded to the network.
  */
 #include "stock_frame.h"
+#include <atomic>
 #include <esp_wifi.h>
 #include <esp_sntp.h>
 #include <driver/gpio.h>
@@ -13,10 +14,11 @@
 static void screenMediaInit();
 static void screenMediaPoll(uint32_t);
 static bool screenMediaFeed(unsigned,uint32_t);
+static bool screenMediaResync(uint32_t);
 static bool screenMediaAnnounce(const String &);
 static bool screenMediaNegotiating();
 static void screenServicesStatus(JsonObject);
-static void screenRelayPowerStatus(JsonObject);
+static void screenRelayPowerStatus(JsonObject, bool);
 static void screenServicesInit();
 static void screenServicesPoll(uint32_t);
 static bool screenOtaCommand(const String &, const String &);
@@ -33,7 +35,45 @@ static const char *screenApplySettings(JsonObjectConst, JsonObject);
 static void screenGetSettings(JsonObject);
 static bool screenCalibrationResponse(const String &, const String &, int);
 static bool screenWeatherStockRequest(const String &);
+static bry::StockFrame stockFrame;
 static HardwareSerial screenUart(1);
+// HardwareSerial reports errors from its event task. Only the UART owner
+// consumes the epoch and resets parsers; the callback never touches RX bytes.
+static std::atomic<uint32_t> screenRxFifo{0}, screenRxBuffer{0},
+  screenRxFrame{0}, screenRxParity{0}, screenRxBreak{0}, screenRxLoss{0},
+  screenRxLastError{0};
+static uint32_t screenRxResyncs = 0;
+static void screenUartReceiveError(hardwareSerial_error_t error) {
+  switch (error) {
+  case UART_FIFO_OVF_ERROR: ++screenRxFifo; break;
+  case UART_BUFFER_FULL_ERROR: ++screenRxBuffer; break;
+  case UART_FRAME_ERROR: ++screenRxFrame; break;
+  case UART_PARITY_ERROR: ++screenRxParity; break;
+  case UART_BREAK_ERROR: ++screenRxBreak; break;
+  default: return;
+  }
+  screenRxLastError.store(millis(), std::memory_order_relaxed);
+  screenRxLoss.store(1, std::memory_order_release);
+}
+static void screenUartRecoverRx(uint32_t now) {
+  if (!screenRxLoss.exchange(0, std::memory_order_acquire)) return;
+  // Raw maintenance owns its receive state and failure/ACK policy.
+  if (screenOtaActive()) return;
+  stockFrame.reset();
+  stockFrame.discard = true;
+  screenMediaResync(now);
+  ++screenRxResyncs;
+}
+static void screenUartDiagnostics(JsonObject out) {
+  out["uart_rx_fifo_overflows"] = screenRxFifo.load();
+  out["uart_rx_buffer_full"] = screenRxBuffer.load();
+  out["uart_rx_frame_errors"] = screenRxFrame.load();
+  out["uart_rx_parity_errors"] = screenRxParity.load();
+  out["uart_rx_breaks"] = screenRxBreak.load();
+  out["uart_rx_resyncs"] = screenRxResyncs;
+  out["uart_rx_last_error_ms"] = screenRxLastError.load();
+}
+
 static esp_pm_lock_handle_t screenWakeLock, screenTxLock;
 static bool screenWakeHeld=false, screenTxHeld=false;
 static uint32_t screenTxAt=0;
@@ -55,7 +95,6 @@ static void screenPowerPoll(uint32_t now,bool updating) {
     ESP_ERROR_CHECK(esp_pm_lock_release(screenTxLock));screenTxHeld=false;
   }
 }
-static bry::StockFrame stockFrame;
 static DynamicJsonDocument screenSnapshot(4096);
 static uint32_t screenLastRx = 0, screenFrames = 0, screenDataAt = 0,
                 screenNextSnapshot = 0, screenSnapshotAt = 0;
@@ -137,7 +176,7 @@ static void screenRequestSnapshot() {
   doc.createNestedObject("data");
   screenDelivery(screenRoot() + "/mqtt/service/get_snapshot", doc, 0);
 }
-static void screenPowerStatus(JsonObject pm) {
+static void screenPowerStatus(JsonObject pm, bool detailed = false) {
   esp_pm_config_esp32_t power = {};
   ESP_ERROR_CHECK(esp_pm_get_configuration(&power));
   pm["max_cpu_mhz"] = power.max_freq_mhz;
@@ -147,7 +186,17 @@ static void screenPowerStatus(JsonObject pm) {
   pm["mcu_wake_lock"] = screenWakeHeld;
   pm["uart_tx_lock"] = screenTxHeld;
   pm["last_wakeup_cause"] = unsigned(esp_sleep_get_wakeup_cause());
-  screenRelayPowerStatus(pm);
+  screenRelayPowerStatus(pm, detailed);
+}
+// Measurement preheat is independent of the optional calibration session.
+// Snapshot timestamps are local monotonic time; unknown/offline stays unknown.
+static int screenTvocWarmup(uint32_t now) {
+  JsonVariantConst status = screenSnapshot["status"];
+  if (uint32_t(now - screenSnapshotAt) >= 20000 ||
+      !status["tvoc_warmup_seconds_remaining"].is<unsigned>()) return -1;
+  const unsigned seconds = status["tvoc_warmup_seconds_remaining"].as<unsigned>();
+  const uint32_t elapsed = uint32_t(now - screenSnapshotAt) / 1000;
+  return seconds > elapsed ? int(seconds - elapsed) : 0;
 }
 static void screenStatus(JsonObject out) {
   out["hardware_model"] = "BRY88BBA15G";
@@ -155,6 +204,9 @@ static void screenStatus(JsonObject out) {
   screenPowerStatus(out.createNestedObject("power_management"));
   out["sensor_source"] = "screen_mcu";
   out["co2_warmup_seconds_remaining"] = nullptr;
+  const int tvocWarmup = screenTvocWarmup(millis());
+  if (tvocWarmup < 0) out["tvoc_warmup_seconds_remaining"] = nullptr;
+  else out["tvoc_warmup_seconds_remaining"] = tvocWarmup;
   out.remove("co2_diagnostics");
   out.remove("climate_compensation");
   out["indicator_rules_supported"] = false;
@@ -220,7 +272,12 @@ static const char *screenSettings(const String &action, JsonObjectConst params,
     JsonObjectConst d = params["no_disturb"];
     valid = d.size() == 3 && d["state"].is<bool>() &&
             screenTime(d["start_tm"] | "") && screenTime(d["end_tm"] | "");
-  } else if (params.containsKey("ipbox_push"))
+  } else if (params.containsKey("tvoc_warmup_minutes"))
+    valid = params["tvoc_warmup_minutes"].is<int>() &&
+            params["tvoc_warmup_minutes"].as<int>() >= -1 &&
+            params["tvoc_warmup_minutes"].as<int>() != 0 &&
+            params["tvoc_warmup_minutes"].as<int>() <= 60;
+  else if (params.containsKey("ipbox_push"))
     valid = params["ipbox_push"].is<bool>();
   // Unknown warning scaling/ranges and calibration are deliberately
   // unsupported.
@@ -534,6 +591,7 @@ static void screenInit() {
   screenUart.setRxBufferSize(8192);
   screenUart.setTxBufferSize(2048);
   screenUart.begin(115200, SERIAL_8N1, 17, 16);
+  screenUart.onReceiveError(screenUartReceiveError);
   uart_config_t serial = {};
   serial.baud_rate=115200;serial.data_bits=UART_DATA_8_BITS;
   serial.parity=UART_PARITY_DISABLE;serial.stop_bits=UART_STOP_BITS_1;
@@ -589,6 +647,7 @@ static void pollSensors(uint32_t) { /* Samples arrive from the MCU, never probe
                                        old-board I2C/UART pins. */
 }
 static void screenPoll(uint32_t now) {
+  screenUartRecoverRx(now);
   screenClockPoll(now);
   size_t budget = 4096;
   while (budget-- && screenUart.available()) {

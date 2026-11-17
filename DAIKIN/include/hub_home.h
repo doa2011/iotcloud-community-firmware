@@ -15,10 +15,10 @@ public:
   enum Control { Outlet, FanOn, FanSpeed, LightOn, LightBrightness, FanMode, Name };
   struct Value {
     double number = 0;
-    uint32_t at = 0;
+    uint32_t at = 0, receivedAt = 0, maxAge = 20000;
     bool valid = false;
     bool fresh(uint32_t now) const {
-      return valid && uint32_t(now - at) < 20000;
+      return valid && uint32_t(now - at) < maxAge && uint32_t(now - receivedAt) < 20000;
     }
   };
   struct Device {
@@ -323,20 +323,26 @@ private:
       d.query.clear();
   }
   void value(Device &d, Metric key, JsonVariantConst v, bool valid,
-             double minimum, double maximum, uint32_t age = 0) {
-    value(d.values[key], v, valid, minimum, maximum, age);
+             double minimum, double maximum, uint32_t age = 0, uint32_t maxAge = 20000) {
+    value(d.values[key], v, valid, minimum, maximum, age, maxAge);
   }
   // Share numeric validation across sensor and meter fields instead of
   // expanding the same JSON conversion at every field and receipt path.
   void __attribute__((noinline)) value(Value &out, JsonVariantConst v, bool valid,
-             double minimum, double maximum, uint32_t age = 0) {
+             double minimum, double maximum, uint32_t age = 0, uint32_t maxAge = 20000) {
     const double number = v.as<double>();
     out.valid = valid && v.is<double>() && std::isfinite(number) &&
-                number >= minimum && number <= maximum && age < 20000;
+                number >= minimum && number <= maximum && maxAge>0 && maxAge<=3600000 && age < maxAge;
     if (out.valid) {
       out.number = number;
-      out.at = clock - age;
+      out.at = clock - age;out.receivedAt=clock;out.maxAge=maxAge;
     }
+  }
+  static uint32_t sampleLimit(JsonVariantConst sensor, bool particulate) {
+    auto limit=sensor["max_age_ms"];
+    if(!sensor.as<JsonObjectConst>().containsKey("max_age_ms"))return 20000;
+    if(!particulate||!limit.is<unsigned>())return 0;
+    unsigned value=limit.as<unsigned>();return value>0&&value<=3600000?value:0;
   }
   static uint32_t sampleAge(JsonVariantConst value) {
     // M1's shared encoder emits age_ms as binary64. Accept exact millisecond
@@ -418,7 +424,7 @@ private:
               sensor["valid"] == true && sensor["unit"] == units[i], minimum[i],
               maximum[i], sensor["age_ms"].is<unsigned>()
                               ? sensor["age_ms"].as<unsigned>()
-                              : 20000);
+                              : UINT32_MAX, sampleLimit(sensor, i==PM25||i==PM10));
       }
     }
     if (!valid)

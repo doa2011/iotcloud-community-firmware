@@ -87,7 +87,24 @@ uint32_t media_crc32(const void *v, size_t n) {
 bool media_rate_valid(uint32_t rate) {
   return rate == 115200 || rate == 230400 || rate == 460800 || rate == 921600;
 }
+void media_reset(media_parser *s) {
+  s->used = 0;
+  s->active = s->resync = s->escape = s->discard = false;
+}
+void media_resync(media_parser *s, uint32_t now) {
+  media_reset(s);
+  s->active = s->resync = true;
+  s->at = now;
+}
 bool media_feed(media_parser *s, unsigned c, uint32_t now) {
+  if (s->resync) {
+    s->at = now;
+    if (c == 0) {
+      s->resync = false;
+      s->active = true;
+    }
+    return true;
+  }
   if (s->active && (uint32_t)(now - s->at) > 1000) {
     s->active = false;
     s->framing_errors++;

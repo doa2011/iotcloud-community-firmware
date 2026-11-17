@@ -18,6 +18,7 @@ ARDUINOJSON_END_PRIVATE_NAMESPACE
 #include "frames.h"
 #include "cm1106.h"
 #include "indicator_json.h"
+extern "C" char *utoa(unsigned value,char *out,int base){assert(base==10);std::sprintf(out,"%u",value);return out;}
 static uint32_t clockMs = 240000;
 static uint32_t millis() { return clockMs; }
 enum Sensor { PM25, CO2, TEMPERATURE, HUMIDITY, TVOC, HCHO, PM10, SENSOR_COUNT };
@@ -75,9 +76,15 @@ static bool mqttConnected = true;
 #ifdef IOTCLOUD_BRY88_SCREEN
 static bool mqttCommandReady = true;
 static void screenStatus(JsonObject out);
-static void screenPowerStatus(JsonObject) {}
+static int screenTvocWarmup(uint32_t);
+static void screenPowerStatus(JsonObject,bool=false) {}
+static void screenUartDiagnostics(JsonObject) {}
 #endif
 #include "indicators.inc"
+static void sensorDiagnostics(JsonObject) {}
+#include "climate.h"
+#include "i18n.h"
+#include "config_validation.inc"
 #include "state.inc"
 #include "public_read.inc"
 #include "account_scope.inc"
@@ -97,13 +104,75 @@ static bool screenFields(JsonObjectConst,const char *){return true;}
 static bool bry_bridge_send(void *,const void *,size_t,unsigned){return true;}
 #include "../../../BRY88BBA15G/screen_brightness.inc"
 #include "../../../BRY88BBA15G/screen_module.inc"
-static void screenStatus(JsonObject out){
- out["sensor_source"]="screen_mcu";
- JsonObject screen=out.createNestedObject("screen");
+static DynamicJsonDocument screenSnapshot(4096);
+static uint32_t screenSnapshotAt=0,screenFrames=0,screenLastRx=0,screenDataAt=0;
+static String screenMcuVersion("iotcloud-screen-test"),screenGalleryVersion("iotcloud-built-in"),screenPendingToken;
+static bool screenSession=true;
+static int screenPendingCode=0;
+static uint32_t screenPendingAt=0;
+static uint8_t screenRaw[64];static size_t screenRawSize=0;
+static unsigned getCpuFrequencyMhz(){return 80;}
+static const char *screenSettingsRequestState(){return "idle";}
+static void screenServicesStatus(JsonObject screen){
+#ifdef G3_FULL_STATUS_CAPACITY
+#include "../../../BRY88BBA15G/tests/fixtures/business_screen_full.inc"
+#endif
  screenBrightnessStatus(screen.createNestedObject("brightness"));
  screenResourceStatus(screen.createNestedObject("resources"));
  screenModuleStatus(screen.createNestedObject("module"));
  if(duringStateBuild)duringStateBuild();
+}
+#include "screen_status.inc"
+static DynamicJsonDocument screenSavedSettings(1024),delivered(1536);
+static uint32_t screenSettingsSession=0;
+static unsigned screenTail=0,screenHead=0;
+static const char *screenApplySettings(JsonObjectConst params,JsonObject){screenSavedSettings.set(params);return "accepted";}
+static void screenGetSettings(JsonObject out){out["saved_settings"]=screenSavedSettings;}
+static String screenRoot(){return "SENSOR/AABBCCDDEEFF";}
+static bool screenDelivery(const String &,JsonDocument &doc,unsigned){return delivered.set(doc);}
+#include "screen_settings.inc"
+#include "screen_restore.inc"
+static void tvocSettingsValidationAndReplay(){
+ DynamicJsonDocument params(256),reply(2048);
+ for(int value:{-1,1,15,60}){
+  params["tvoc_warmup_minutes"]=value;
+  assert(!strcmp(screenSettings("screen.settings.set",params.as<JsonObjectConst>(),reply.to<JsonObject>()),"accepted"));
+  screenSettingsSession=0;screenRestoreSettings();assert(delivered["data"]["tvoc_warmup_minutes"]==value);
+  assert(screenSettingsSession==screenBridge.session);
+  delivered.clear();screenRestoreSettings();assert(delivered.isNull());
+  ++screenBridge.session;screenRestoreSettings();assert(delivered["data"]["tvoc_warmup_minutes"]==value);
+  screenPendingCode=0;screenPendingToken="";
+ }
+ for(const char *wire:{"{\"tvoc_warmup_minutes\":0}","{\"tvoc_warmup_minutes\":-2}","{\"tvoc_warmup_minutes\":61}","{\"tvoc_warmup_minutes\":1.5}","{\"tvoc_warmup_minutes\":true}","{\"tvoc_warmup_minutes\":null}"}){
+  params.clear();assert(!deserializeJson(params,wire));
+  assert(!strcmp(screenSettings("screen.settings.set",params.as<JsonObjectConst>(),reply.to<JsonObject>()),"invalid_params"));
+ }
+ screenSavedSettings.clear();screenPendingCode=0;screenPendingToken="";
+}
+
+static void tvocMeasurementWarmup(){
+ screenSnapshotAt=clockMs;screenSnapshot["status"]["tvoc_warmup_seconds_remaining"]=120;
+ auto publish=[](){assert(pollBusinessStatusCache(clockMs));DynamicJsonDocument doc(16384);assert(!deserializeMsgPack(doc,cachedBusinessState().c_str(),cachedBusinessState().length()));return doc;};
+ requestBusinessStatusRefresh();auto doc=publish();
+ std::printf("G3 full MessagePack decode pool %u/8192, overflow %u\n",unsigned(doc.memoryUsage()),unsigned(doc.overflowed()));
+ assert(doc.memoryUsage()<=8192&&!doc.overflowed());
+ DynamicJsonDocument viaState(16384);state(viaState.to<JsonObject>());
+ assert(viaState["tvoc_warmup_seconds_remaining"]==120&&viaState["snapshot_uptime_ms"]==clockMs);
+ assert(doc["tvoc_warmup_seconds_remaining"]==120);
+ assert(doc["co2_warmup_seconds_remaining"].isNull());
+ assert(businessStatusPoolOverflows==0&&businessStatusPoolBytes<=6400);
+ std::printf("G3 production builder pool %u/6400, overflow %u\n",unsigned(businessStatusPoolBytes),businessStatusPoolOverflows);
+ clockMs+=1501;doc=publish();assert(doc["tvoc_warmup_seconds_remaining"]==119);
+ assert(!doc["sensors"]["tvoc"]["valid"].as<bool>());
+ clockMs=screenSnapshotAt+20000;doc=publish();assert(doc["tvoc_warmup_seconds_remaining"].isNull());
+ screenSnapshotAt=clockMs;screenSnapshot["status"]["tvoc_warmup_seconds_remaining"]=0;
+ requestBusinessStatusRefresh();doc=publish();assert(doc["tvoc_warmup_seconds_remaining"]==0);
+ screenSnapshot["status"]["tvoc_warmup_seconds_remaining"]=nullptr;
+ requestBusinessStatusRefresh();doc=publish();assert(doc["tvoc_warmup_seconds_remaining"].isNull());
+ // Unsigned snapshot age also advances correctly across millis() wrap.
+ screenSnapshotAt=UINT32_MAX-500;screenSnapshot["status"]["tvoc_warmup_seconds_remaining"]=300;
+ assert(screenTvocWarmup(1000)==299);
+ screenSnapshot.clear();requestBusinessStatusRefresh();
 }
 static void telemetryKeepsPublication(){
  auto receive=[&](const std::function<void()> &callback){
@@ -118,7 +187,7 @@ static void telemetryKeepsPublication(){
  uint8_t backlight[SCREEN_BACKLIGHT_BYTES];
  assert(screen_backlight_encode(backlight,60,10,10,false));
  receive([&](){assert(screenBrightnessReceive(backlight,sizeof(backlight)));});
- DynamicJsonDocument doc(8192);state(doc.to<JsonObject>());
+ DynamicJsonDocument doc(16384);state(doc.to<JsonObject>());
  assert(doc["screen"]["brightness"]["available"]==true&&doc["screen"]["brightness"]["applied_percent"]==10);
  uint8_t bank[24]={0x2a,2,2,0,1,0,0,0,57,0,0,0,0x12,0x34,0x56,0x78};
  receive([&](){screenResourceReceive(bank,sizeof(bank));});
@@ -219,7 +288,40 @@ static void concurrentCopies(){
  cache.invalidate();String missing;assert(!cache.copy(missing,false,5000));
 }
 
+#ifdef IOTCLOUD_BRY88_SCREEN
+static void exactBusinessEnvelope(const String &wire,const String &actual){
+ ph_writer reference;assert(phw_init_capacity(&reference,PH_WIRE_MSGPACK,wire.length()+64));
+ ph_buf cached={const_cast<char*>(wire.c_str()),wire.length(),wire.length()+1};
+ phw_begin(&reference,nullptr,false);phw_text(&reference,"code","ok");
+ phw_cached_value(&reference,"data",&cached,8);phw_end(&reference);
+ ph_buf *encoded=phw_take(&reference);assert(encoded);
+ assert(actual.length()==encoded->len&&!memcmp(actual.c_str(),encoded->buf,encoded->len));
+ ph_buf_free(encoded);
+}
+static void envelopeFixtures(){
+ const char *fixtures[]={"{}","{\"nested\":{\"items\":[0,null,false,\"a\\u0000b\"]}}"};
+ for(const char *json:fixtures){
+  DynamicJsonDocument doc(512);assert(!deserializeJson(doc,json));
+  String wire,http;serializeWireMP(doc,wire);
+  assert(encodeBusinessHttpEnvelope(wire,http));exactBusinessEnvelope(wire,http);
+ }
+}
+#endif
 int main(){
+#ifdef G3_FULL_STATUS_CAPACITY
+#include "../../../BRY88BBA15G/tests/fixtures/business_snapshot_full.inc"
+#endif
+ DynamicJsonDocument power(512);assert(!deserializeJson(power,"{\"enabled\":false,\"start_minute\":1380,\"end_minute\":420,\"timezone_minutes\":480}"));
+#ifdef IOTCLOUD_BRY88_SCREEN
+ assert(!validSection("pm_power",power.as<JsonObjectConst>()));
+#else
+ assert(validSection("pm_power",power.as<JsonObjectConst>()));
+ power["end_minute"]=1440;assert(!validSection("pm_power",power.as<JsonObjectConst>()));
+ power["end_minute"]=420;power["enabled"]=1;assert(!validSection("pm_power",power.as<JsonObjectConst>()));
+ power["enabled"]=false;power["timezone_minutes"]=841;assert(!validSection("pm_power",power.as<JsonObjectConst>()));
+ power["timezone_minutes"]=480;power.remove("start_minute");assert(!validSection("pm_power",power.as<JsonObjectConst>()));
+#endif
+
  assert(mqttAccountScope("")=="local");
  assert(mqttAccountScope("a/B-9")=="u_612f422d39");
  assert(mqttAccountScope("\xe6\xb5\x8b\xe8\xaf\x95")=="u_e6b58be8af95");
@@ -227,14 +329,25 @@ int main(){
  config["hub"]["username"]="owner";config["device"]["name"]="initial";
  co2Module.warmed=true;co2Module.received=true;co2Module.measuredAt=clockMs;
  for(auto &s:readings)s.set(42,clockMs);
+#ifdef G3_FULL_STATUS_CAPACITY
+ // G3 has neither the optional HCHO nor PM10 hardware channel.
+ hchoPresent=false;readings[HCHO].received=false;readings[PM10].received=false;
+#endif
  assert(pollBusinessStatusCache(clockMs));const unsigned count=businessStatusBuilds;
  const String wire=cachedBusinessState(),http=cachedHttpStatus();
+#ifdef IOTCLOUD_BRY88_SCREEN
+ exactBusinessEnvelope(wire,http);envelopeFixtures();
+#endif
  clockMs+=1000;assert(pollBusinessStatusCache(clockMs));assert(businessStatusBuilds==count);
  assert(cachedBusinessState()==wire&&cachedHttpStatus()==http);
- DynamicJsonDocument doc(8192);state(doc.to<JsonObject>());
+ DynamicJsonDocument doc(16384);state(doc.to<JsonObject>());
  assert(doc["snapshot_uptime_ms"]==240000&&doc["sensors"]["pm25"]["valid"]==true);
  assert(!doc.containsKey("free_memory")&&!doc.containsKey("ota_partitions"));
+#ifdef IOTCLOUD_BRY88_SCREEN
+ assert(!doc.containsKey("co2_diagnostics"));
+#else
  assert(doc["co2_diagnostics"]["calibration"].is<JsonObject>());
+#endif
  clockMs=260000;assert(pollBusinessStatusCache(clockMs));assert(businessStatusBuilds==count+1);
  doc.clear();state(doc.to<JsonObject>());assert(doc["sensors"]["pm25"]["valid"]==false);
  readings[PM25].set(51,clockMs);assert(pollBusinessStatusCache(clockMs));
@@ -258,12 +371,19 @@ int main(){
  doc.clear();state(doc.to<JsonObject>());assert(doc["snapshot_uptime_ms"]==clockMs);
 #ifdef IOTCLOUD_BRY88_SCREEN
  telemetryKeepsPublication();
+ tvocMeasurementWarmup();
+ tvocSettingsValidationAndReplay();
 #endif
  config["device"]["name"]="changed";invalidateBusinessStatusCache();
  String invalidated;assert(!businessReadSnapshot.copy(invalidated,false,clockMs));
  doc.clear();state(doc.to<JsonObject>());assert(doc["name"]=="changed");
  clockMs=100000;co2Module.warmed=false;assert(pollBusinessStatusCache(clockMs));unsigned warm=businessStatusBuilds;
- clockMs+=1000;assert(pollBusinessStatusCache(clockMs));assert(businessStatusBuilds==warm+1);
+ clockMs+=1000;assert(pollBusinessStatusCache(clockMs));
+#ifndef IOTCLOUD_BRY88_SCREEN
+ assert(businessStatusBuilds==warm+1);
+#else
+ assert(businessStatusBuilds==warm);
+#endif
  co2Module.attempted=true;co2Module.requestedAt=clockMs;assert(pollBusinessStatusCache(clockMs));unsigned cool=businessStatusBuilds;
  clockMs+=1000;assert(pollBusinessStatusCache(clockMs));assert(businessStatusBuilds==cool+1);
  doc.clear();diagnostics(doc.to<JsonObject>());assert(doc["schema"]==1);
@@ -271,5 +391,11 @@ int main(){
  assert(pair.size()==2&&pair[0].is<unsigned>());if(pair[0]==PH_DIAG_MQTT_ERROR_TYPE){assert(pair[1]==0);zero=true;}}
  assert(zero);co2Module.received=false;doc.clear();diagnostics(doc.to<JsonObject>());
  for(JsonArrayConst pair:doc["fields"].as<JsonArrayConst>())assert(pair[0]!=PH_DIAG_CO2_DIAGNOSTICS_RAW_PPM);
+ // A held PM sample has a long source age but cannot underflow the cache deadline.
+ clockMs=2000000;readings[PM25].set(55,clockMs-1800000);readings[PM25].max_age_ms=3600000;
+ assert(pollBusinessStatusCache(clockMs));assert(businessStatusKey.samples[PM25].valid);
+ unsigned beforeTTL=businessStatusBuilds;readings[PM25].max_age_ms=120000;
+ assert(pollBusinessStatusCache(clockMs));assert(!businessStatusKey.samples[PM25].valid);
+ assert(businessStatusBuilds==beforeTTL+1);readings[PM25].max_age_ms=20000;
  httpReads();largeEncodedRead();concurrentCopies();
 }

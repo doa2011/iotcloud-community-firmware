@@ -65,6 +65,13 @@ peers[0].lan=true;peers[0].last_seen=now;state(2,3,1,true,true,2000,false);asser
 #else
 now+=19999;assert(valid());now++;assert(!valid());assert(metadata_calls==5&&state_calls==9);
 #endif
+/* Only PM may advertise an extended source age; transport remains separate. */
+for(unsigned kind=0;kind<4;kind++){
+ ph_writer ttl;assert(phw_init(&ttl,PH_WIRE_MSGPACK));ph_sensor_snapshot_begin(&ttl,"123456abcdef",2,88,1);
+ const char *id=kind==3?"co2":"pm25";phw_begin(&ttl,id,false);phw_bool(&ttl,"valid",true);phw_number(&ttl,"value",12);phw_u32(&ttl,"age_ms",1800000);phw_u32(&ttl,"max_age_ms",kind==1?0:kind==2?3600001:3600000);phw_end(&ttl);ph_sensor_finish(&ttl);
+ ph_buf *b=phw_take(&ttl);assert(b);ph_value root;ph_sensor_view v;assert(phv_parse(PH_WIRE_MSGPACK,b->buf,b->len,&root)&&ph_sensor_view_parse(&root,"123456abcdef",false,&v));
+ float number;uint32_t age;assert(ph_sensor_reading(&v,id,15000,&number,&age)==(kind==0));if(kind==0)assert(age==1800000&&number==12);ph_buf_free(b);
+}
 /* Namespace ownership is enforced before decoding even valid sensor bytes. */
 ph_writer boundary;assert(phw_init(&boundary,PH_WIRE_MSGPACK));ph_sensor_snapshot_begin(&boundary,"123456abcdef",2,99,1);ph_sensor_finish(&boundary);
 ph_buf *payload=phw_take(&boundary);assert(payload);mqtt_account_t outsider;char outside[FEATURE_TOPIC_MAX];

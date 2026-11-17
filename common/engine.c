@@ -137,7 +137,8 @@ unsigned feature_sample_fresh_fields(const feature_sample_t *s,uint32_t now) {
   unsigned mask=feature_sample_fields(s);
   for(unsigned f=0;f<4;f++)if(mask&(1u<<f)) {
     uint32_t age=s->partial?s->field_age_ms[f]:s->age_ms;
-    if(age>=FEATURE_STALE_MS || (uint32_t)(now-s->received_ms)>=FEATURE_STALE_MS-age ||
+    uint32_t limit=f==2&&s->pm25_max_age_ms?s->pm25_max_age_ms:FEATURE_STALE_MS;
+    if(age>=limit || (uint32_t)(now-s->received_ms)>=FEATURE_STALE_MS || (uint32_t)(now-s->received_ms)>=limit-age ||
        !isfinite(s->value[f]) || (f==1&&(s->value[f]<0||s->value[f]>100)) ||
        (f>=2&&s->value[f]<0)) {
       if(!s->partial)return 0;

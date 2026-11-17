@@ -9,6 +9,7 @@ typedef struct {
     uint32_t boot,sequence;
     int32_t value[5];
     uint32_t age_ms[5];
+    uint32_t pm25_max_age_ms;
     uint8_t fields;
     bool co2_supported;
 } lan_sample;

@@ -4,7 +4,8 @@
 #define SCREEN_MSG_POLICY 0x28u
 #define DISPLAY_PLANS 8u
 #define DISPLAY_KEEP_PAGE 255u
-#define DISPLAY_POLICY_BYTES (16u + DISPLAY_PLANS * 44u)
+#define DISPLAY_POLICY_V1_BYTES (16u + DISPLAY_PLANS * 44u)
+#define DISPLAY_POLICY_BYTES (DISPLAY_POLICY_V1_BYTES + 8u + SCENE_PAGES * 12u)
 typedef struct {
   bool enabled;
   uint8_t days, brightness, page; /* Mon=bit0; zero brightness switches off. */
@@ -12,10 +13,18 @@ typedef struct {
   char name[32];
 } display_plan;
 typedef struct {
+  uint32_t page_id;
+  uint16_t external_minutes, battery_minutes;
+  uint8_t idle_brightness;
+} display_page_override;
+typedef struct {
   uint32_t revision;
   uint16_t external_minutes, battery_minutes;
   uint8_t ceiling, idle_brightness, idle_page, count;
   display_plan plans[DISPLAY_PLANS];
+  uint32_t home_page_id; /* Zero selects the first enabled scene page. */
+  uint8_t page_count; /* No matching entry inherits global idle settings. */
+  display_page_override page_overrides[SCENE_PAGES];
 } display_policy;
 #ifdef __cplusplus
 extern "C" {

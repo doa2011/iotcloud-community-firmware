@@ -31,7 +31,7 @@ static void sensor_sample_decode_mp(const ph_sensor_view *v,const sensor_descrip
            (f==0&&(value< -40||value>125))||(f==1&&(value<0||value>100))||(f>=2&&value<0)||(f==4&&(value<1||value>65535)))continue;
         if(f==4){s->co2=value;s->co2_valid=true;s->co2_age_ms=age;}
         else{s->fields|=1u<<f;s->value[f]=value;s->field_age_ms[f]=age;if(age>s->age_ms)s->age_ms=age;}
-    }s->valid=s->fields!=0;
+    }s->pm25_max_age_ms=ph_sensor_max_age(v,"pm25",FEATURE_STALE_MS);s->valid=s->fields!=0;
 }
 static bool runtime_sensor_input_mp(const mqtt_account_t *account,const char *topic,const void *data,size_t n,bool retained)
 {

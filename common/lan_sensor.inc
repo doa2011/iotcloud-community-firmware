@@ -21,7 +21,7 @@ static void lan_sample_capture(lan_sample *out,const feature_sample_t *sample,ui
 {
   static const double scales[]={1000,1000,1000,1000000,1};
   memset(out,0,sizeof(*out));out->boot=boot_id;out->sequence=sample->sequence;
-  out->co2_supported=sample->co2_supported;
+  out->co2_supported=sample->co2_supported;out->pm25_max_age_ms=sample->pm25_max_age_ms;
   unsigned fresh=feature_sample_fresh_fields(sample,now);
   for(unsigned i=0;i<5;i++){
     bool valid=i==4?feature_co2_fresh(sample,now):(fresh&(1u<<i))!=0;
@@ -51,8 +51,8 @@ static void lan_sensor_input(const lan_packet *packet,const char *ip)
       if(samples[i].boot&&wire->boot!=samples[i].boot){memmove(peers[i].retired_boot+1,peers[i].retired_boot,3*sizeof(uint32_t));peers[i].retired_boot[0]=samples[i].boot;}
       feature_sample_t sample={0};sample.partial=true;sample.boot=wire->boot;sample.sequence=wire->sequence;sample.received_ms=sample.co2_received_ms=now_ms();
       static const float scales[]={.001f,.001f,.001f,.000001f};
-      for(unsigned f=0;f<4;f++)if((wire->fields&(1u<<f))&&wire->age_ms[f]<FEATURE_STALE_MS){sample.fields|=1u<<f;sample.value[f]=wire->value[f]*scales[f];sample.field_age_ms[f]=wire->age_ms[f];if(wire->age_ms[f]>sample.age_ms)sample.age_ms=wire->age_ms[f];}
-      sample.valid=sample.fields!=0;sample.co2_supported=wire->co2_supported;sample.co2_valid=(wire->fields&16)&&wire->age_ms[4]<20000;sample.co2=wire->value[4];sample.co2_age_ms=wire->age_ms[4];samples[i]=sample;
+      for(unsigned f=0;f<4;f++)if((wire->fields&(1u<<f))&&wire->age_ms[f]<(f==2&&wire->pm25_max_age_ms?wire->pm25_max_age_ms:FEATURE_STALE_MS)){sample.fields|=1u<<f;sample.value[f]=wire->value[f]*scales[f];sample.field_age_ms[f]=wire->age_ms[f];if(wire->age_ms[f]>sample.age_ms)sample.age_ms=wire->age_ms[f];}
+      sample.pm25_max_age_ms=wire->pm25_max_age_ms;sample.valid=sample.fields!=0;sample.co2_supported=wire->co2_supported;sample.co2_valid=(wire->fields&16)&&wire->age_ms[4]<20000;sample.co2=wire->value[4];sample.co2_age_ms=wire->age_ms[4];samples[i]=sample;
     }
   }
   unlock();free(c);

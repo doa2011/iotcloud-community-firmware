@@ -12,7 +12,7 @@ struct ScreenGuard {
   unsigned length = 0;
   uint8_t bytes[SCREEN_BOOT_CHUNK] = {};
   char imageMd5[33] = {};
-  uint32_t diagnostic[20] = {}, diagnosticSeen = 0;
+  uint32_t diagnostic[24] = {}, diagnosticSeen = 0;
   unsigned diagnosticVersion = 0;
   bool hasDiagnostic = false;
   const char *state = "unavailable";
@@ -91,10 +91,11 @@ static bool screenGuardLine(const uint8_t *p, size_t n) {
           &sequence, reply, &size) || session != screenGuard.session || !size)
     return false;
   if (reply[0] == SCREEN_GUARD_DIAGNOSTIC) {
-    if ((size == SCREEN_GUARD_DIAGNOSTIC_V3_BYTES && reply[1] == 3) &&
+    if (((size == SCREEN_GUARD_DIAGNOSTIC_V3_BYTES && reply[1] == 3) ||
+         (size == SCREEN_GUARD_DIAGNOSTIC_V4_BYTES && reply[1] == 4)) &&
         scene_u32(reply + 2) <= 6 && scene_u32(reply + 6) >= 1 &&
         scene_u32(reply + 6) <= 17) {
-      for (unsigned i = 0; i < 20; i++)
+      for (unsigned i = 0; i < 24; i++)
         screenGuard.diagnostic[i] = i < (size - 2) / 4 ?
             scene_u32(reply + 2 + i * 4) : 0;
       screenGuard.diagnosticVersion = reply[1];
@@ -156,9 +157,9 @@ static const char *screenGuardRequest(unsigned op, uint32_t offset, unsigned n,
   data["session"] = screenGuard.session;
   return "accepted";
 }
-static void screenGuardStatus(JsonObject data, bool bytes) {
+static void screenGuardStatus(JsonObject data, bool bytes, bool detail = false) {
   data["available"] = screenGuardAvailable();
-  data["diagnostic_max_version"] = 3;
+  data["diagnostic_max_version"] = 4;
   data["session"] = screenGuard.session;
   data["mode"] = !screenGuardAvailable() ? "unavailable" : screenGuard.mode == 0 ? "normal" : screenGuard.mode == 1 ? "window" : screenGuard.mode == 2 ? "held" : "fault_recovery";
   uint32_t age = millis() - screenGuard.seen;
@@ -185,9 +186,10 @@ static void screenGuardStatus(JsonObject data, bool bytes) {
       "ipsr", "cfsr", "hfsr", "mmfar", "bfar", "exception_lr",
       "exception_msp", "rtc_status", "sdram_error", "uptime_ms",
       "fault_pc", "stacked_lr", "stacked_xpsr", "control_actual",
-      "control_expected", "control_address", "sensor_step"};
+      "control_expected", "control_address", "sensor_step",
+      "hardware_rx_overruns", "ring_dropped_bytes", "rx_loss_resets", "last_rx_loss_ms"};
     diag["version"] = screenGuard.diagnosticVersion;
-    unsigned count = 20u;
+    unsigned count = detail && screenGuard.diagnosticVersion == 4 ? 24u : 20u;
     for (unsigned i = 0; i < count; i++)
       diag[names[i]] = screenGuard.diagnostic[i];
   }

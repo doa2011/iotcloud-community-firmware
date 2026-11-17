@@ -202,9 +202,16 @@ static bool saveConfigTransaction(DynamicJsonDocument &candidate,bool forceRevok
   memset(password,0,sizeof(password));if(saved)invalidateBusinessStatusCache();return saved;
 }
 static bool saveConfig(DynamicJsonDocument &candidate){return saveConfigTransaction(candidate,false);}
+#ifndef IOTCLOUD_BRY88_SCREEN
+static bool resetSensorCalibration();
+#endif
 static bool resetConfiguration(){
+#ifndef IOTCLOUD_BRY88_SCREEN
+  if(!resetSensorCalibration())return false;
+#endif
   DynamicJsonDocument empty(128);empty.to<JsonObject>();
-  bool recovery=configRecovery;configRecovery=false;bool saved=saveConfigTransaction(empty,true);if(!saved)configRecovery=recovery||configRecovery;return saved;
+  bool recovery=configRecovery;configRecovery=false;bool saved=saveConfigTransaction(empty,true);if(!saved)configRecovery=recovery||configRecovery;
+  return saved;
 }
 static void startAccessPoint(){
   const IPAddress address(192,168,0,1),netmask(255,255,255,0);

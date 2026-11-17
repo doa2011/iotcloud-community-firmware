@@ -46,7 +46,7 @@ static __attribute__((noinline)) const char *screenLegacyServicesCommand(
   }
   if (action == "screen.display.get") {
     if (params.size()) return "invalid_params";
-    screenPolicyGet(data); return "ok";
+    screenPolicyGet(data, true); return "ok";
   }
   if (action == "screen.display.set") return screenPolicySet(params, data);
   if(action=="screen.startup.get") {
@@ -57,7 +57,7 @@ static __attribute__((noinline)) const char *screenLegacyServicesCommand(
   if (action == "screen.recovery.get") {
     if (params.size())
       return "invalid_params";
-    screenGuardStatus(data, false);
+    screenGuardStatus(data, false, true);
     return "ok";
   }
   if (action == "screen.recovery.nor.set") {
@@ -99,7 +99,7 @@ static __attribute__((noinline)) const char *screenLegacyServicesCommand(
     if (!params["request"].as<uint32_t>() ||
         params["request"].as<uint32_t>() != screenGuard.request)
       return "not_found";
-    screenGuardStatus(data, true);
+    screenGuardStatus(data, true, true);
     return "ok";
   }
   if (action == "screen.layout.get") {

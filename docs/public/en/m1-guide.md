@@ -26,6 +26,8 @@ Expired, warming-up or unhealthy measurements show “—”. If the card is abs
 
 Test firmware with SCD40 support reads CO₂ over I²C. After sensor identification, the home page displays CO₂ in ppm. A newly opened page hides the card until a valid reading arrives, including when the sensor data is already expired. If a reading expires after a valid value was displayed, the card retains the last valid value from this page session in gray with an “Outdated” label. Before the first valid reading, it shows “—”. Reloading clears this cache. Original temperature and humidity readings still come from M1's built-in sensor.
 
+Matching firmware uses actual station pressure from a detected BMP388 / BMP390 barometer to compensate SCD40 CO₂. Pressure must be within 700–1200 hPa and no more than ten seconds old; absent, expired or out-of-range pressure falls back to 1013 hPa. Do not substitute sea-level-corrected weather pressure for station pressure. This compensates CO₂ only: temperature and humidity still come from M1's built-in sensor, with no additional SCD40 temperature or humidity entities.
+
 This feature is for experimental firmware; continuous sampling may stop.
 
 Disconnect power and identify solder points on the actual board. These are SDK GPIO names, not connector pin numbers:

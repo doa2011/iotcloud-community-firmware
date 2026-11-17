@@ -4904,6 +4904,194 @@
       ],
       "block_sha256": "d19fefa95346caab822ce87eb8d155ea5beb1e3c31793e98f8ad3ebff126e0e1",
       "release_sha256": "889b1c7457e6b53266f38a6986fa87da8020178d7ade547827e696b73d71320c"
+    },
+    "v1.0.0-rc.7:b001": {
+      "status": "excluded",
+      "reason": "Release introduction; actionable upgrade limits are reviewed in dedicated change records.",
+      "basis": [
+        "v1.0.0-rc.7:b001"
+      ],
+      "change_refs": [],
+      "block_sha256": "3e1e31a0c2b480be5ac271059e3a1714bf780165c69b574f1904f6f278dbdd38",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b002": {
+      "status": "excluded",
+      "reason": "Release introduction; actionable upgrade limits are reviewed in dedicated change records.",
+      "basis": [
+        "v1.0.0-rc.7:b002"
+      ],
+      "change_refs": [],
+      "block_sha256": "aa380c12d3e77ebb8c54475835dd683ac886f833bb9a27c146e5bf29c0f83e48",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b003": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b003"
+      ],
+      "change_refs": [
+        "rc7-upgrade-boundaries@1.0.0-rc.7"
+      ],
+      "block_sha256": "2e9b9a28ebbca9f85cacf223af9f74ab96f070adc9c80d213554352710fae682",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b004": {
+      "status": "approved",
+      "reason": "Author reviewed both languages, including Hub frontend trimming to fit stock OTA capacity, against the final source; not independent review.",
+      "basis": [
+        "v1.0.0-rc.7:b004"
+      ],
+      "change_refs": [
+        "hub-request-and-homekit-recovery@1.0.0-rc.7"
+      ],
+      "block_sha256": "860a70dbdd8bfdb4701af1dc39f1af238a7237c544a02d468a00ea57ba6978dc",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b005": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b005"
+      ],
+      "change_refs": [
+        "hub-power-energy-display@1.0.0-rc.7"
+      ],
+      "block_sha256": "9e6703a03b947cb8104aeee63107fc9744d5a67137ae09b1e1e2287fb9dc8a81",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b006": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b006"
+      ],
+      "change_refs": [
+        "rc7-m1-memory@1.0.0-rc.7"
+      ],
+      "block_sha256": "dafbb1e54d5940db8e6cc9ba00fdefefdace80e39b218951c14be381d15bdeb5",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b007": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b007"
+      ],
+      "change_refs": [
+        "rc7-sensor-compensation@1.0.0-rc.7"
+      ],
+      "block_sha256": "2d33ae2df33748bc4a90db854d40684487215335061846b5f6d251d29d83c61a",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b008": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b008"
+      ],
+      "change_refs": [
+        "rc7-pm-power-age@1.0.0-rc.7"
+      ],
+      "block_sha256": "1b413ba8bab610ddbc2c4f407e00f9aa1e91e2248bdc1df73cabc4af19932cf1",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b009": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b009"
+      ],
+      "change_refs": [
+        "g3-media-push-display-policy@1.0.0-rc.7"
+      ],
+      "block_sha256": "d6bce6e744c2a78c94aa75c52435c0599e75d4c99fe89f496613ec4adc85153e",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b010": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b010"
+      ],
+      "change_refs": [
+        "rc7-g3-camera-layout@1.0.0-rc.7"
+      ],
+      "block_sha256": "c6ea663f59c5638574b77f5bbe682f0db2e26b8cae15c27ca97ca5226cd3c96b",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b011": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b011"
+      ],
+      "change_refs": [
+        "rc7-g3-home-standby@1.0.0-rc.7"
+      ],
+      "block_sha256": "8ee8eb222233bda6e515dbe40a826b50ccf345c129d8d01bf3edbcc96ec6174d",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b012": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b012"
+      ],
+      "change_refs": [
+        "rc7-g3-tvoc-warmup@1.0.0-rc.7"
+      ],
+      "block_sha256": "aa2549c5e5353a02c195e94c089917681cda5bb2711cbe831785e5a9e408fdd4",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b013": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b013"
+      ],
+      "change_refs": [
+        "rc7-g3-uart-status@1.0.0-rc.7"
+      ],
+      "block_sha256": "e18a4a8f28ceb471d38ce727d07660f5086a1ab846588d9da1497e2aa57c90be",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b014": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b014"
+      ],
+      "change_refs": [
+        "rc7-g3-time-weather@1.0.0-rc.7"
+      ],
+      "block_sha256": "967ca3be7327c44ad04d0987fac701ae15edb0d795b6239a2186c90b56bba973",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b015": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b015"
+      ],
+      "change_refs": [
+        "rc7-g3-ota-known-issue@1.0.0-rc.7"
+      ],
+      "block_sha256": "ecc0626288845cff068febca330337badeaba41baa6fc6cd4415b0e62dfd8a1f",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
+    },
+    "v1.0.0-rc.7:b016": {
+      "status": "approved",
+      "reason": "Author reviewed bilingual source against current implementation and retained acceptance limits.",
+      "basis": [
+        "v1.0.0-rc.7:b016"
+      ],
+      "change_refs": [
+        "rc7-release-native-assets@1.0.0-rc.7"
+      ],
+      "block_sha256": "38a3e17a0b116d7f7bef9d146eb9f9e9ce0acb0c48e95825b8bdffd5714b487c",
+      "release_sha256": "b6ec9a9362d8280dd36d3ebf60ee83d7254d5433b1b1b91373d3879332f160b2"
     }
   }
 }

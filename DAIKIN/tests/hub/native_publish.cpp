@@ -180,6 +180,7 @@ static void esp_partition_iterator_release(const Partition *) {}
 static int mqttLastEvent = 1, mqttErrorType = 0, mqttSocketError = 0;
 static bool mqttConnected = true;
 #include "indicators.inc"
+static void sensorDiagnostics(JsonObject) {}
 #include "state.inc"
 #include "typed.inc"
 #include "native.inc"

@@ -8,7 +8,7 @@
  * physical sensor sample used by MQTT telemetry, linkage or alarm thresholds. */
 typedef struct {
     float value;
-    uint32_t revision, received_ms, age_ms, lease_ms, boot, sequence, retired_boot[4];
+    uint32_t revision, received_ms, age_ms, max_age_ms, lease_ms, boot, sequence, retired_boot[4];
     uint32_t metadata_boot, descriptor_revision;
     bool descriptor_valid;
     uint16_t color;
@@ -95,7 +95,7 @@ void m1_display_source_sample(const char *id,const ph_value *body)
             if(!matches)r->valid=false;
             else{
                 r->revision=revision;r->boot=view.boot;r->sequence=view.sequence;r->received_ms=now;
-                r->valid=valid;r->value=value;r->age_ms=valid?age:0;r->received=true;r->lease_ms=lease;r->color_override=false;r->offline=false;
+                r->valid=valid;r->value=value;r->age_ms=valid?age:0;r->max_age_ms=ph_sensor_max_age(&view,remote.field_id,lease);r->received=true;r->lease_ms=lease;r->color_override=false;r->offline=false;
             }
         }
         mico_rtos_unlock_mutex(&m1_lock);
@@ -144,7 +144,10 @@ void m1_display_source_value(const m1_display_config_t *c,unsigned slot,m1_displ
         known=r->revision==c->revision && r->received;
         if(known && r->lease_ms<limit)limit=r->lease_ms;
         uint32_t elapsed=now-r->received_ms;
-        valid=r->revision==c->revision && r->valid && r->age_ms<limit && elapsed<limit-r->age_ms;
+        uint32_t source_limit=l->source==M1_DISPLAY_MQTT&&r->max_age_ms?r->max_age_ms:limit;
+        valid=r->revision==c->revision && r->valid && r->age_ms<source_limit && elapsed<source_limit-r->age_ms && elapsed<limit;
+        if(l->source==M1_DISPLAY_MQTT&&r->max_age_ms){uint32_t remaining=r->age_ms<source_limit?source_limit-r->age_ms:0;
+          limit=r->age_ms+(remaining<limit?remaining:limit);}
         if(known){age=r->age_ms+elapsed;value=r->value;}
         if(valid){
             direct=c->reserved==M1_DISPLAY_FORMATTED && l->source==M1_DISPLAY_API && r->direct;

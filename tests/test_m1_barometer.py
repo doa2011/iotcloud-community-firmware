@@ -13,7 +13,7 @@ class M1BarometerTest(unittest.TestCase):
             binary = Path(temporary) / 'barometer'
             command = [os.environ.get('CC', 'cc'), '-std=c99', '-Wall', '-Wextra', '-Werror',
                        '-DBMP3_64BIT_COMPENSATION=1', '-Itests/barometer', '-IM1',
-                       'tests/test_m1_barometer.c', 'M1/barometer.c', 'M1/bmp3_vendor/bmp3.c',
+                       'tests/test_m1_barometer.c', 'M1/barometer.c', 'M1/scd40.c', 'M1/bmp3_vendor/bmp3.c',
                        '-o', str(binary)]
             if os.environ.get('SANITIZE') == '1':
                 command += ['-g', '-fno-omit-frame-pointer', '-fsanitize=address,undefined', '-fno-pie', '-no-pie']

@@ -25,10 +25,10 @@ static int sntp_get_sync_status() {
   sync_status = SNTP_SYNC_STATUS_RESET;
   return result;
 }
-static void configTime(long offset, int daylight, const char *a, const char *b) {
+static void configTime(long offset, int daylight, const char *a, const char *b, const char *c) {
   assert(WiFi.state == WL_CONNECTED && WiFi.address);
   assert(!offset && !daylight && !strcmp(a, "pool.ntp.org") &&
-         !strcmp(b, "time.cloudflare.com"));
+         !strcmp(b, "time.cloudflare.com") && !strcmp(c, "time.windows.com"));
   starts++;
 }
 #define time clock_time

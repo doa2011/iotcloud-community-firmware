@@ -27,10 +27,20 @@ static inline bool ph_sensor_descriptor_matches(const ph_sensor_view *view,const
        !phv_get(&field,"unit",&v)||!phv_equal_text(&v,unit))return false;
     return true;
 }
+/* A source-age allowance never extends the receiver's communication lease. */
+static inline uint32_t ph_sensor_max_age(const ph_sensor_view *view,const char *id,uint32_t fallback)
+{
+    ph_value field,v;uint32_t limit;
+    if(!phv_get(&view->fields,id,&field))return 0;
+    if(!phv_get(&field,"max_age_ms",&v))return fallback;
+    if((strcmp(id,"pm25")&&strcmp(id,"pm10"))||!ph_sensor_u32(&field,"max_age_ms",&limit,true)||limit>3600000)return 0;
+    return limit;
+}
 static inline bool ph_sensor_reading(const ph_sensor_view *view,const char *id,uint32_t lease,float *value,uint32_t *age)
 {
     ph_value field,v;bool valid;double n;
-    if(!phv_get(&view->fields,id,&field)||!phv_keys(&field,"|value||valid||age_ms|")||!phv_get(&field,"valid",&v)||!phv_bool(&v,&valid)||!valid||
+    lease=ph_sensor_max_age(view,id,lease);if(!lease)return false;
+    if(!phv_get(&view->fields,id,&field)||!phv_keys(&field,"|value||valid||age_ms||max_age_ms|")||!phv_get(&field,"valid",&v)||!phv_bool(&v,&valid)||!valid||
        !ph_sensor_u32(&field,"age_ms",age,false)||*age>=lease||!phv_get(&field,"value",&v)||!phv_number(&v,&n))return false;
     *value=(float)n;return isfinite(n)&&isfinite(*value);
 }
