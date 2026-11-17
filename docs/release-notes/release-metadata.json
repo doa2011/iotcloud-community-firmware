@@ -136,5 +136,12 @@
     "published_at": "2026-10-17T22:13:51Z",
     "tag_name": "v0.9.9",
     "target_commitish": "main"
+  },
+  "v1.0.0-rc.7": {
+    "html_url": "https://github.com/phicomm-io/iotcloud-community-firmware/releases/tag/v1.0.0-rc.7",
+    "tag_name": "v1.0.0-rc.7",
+    "target_commitish": "main",
+    "prerelease": true,
+    "draft": true
   }
 }
