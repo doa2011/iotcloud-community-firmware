@@ -567,6 +567,7 @@ class VariantHttpSurface(unittest.TestCase):
 static const char *deviceId="9c9c1ff76748",*version="1.0.0-rc.4";
 static constexpr const char *hardwareModel="BRY88AX151K";
 static bool configRecovery=false,hchoPresent=false;
+static DynamicJsonDocument config(4096);
 #include "capabilities.inc"
 static std::vector<std::string> routes;
 #ifndef IOTCLOUD_HUB
