@@ -4,6 +4,29 @@ Features, fixes and upgrade requirements for each release.
 
 ## v1.0.0-rc.7
 
+### Post-publication additions
+
+The following entries complete the RC6-to-RC7 source audit.
+
+- **Recover stalled S30M-V1B links**: Recover when Wi-Fi remains associated but unicast reception stalls and the device becomes unreachable, using gateway checks and bounded reconnects owned by the Wi-Fi service.
+
+- **Nonblocking S30M-V1B link checks**: Keep link-health checks from blocking LAN reception when the TCP/IP queue is full, including under high-rate UDP reads.
+
+- **S30M-V1B online update checks**: Add online version checks, update status and native RBL updates, checking model, image size and SHA-256 while retaining STOCK_UA/RBL formats.
+
+- **Prevent premature SDK resets on TC1**: Disable the separate SDK EasyLink button callback so a roughly three-second hold cannot erase parameter partitions before the community firmware handles its five- and ten-second reset gestures.
+
+- **Correct default names and displayed models**: Use actual product models in page titles, default names and discovery; migrate old defaults while preserving custom names. S30M-V1B no longer exposes OpenBK or its module name as its product name.
+
+- **Fix G3 weather requests and memory use**: Correct weather-provider requests and certificate configuration, reduce response-parsing memory pressure and allow enough time for Open-Meteo TLS handshakes to improve weather availability.
+
+- **Restore TLS verification after camera changes**: Clear the lingering insecure state on a reused camera connection so switching back to an HTTPS source that requires verification re-enables certificate checks.
+
+- **Fix UART handoff during G3 screen updates**: Drain old media before raw screen-OTA handoff, reject business replies and late video frames during transfer, and return to boot baud after acknowledged MCU restarts. The separate warm-OTA corruption issue on some devices remains unresolved.
+
+- **Reduce G3 rendering and transport overhead**: The matching screen MCU improves JPEG, transparent overlays, DMA and incremental rendering, while reducing idle polling overhead. Camera frame rate still depends on image size and screen throughput; the matching screen MCU needs a separate update.
+
+
 **RC7 is a release candidate with cumulative changes since RC6. Back up configuration and select the matching model and variant.**
 
 ### Upgrade scope and separate MCUs
