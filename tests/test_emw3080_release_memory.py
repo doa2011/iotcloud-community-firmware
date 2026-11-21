@@ -13,6 +13,7 @@ from tools.check_emw3080_memory import assess, PRESSURE_MINIMUM_BYTES
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = 'PHICOMM_EMW3080_RELEASE_MEMORY=1'
+TC1_POLICY = 'PHICOMM_TC1_MEMORY=1'
 VARIANTS = (
     ('M1', 'full', 1, 0),
     ('M1', 'no-frontend-resources', 0, 0),
@@ -70,7 +71,14 @@ class Emw3080ReleaseMemory(unittest.TestCase):
                            '#if SERVICE_MEMORY_RESERVE != 16384u\n#error default changed\n#endif\n'
                            'int main(void){return 0;}\n', flags)
         for build_type in ('release', 'release_log', 'debug'):
-            self.assertNotIn(POLICY, product_defines('TC1', build_type, 1, 0))
+            for resources in (0, 1):
+                with self.subTest(product='TC1', build_type=build_type, resources=resources):
+                    defines = product_defines('TC1', build_type, resources, 0)
+                    self.assertNotIn(POLICY, defines)
+                    self.assertIn(TC1_POLICY, defines)
+                    self.run_c('#include "common/memory_budget.h"\n'
+                               '#if SERVICE_MEMORY_RESERVE != 8192u\n#error TC1 reserve changed\n#endif\n'
+                               'int main(void){return 0;}\n', ['-D'+TC1_POLICY])
 
     def test_runtime_allocation_boundary_scenarios(self):
         service = (ROOT / 'common/service.c').read_text()
@@ -137,7 +145,8 @@ int main(void){
  return 0;
 }
 '''.replace('PRODUCTION', production)
-        for flags in ([], ['-DDEBUG'], ['-D'+POLICY, '-DDEBUG'], ['-D'+POLICY, '-DNDEBUG']):
+        for flags in ([], ['-DDEBUG'], ['-D'+POLICY, '-DDEBUG'], ['-D'+POLICY, '-DNDEBUG'],
+                      ['-D'+TC1_POLICY, '-DDEBUG'], ['-D'+TC1_POLICY, '-DNDEBUG']):
             with self.subTest(flags=flags):
                 self.run_c(source, flags)
 
