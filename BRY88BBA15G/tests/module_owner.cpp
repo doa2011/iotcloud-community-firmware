@@ -122,8 +122,11 @@ int main() {
   assert(!screenModulePowerHealthy() && screenPowerFailed);
   screenModulePowerEnd();delay(1);
   assert(screenModulePowerBegin());
+  auto oldSession = screenPowerSession;
   screenBridge.session++;delay(1);
-  assert(!screenModulePowerHealthy() && screenPowerFailed);
+  assert(screenModulePowerHealthy() && !screenPowerFailed);
+  assert(screenPowerSession == screenBridge.session && screenPowerSession != oldSession);
+  assert(screenPowerLeased && !screenPowerRequest);
   screenModulePowerEnd();delay(1);
   /* MCU rejection and failed renewals cannot silently keep a flash going. */
   assert(screenModulePowerBegin());
