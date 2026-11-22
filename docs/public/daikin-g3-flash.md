@@ -136,6 +136,14 @@ macOS 需允许配网工具使用蓝牙。临时服务可运行在本机或同�
 python3 init.py --address 192.168.1.10 --device AABBCCDDEEFF --output ./lab
 docker compose -f ./lab/compose.json up -d
 ```
+先检查临时 MQTT 根证书：
+
+```sh
+openssl x509 -in ./lab/ca.pem -noout -text | grep -A1 'Basic Constraints'
+```
+
+输出必须包含 `CA:TRUE`。如果缺少该字段，当前迁移包的证书生成器较旧，设备会在 8883 握手时报告 `tlsv1 alert unknown ca`。不需要重新配 Wi-Fi；按[迁移工具证书修复说明](https://github.com/phicomm-io/iotcloud-community-firmware/tree/main/tools/daikin_g3_migrate#tls-certificate-check--tls-%E8%AF%81%E4%B9%A6%E6%A3%80%E6%9F%A5)替换 `lab` 中的证书并重启容器。少量首轮重试可以忽略，必须等日志出现 `New client connected ... as SENSOR:<STA_MAC>` 后再继续。
+
 
 ### 2. 配置本设备 DNS 与蓝牙配网
 

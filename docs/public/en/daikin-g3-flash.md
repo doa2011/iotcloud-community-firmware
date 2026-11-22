@@ -136,6 +136,14 @@ Check that your user can run `docker info` and `docker compose version`. On Linu
 python3 init.py --address 192.168.1.10 --device AABBCCDDEEFF --output ./lab
 docker compose -f ./lab/compose.json up -d
 ```
+Check the temporary MQTT root certificate before provisioning the detector:
+
+```sh
+openssl x509 -in ./lab/ca.pem -noout -text | grep -A1 'Basic Constraints'
+```
+
+The output must contain `CA:TRUE`. If it is missing, the migration archive has the older certificate generator and the detector may report `tlsv1 alert unknown ca` during the port 8883 handshake. Do not reprovision Wi-Fi; follow the [migration tool certificate repair instructions](https://github.com/phicomm-io/iotcloud-community-firmware/tree/main/tools/daikin_g3_migrate#tls-certificate-check--tls-%E8%AF%81%E4%B9%A6%E6%A3%80%E6%9F%A5), replace the certificates in `lab`, and restart the containers. A few first-retry messages are expected; continue only after the log shows `New client connected ... as SENSOR:<STA_MAC>`.
+
 
 ### 2. Configure device DNS and Bluetooth
 

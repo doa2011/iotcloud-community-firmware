@@ -20,6 +20,56 @@ docker compose -f ./lab/compose.json up -d
 
 The initial service offers **no update**. Ports LAN TCP 443 and 8883 must be free and reachable by the detector. Keep this temporary anonymous compatibility broker on your trusted LAN; remove it after migration.
 
+### TLS certificate check / TLS 证书检查
+
+The detector receives `lab/ca.pem` over the temporary HTTPS service and then uses it to verify MQTT on port 8883. Check the generated certificate before starting the detector:
+
+设备会通过临时 HTTPS 服务下载 `lab/ca.pem`，再用它校验 8883 端口的 MQTT。启动设备前先检查证书：
+
+```sh
+openssl x509 -in ./lab/ca.pem -noout -text | grep -A1 'Basic Constraints'
+```
+
+The output must contain `CA:TRUE`. If it is missing, the archive has the older certificate generator. Do not reprovision Wi-Fi; replace the lab certificate and restart the two containers. Replace `192.168.1.10` below with the service host address:
+
+输出必须包含 `CA:TRUE`。如果没有，不要重新配 Wi-Fi；替换临时服务证书后重启容器。下面的 `192.168.1.10` 替换为服务主机地址：
+
+```sh
+docker compose -f ./lab/compose.json down
+cd ./lab
+cp ca.pem ca.pem.before
+cp server.key server.key.before
+HOST_IP=192.168.1.10
+cat > openssl-g3.cnf <<EOF
+[req]
+prompt = no
+distinguished_name = dn
+x509_extensions = ext
+
+[dn]
+CN = newlifemulti.daikin-china.com.cn
+
+[ext]
+basicConstraints = critical,CA:TRUE
+keyUsage = critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign
+extendedKeyUsage = serverAuth
+subjectAltName = DNS:newlifemulti.daikin-china.com.cn,DNS:newlifemulti-cdh.daikin-china.com.cn,DNS:newlifemulti-cdh-core.daikin-china.com.cn,IP:${HOST_IP}
+EOF
+openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 30 \
+  -config openssl-g3.cnf -extensions ext \
+  -keyout server.key.new -out ca.pem.new
+cp ca.pem.new server.pem.new
+mv ca.pem.new ca.pem
+mv server.key.new server.key
+mv server.pem.new server.pem
+cd ..
+docker compose -f ./lab/compose.json up -d
+```
+
+`OpenSSL Error ... tlsv1 alert unknown ca` means the detector rejected the MQTT server certificate. A few such messages can occur during the first retry; continue only if the log later shows `New client connected ... as SENSOR:<STA_MAC>`. Repeated errors without that line indicate the certificate must be repaired.
+
+`OpenSSL Error ... tlsv1 alert unknown ca` 表示设备拒绝了 MQTT 服务端证书。首次重试时可能出现少量这类日志；只有随后出现 `New client connected ... as SENSOR:<STA_MAC>` 才能继续。没有该行而持续报错时，需要按上面步骤修复证书。
+
 ## 2. Provision the factory firmware
 
 Configure the three per-device DNS overrides below before provisioning. If already provisioned with a working gateway association, keep it. Otherwise short-press the separate recessed rear network button. Do not long-press. `gateway_mac=020000000001` is a **virtual IP Box**, not the device identity; `gateway_ip` is the service host's reachable address.
