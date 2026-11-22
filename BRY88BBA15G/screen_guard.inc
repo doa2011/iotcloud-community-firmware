@@ -152,7 +152,7 @@ static const char *screenGuardRequest(unsigned op, uint32_t offset, unsigned n,
   screenGuard.request = request;
   screenGuard.state = "pending";
   /* Installation rehashes the full NOR through bounded GPIO SPI. */
-  screenGuard.deadline = millis() + (op == GUARD_INSTALL ? 60000 : 3000);
+  screenGuard.deadline = millis() + (op == GUARD_INSTALL ? 180000 : 3000);
   data["request"] = request;
   data["session"] = screenGuard.session;
   return "accepted";
