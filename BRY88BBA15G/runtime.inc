@@ -29,6 +29,7 @@ static bool screenBusinessSend(const char *, size_t);
 static bool screenGuardLine(const uint8_t *, size_t);
 static bool screenGuardAnnounce(const String &);
 static bool screenGuardImageAnnounce(const String &);
+static void screenOtaDiagnosticStatus(JsonObject);
 static bool screenExtendedLine(const uint8_t *, size_t);
 static String screenHex(const uint8_t *, size_t);
 static const char *screenApplySettings(JsonObjectConst, JsonObject);
@@ -226,6 +227,7 @@ static void screenStatus(JsonObject out) {
   s["gateway_binding"] = "local_compatibility_only";
   s["weather_available"] = false;
   screenServicesStatus(s);
+  screenOtaDiagnosticStatus(s.createNestedObject("ota_diagnostics"));
   s["settings"] = screenSnapshot["setting"];
   s["settings_request"]["token"] = screenPendingToken;
   s["settings_request"]["code"] = screenPendingCode;
