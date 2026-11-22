@@ -42,7 +42,7 @@ static void screenLogPoll(uint32_t now) {
   }
   // Avoid a write on every boot in a device stuck in a reset loop.
   if(now<60000u || screenEventLog.faults()==screenLogSavedFaults ||
-     otaActive || screenOtaActive() ||
+     screenOtaActive() ||
      (screenLogEverSaved&&uint32_t(now-screenLogSavedAt)<1800000u))
     return;
   const g3diag::Saved snapshot=g3diag::capture(screenEventLog);
