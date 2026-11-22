@@ -405,7 +405,8 @@ void loop(){
   constexpr uint32_t apCloseDelay=120000;
 #endif
   static uint32_t connectedSince=0;
-  if(WiFi.status()==WL_CONNECTED){if(!connectedSince){connectedSince=now;if(MDNS.begin(deviceHostname.c_str())){MDNS.addService("http","tcp",80);advertiseLanBusiness();}}#ifdef IOTCLOUD_BRY88_SCREEN
+  if(WiFi.status()==WL_CONNECTED){if(!connectedSince){connectedSince=now;if(MDNS.begin(deviceHostname.c_str())){MDNS.addService("http","tcp",80);advertiseLanBusiness();}}
+#ifdef IOTCLOUD_BRY88_SCREEN
     const bool keepProvisioningAp = screenProvisioning;
 #else
     const bool keepProvisioningAp = false;
