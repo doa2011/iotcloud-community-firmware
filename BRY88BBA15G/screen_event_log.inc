@@ -22,15 +22,18 @@ static void screenLogInit() {
   screenLogEvent(g3diag::BOOT,g3diag::INFO,esp_reset_reason());
 }
 static void screenLogPoll(uint32_t now) {
-  const bool stale=!screenSnapshot.containsKey("status") ||
-      uint32_t(now-screenSnapshotAt)>=20000u;
+  // Allow first boot/association to finish before diagnosing absent data.
+  const bool stale=screenSnapshot.containsKey("status")
+      ? uint32_t(now-screenSnapshotAt)>=20000u
+      : now>=30000u;
   if(stale!=screenLogSnapshotStale) {
     screenLogSnapshotStale=stale;
     screenLogEvent(stale?g3diag::SNAPSHOT_LOST:g3diag::SNAPSHOT_RESTORED,
                    stale?g3diag::ERROR:g3diag::INFO,
                    screenSnapshotAt?uint32_t(now-screenSnapshotAt):0);
   }
-  const bool silent=!screenLastRx||uint32_t(now-screenLastRx)>=20000u;
+  const bool silent=screenLastRx
+      ? uint32_t(now-screenLastRx)>=20000u : now>=30000u;
   if(silent!=screenLogUartSilent) {
     screenLogUartSilent=silent;
     screenLogEvent(silent?g3diag::MCU_UART_SILENT:g3diag::MCU_UART_RESTORED,
