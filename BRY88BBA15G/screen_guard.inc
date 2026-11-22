@@ -18,6 +18,29 @@ struct ScreenGuard {
   const char *state = "unavailable";
 };
 static ScreenGuard screenGuard;
+/* Field diagnostic breadcrumb: survives the failed OTA attempt until ESP32
+ * reboot. Read through the existing authenticated screen.recovery.get API. */
+static struct {
+  uint32_t at = 0, events = 0, offset = 0, error = 0;
+  char phase[28] = "idle";
+  char command[20] = "";
+} screenOtaTraceState;
+static void screenOtaTrace(const char *phase, const char *command = "",
+                           uint32_t offset = 0, uint32_t error = 0) {
+  snprintf(screenOtaTraceState.phase, sizeof(screenOtaTraceState.phase), "%s",
+           phase ? phase : "unknown");
+  snprintf(screenOtaTraceState.command, sizeof(screenOtaTraceState.command), "%s",
+           command ? command : "");
+  screenOtaTraceState.at = millis();
+  screenOtaTraceState.offset = offset;
+  screenOtaTraceState.error = error;
+  ++screenOtaTraceState.events;
+  Serial.printf("[G3-OTA-DIAG] t=%lu phase=%s cmd=%s offset=%lu error=%lu image=%s active=%u pending=%u\\n",
+                (unsigned long)screenOtaTraceState.at, screenOtaTraceState.phase,
+                screenOtaTraceState.command, (unsigned long)offset,
+                (unsigned long)error, screenImage.state,
+                screenImage.active, screenImage.pending);
+}
 static bool screenGuardAvailable() {
   return screenGuard.session && uint32_t(millis() - screenGuard.seen) < 15000;
 }
@@ -119,6 +142,8 @@ static bool screenGuardLine(const uint8_t *p, size_t n) {
   } else {
     screenGuard.result = reply[2];
     screenGuard.state = reply[2] == GUARD_OK ? "complete" : "mcu_rejected";
+    screenOtaTrace(reply[2] == GUARD_OK ? "install_reply_ok" : "install_reply_error",
+                   "GUARD_REPLY", screenGuard.offset, reply[2]);
     if (reply[2] == GUARD_OK && screenGuard.operation == GUARD_READ_BOOT) {
       memcpy(screenGuard.bytes, reply + 11, screenGuard.length);
       if (screenGuard.offset == screenGuard.exported)
@@ -127,6 +152,26 @@ static bool screenGuardLine(const uint8_t *p, size_t n) {
   }
   invalidateBusinessStatusCache();
   return true;
+}
+static void screenOtaDiagnosticStatus(JsonObject ota) {
+  ota["phase"] = screenOtaTraceState.phase;
+  ota["command"] = screenOtaTraceState.command;
+  ota["age_ms"] = screenOtaTraceState.at ? millis() - screenOtaTraceState.at : 0;
+  ota["events"] = screenOtaTraceState.events;
+  ota["offset"] = screenOtaTraceState.offset;
+  ota["error"] = screenOtaTraceState.error;
+  ota["image_state"] = screenImage.state;
+  ota["image_valid"] = screenImage.valid;
+  ota["image_active"] = screenImage.active;
+  ota["image_pending"] = screenImage.pending;
+  ota["image_bootstrap"] = screenImage.bootstrap;
+  ota["image_size"] = screenImage.size;
+  ota["image_offset"] = screenImage.offset;
+  ota["image_deadline_remaining_ms"] =
+      screenImage.active && int32_t(screenImage.deadline - millis()) > 0
+          ? uint32_t(screenImage.deadline - millis()) : 0;
+  ota["error_text"] = screenOtaErrorText();
+  screenUartDiagnostics(ota);
 }
 static const char *screenGuardRequest(unsigned op, uint32_t offset, unsigned n,
                                        JsonObject data) {
@@ -152,7 +197,9 @@ static const char *screenGuardRequest(unsigned op, uint32_t offset, unsigned n,
   screenGuard.request = request;
   screenGuard.state = "pending";
   /* Installation rehashes the full NOR through bounded GPIO SPI. */
-  screenGuard.deadline = millis() + (op == GUARD_INSTALL ? 60000 : 3000);
+  screenGuard.deadline = millis() + (op == GUARD_INSTALL ? 180000 : 3000);
+  if (op == GUARD_INSTALL)
+    screenOtaTrace("install_request_sent", "GUARD_INSTALL", offset);
   data["request"] = request;
   data["session"] = screenGuard.session;
   return "accepted";
@@ -172,6 +219,7 @@ static void screenGuardStatus(JsonObject data, bool bytes, bool detail = false) 
   data["result"] = screenGuard.result;
   data["offset"] = screenGuard.offset;
   data["total"] = SCREEN_BOOT_BYTES;
+  screenOtaDiagnosticStatus(data.createNestedObject("ota_diagnostic"));
   JsonObject wdt = data.createNestedObject("inherited_wdt");
   wdt["control"] = screenGuard.inheritedControl;
   wdt["reset_value"] = screenGuard.inheritedReset;

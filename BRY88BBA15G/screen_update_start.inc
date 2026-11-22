@@ -42,6 +42,8 @@ static const char *screenUpdateStart(JsonObjectConst params) {
   screenOtaError = "";
   screenImage.deadline = millis() + 60000;
   screenImage.state = "waiting_for_mcu";
+  screenOtaTrace(bootstrap ? "factory_bootstrap_begin" : "community_recovery_begin",
+                 "screen.update.start", 0);
   if (!screenMediaQuiesce()) {
     screenImage.active = false;
     screenImage.state = "uart_busy";
@@ -60,8 +62,10 @@ static const char *screenUpdateStart(JsonObjectConst params) {
   } else
     sent = screenSend("+screen_recover:1\r\n");
   if (!sent) {
+    screenOtaTrace("recovery_request_send_failed", "screen.update.start", 0);
     screenImage.active = false;
     return "busy";
   }
+  screenOtaTrace("recovery_request_sent", bootstrap ? "mqtt_ota" : "screen_recover", 0);
   return "accepted";
 }

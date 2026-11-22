@@ -129,7 +129,7 @@ class DirectInstallTest(unittest.TestCase):
                 raise AssertionError(f'Unexpected command: {action}')
 
         def upload(request, timeout):
-            self.assertEqual(timeout, 30)
+            self.assertEqual(timeout, 180)
             self.assertEqual(request.full_url, 'http://test-device/api/v1/screen/ota/upload')
             self.assertEqual(request.data, self.image.read_bytes())
             owner.uploaded = True

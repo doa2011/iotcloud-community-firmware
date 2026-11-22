@@ -11,7 +11,7 @@ static struct { bool extended=true; uint32_t capabilities=SCREEN_CAP_MODULE_CONT
 static struct { bool active=false; } screenImage;
 static struct { unsigned mode=0; } screenGuard;
 static bool screenRecovering=false, guardAvailable=true, sendOk=true;
-static uint32_t ms, invalidations, refreshes;
+static uint32_t ms, invalidations, refreshes, guardReadyAt;
 static std::vector<uint8_t> sent;
 static uint32_t millis() { return ms; }
 static void delay(unsigned);
@@ -30,6 +30,10 @@ static bool bry_bridge_send(void *,const void *p,size_t n,unsigned cap) {
 static bool acknowledge = true;
 static void delay(unsigned n) {
   ms += n;
+  if (guardReadyAt && (int32_t)(ms - guardReadyAt) >= 0) {
+    guardAvailable = true;
+    guardReadyAt = 0;
+  }
   screenModulePowerPoll(ms);
   if (acknowledge && screenPowerRequest) {
     uint8_t response[20] = {SCREEN_MSG_MODULE_STATUS, 1, 0, 5};
@@ -122,8 +126,12 @@ int main() {
   assert(!screenModulePowerHealthy() && screenPowerFailed);
   screenModulePowerEnd();delay(1);
   assert(screenModulePowerBegin());
+  auto oldSession = screenPowerSession;
   screenBridge.session++;delay(1);
-  assert(!screenModulePowerHealthy() && screenPowerFailed);
+  screenModulePowerPoll(ms);
+  assert(screenModulePowerHealthy() && !screenPowerFailed);
+  assert(screenPowerSession == screenBridge.session && screenPowerSession != oldSession);
+  assert(screenPowerLeased && !screenPowerRequest);
   screenModulePowerEnd();delay(1);
   /* MCU rejection and failed renewals cannot silently keep a flash going. */
   assert(screenModulePowerBegin());
@@ -142,8 +150,22 @@ int main() {
     assert(!screenPowerLeased && sent==last);
     screenModulePowerEnd();delay(1);
   }
-  guardAvailable=false;
-  assert(!screenModulePowerBegin());screenModulePowerEnd();delay(1);
+  /* Regression boundary: the reset MCU has returned to normal mode.
+   * Its first Guard heartbeat may arrive at 5 s; HTTP prepare waits up to 12 s. */
+  screenModulePowerEnd();delay(1);
+  screenRecovering=false;
+  screenGuard.mode=0;
+  guardAvailable=false;guardReadyAt=ms+5000;
+  auto guardWaitStart=ms;
+  assert(screenModulePowerBegin() && screenModulePowerHealthy());
+  assert(ms-guardWaitStart>=5000 && ms-guardWaitStart<6000);
+  screenModulePowerEnd();delay(1);
+  /* If no heartbeat ever arrives, preparation still fails within its bound. */
+  guardAvailable=false;guardReadyAt=0;
+  guardWaitStart=ms;
+  assert(!screenModulePowerBegin());
+  assert(ms-guardWaitStart>=12000 && ms-guardWaitStart<=12001);
+  screenModulePowerEnd();delay(1);
   guardAvailable=true;screenRecovering=false;screenGuard.mode=0;
   /* A factory peer receives no extension and retains its original OTA path. */
   screenBridge.capabilities=0;auto previous=sent;

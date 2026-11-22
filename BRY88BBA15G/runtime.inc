@@ -29,6 +29,7 @@ static bool screenBusinessSend(const char *, size_t);
 static bool screenGuardLine(const uint8_t *, size_t);
 static bool screenGuardAnnounce(const String &);
 static bool screenGuardImageAnnounce(const String &);
+static void screenOtaDiagnosticStatus(JsonObject);
 static bool screenExtendedLine(const uint8_t *, size_t);
 static String screenHex(const uint8_t *, size_t);
 static const char *screenApplySettings(JsonObjectConst, JsonObject);
@@ -226,6 +227,7 @@ static void screenStatus(JsonObject out) {
   s["gateway_binding"] = "local_compatibility_only";
   s["weather_available"] = false;
   screenServicesStatus(s);
+  screenOtaDiagnosticStatus(s.createNestedObject("ota_diagnostics"));
   s["settings"] = screenSnapshot["setting"];
   s["settings_request"]["token"] = screenPendingToken;
   s["settings_request"]["code"] = screenPendingCode;
@@ -440,8 +442,17 @@ static void screenCommand(const uint8_t *p, size_t n, size_t payloadAt,
     while (topicEnd < n && p[topicEnd] != ' ')
       ++topicEnd;
     String topic((const char *)p + 4, topicEnd - 4);
-    bool ok = screenSession && payloadAt &&
+    // The screen MCU may outlive an ESP32-only OTA/restart. Its factory
+    // owner keeps publishing upload_snapshot, but the volatile local session
+    // is recreated on every ESP32 boot. Accept one identity-checked snapshot
+    // as the session re-entry handshake instead of dropping telemetry forever.
+    bool bootstrap = !screenSession && topic.endsWith("/upload_snapshot");
+    bool ok = payloadAt && (screenSession || bootstrap) &&
               screenPublication(topic, p + payloadAt, payloadSize);
+    if (ok && bootstrap) {
+      screenSession = true;
+      screenNextSnapshot = millis() + 15000;
+    }
     screenReply("pub", ok, ok ? 0 : 0x43);
     return;
   }
