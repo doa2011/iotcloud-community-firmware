@@ -35,6 +35,7 @@ static const char *screenApplySettings(JsonObjectConst, JsonObject);
 static void screenGetSettings(JsonObject);
 static bool screenCalibrationResponse(const String &, const String &, int);
 static bool screenWeatherStockRequest(const String &);
+static void screenLogEvent(uint16_t code,uint8_t severity,uint32_t arg);
 static bry::StockFrame stockFrame;
 static HardwareSerial screenUart(1);
 // HardwareSerial reports errors from its event task. Only the UART owner
@@ -57,6 +58,7 @@ static void screenUartReceiveError(hardwareSerial_error_t error) {
 }
 static void screenUartRecoverRx(uint32_t now) {
   if (!screenRxLoss.exchange(0, std::memory_order_acquire)) return;
+  screenLogEvent(2,3,screenRxLastError.load());
   // Raw maintenance owns its receive state and failure/ACK policy.
   if (screenOtaActive()) return;
   stockFrame.reset();
@@ -111,6 +113,7 @@ static unsigned screenHead = 0, screenTail = 0;
 static String screenPendingToken;
 static uint32_t screenPendingAt = 0;
 static int screenPendingCode = -1;
+#include "screen_event_log.inc"
 static bool screenSend(const String &line, uint32_t delayMs = 0) {
   if (line.length() > 3072)
     return false;
@@ -227,6 +230,7 @@ static void screenStatus(JsonObject out) {
   // This was previously a dead diagnostic helper and could not be inspected
   // from /api/v1/status when MCU telemetry stopped.
   screenUartDiagnostics(s);
+  screenLogStatus(s.createNestedObject("event_log"));
   s["business_session"] = screenSession ? "local_adapter" : "offline";
   s["upstream_connected"] = mqttConnected;
   s["ble_provisioning_supported"] = false;
@@ -656,6 +660,7 @@ static void screenInit() {
     nvs_close(handle);
   }
   screenServicesInit();
+  screenLogInit();
   screenSend("\r\n+screen_link_reset:1\r\n");
   Serial.printf("screen UART1 RX17 TX16 initialized; firmware %s\n", version);
 }
@@ -694,4 +699,5 @@ static void screenPoll(uint32_t now) {
     screenPendingCode = -2;
     invalidateBusinessStatusCache();
   }
+  screenLogPoll(millis());
 }
