@@ -273,10 +273,11 @@ jobs:
   esp:
     name: DAIKIN ESP32 ${{ matrix.variant }} firmware
     needs: frontend
+    if: matrix.variant == 'g3'
     strategy:
       fail-fast: false
       matrix:
-        variant: [g3]
+        variant: [full, hub, g3]
     env:
       PHICOMM_FIRMWARE_VARIANT: ${{ matrix.variant }}
     runs-on: >-
