@@ -699,5 +699,4 @@ static void screenPoll(uint32_t now) {
     screenPendingCode = -2;
     invalidateBusinessStatusCache();
   }
-  screenLogPoll(millis());
 }
