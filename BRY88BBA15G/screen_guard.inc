@@ -153,6 +153,26 @@ static bool screenGuardLine(const uint8_t *p, size_t n) {
   invalidateBusinessStatusCache();
   return true;
 }
+static void screenOtaDiagnosticStatus(JsonObject ota) {
+  ota["phase"] = screenOtaTraceState.phase;
+  ota["command"] = screenOtaTraceState.command;
+  ota["age_ms"] = screenOtaTraceState.at ? millis() - screenOtaTraceState.at : 0;
+  ota["events"] = screenOtaTraceState.events;
+  ota["offset"] = screenOtaTraceState.offset;
+  ota["error"] = screenOtaTraceState.error;
+  ota["image_state"] = screenImage.state;
+  ota["image_valid"] = screenImage.valid;
+  ota["image_active"] = screenImage.active;
+  ota["image_pending"] = screenImage.pending;
+  ota["image_bootstrap"] = screenImage.bootstrap;
+  ota["image_size"] = screenImage.size;
+  ota["image_offset"] = screenImage.offset;
+  ota["image_deadline_remaining_ms"] =
+      screenImage.active && int32_t(screenImage.deadline - millis()) > 0
+          ? uint32_t(screenImage.deadline - millis()) : 0;
+  ota["error_text"] = screenOtaErrorText();
+  screenUartDiagnostics(ota);
+}
 static const char *screenGuardRequest(unsigned op, uint32_t offset, unsigned n,
                                        JsonObject data) {
   if (!screenGuardAvailable())
@@ -199,25 +219,7 @@ static void screenGuardStatus(JsonObject data, bool bytes, bool detail = false) 
   data["result"] = screenGuard.result;
   data["offset"] = screenGuard.offset;
   data["total"] = SCREEN_BOOT_BYTES;
-  JsonObject ota = data.createNestedObject("ota_diagnostic");
-  ota["phase"] = screenOtaTraceState.phase;
-  ota["command"] = screenOtaTraceState.command;
-  ota["age_ms"] = screenOtaTraceState.at ? millis() - screenOtaTraceState.at : 0;
-  ota["events"] = screenOtaTraceState.events;
-  ota["offset"] = screenOtaTraceState.offset;
-  ota["error"] = screenOtaTraceState.error;
-  ota["image_state"] = screenImage.state;
-  ota["image_valid"] = screenImage.valid;
-  ota["image_active"] = screenImage.active;
-  ota["image_pending"] = screenImage.pending;
-  ota["image_bootstrap"] = screenImage.bootstrap;
-  ota["image_size"] = screenImage.size;
-  ota["image_offset"] = screenImage.offset;
-  ota["image_deadline_remaining_ms"] =
-      screenImage.active && int32_t(screenImage.deadline - millis()) > 0
-          ? uint32_t(screenImage.deadline - millis()) : 0;
-  ota["error_text"] = screenOtaErrorText();
-  screenUartDiagnostics(ota);
+  screenOtaDiagnosticStatus(data.createNestedObject("ota_diagnostic"));
   JsonObject wdt = data.createNestedObject("inherited_wdt");
   wdt["control"] = screenGuard.inheritedControl;
   wdt["reset_value"] = screenGuard.inheritedReset;
