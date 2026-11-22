@@ -43,6 +43,19 @@ static void screenModulePowerPoll(uint32_t now) {
     screenPowerRetried = false;
     return;
   }
+  /* A long-press reset starts a new MCU session. The old PD12 lease and
+   * request IDs belong to the dead session; discard them and acquire a fresh
+   * lease after normal service returns instead of permanently latching the
+   * startup/OTA controller as failed. */
+  if (screenPowerLeased && screenPowerSession != screenBridge.session) {
+    screenPowerLeased = false;
+    screenPowerReady = false;
+    screenPowerFailed = false;
+    screenPowerRequest = 0;
+    screenPowerRetried = false;
+    screenModule = {};
+    screenModule.session = screenBridge.session;
+  }
   /* Recovery owns PD12 in internal SRAM and already keeps it low. Its
    * minimal UART service cannot answer a normal-business module request;
    * stale capabilities must never block uploading a recovery image. */
