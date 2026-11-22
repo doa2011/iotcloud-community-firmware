@@ -434,7 +434,7 @@ jobs:
         if: matrix.variant == 'g3'
         id: screen-source
         env:
-          SCREEN_MCU_REF: c1fdb3afc5f67558ea8c469972ecef736f5bdd50
+          SCREEN_MCU_REF: b09be920b87839584ab5cef6353bd92c8c078ec3
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
           import json, os
