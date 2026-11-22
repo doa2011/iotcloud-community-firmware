@@ -220,6 +220,13 @@ static void screenStatus(JsonObject out) {
   s["gallery_version"] = screenGalleryVersion;
   s["uart_frames"] = screenFrames;
   s["last_rx_age_ms"] = screenLastRx ? millis() - screenLastRx : 0;
+  s["snapshot_received"] = screenSnapshot.containsKey("status");
+  s["snapshot_age_ms"] = screenSnapshot.containsKey("status") ?
+      uint32_t(millis() - screenSnapshotAt) : 0;
+  // Expose the UART1 driver errors already collected by the receive callback.
+  // This was previously a dead diagnostic helper and could not be inspected
+  // from /api/v1/status when MCU telemetry stopped.
+  screenUartDiagnostics(s);
   s["business_session"] = screenSession ? "local_adapter" : "offline";
   s["upstream_connected"] = mqttConnected;
   s["ble_provisioning_supported"] = false;
