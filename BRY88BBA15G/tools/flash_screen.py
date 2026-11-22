@@ -147,7 +147,7 @@ def main():
         previous_session = recovery.get("session")
         install_request = device.command("screen.update.install", {"sha256": sha})
         record("install", install_request)
-        deadline = time.monotonic() + 90
+        deadline = time.monotonic() + 210
         while time.monotonic() < deadline:
             try:
                 recovery = device.command("screen.recovery.get")
