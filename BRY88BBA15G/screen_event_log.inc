@@ -38,7 +38,7 @@ static void screenLogPoll(uint32_t now) {
                    screenLastRx?uint32_t(now-screenLastRx):0);
   }
   if(screenEventLog.faults()==screenLogSavedFaults ||
-     otaActive || screenUploadBusy || screenOtaActive() ||
+     otaActive || screenOtaActive() ||
      (screenLogEverSaved&&uint32_t(now-screenLogSavedAt)<1800000u))
     return;
   const g3diag::Saved snapshot=g3diag::capture(screenEventLog);
