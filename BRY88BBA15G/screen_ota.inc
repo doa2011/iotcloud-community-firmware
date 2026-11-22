@@ -91,6 +91,7 @@ static void screenImportArtifact() {
   invalidateBusinessStatusCache();
 }
 static bool screenOtaCommand(const String &cmd, const String &arg) {
+  screenOtaTrace("mcu_ota_event", cmd.c_str(), screenImage.offset);
   if (cmd == "screen_ota_error") {
     if (screenImage.active && !screenOtaError.length() && arg.length() <= 128) screenOtaError = arg;
     return true;
@@ -114,6 +115,7 @@ static bool screenOtaCommand(const String &cmd, const String &arg) {
       screenImage.state = "waiting_for_start";
       /* Thirteen bounded 32-KiB erases can take up to 65 s on GPIO NOR. */
       screenImage.deadline = millis() + 90000;
+      screenOtaTrace("metadata_received", cmd.c_str(), screenImage.offset);
       Serial.println("screen OTA metadata requested");
       screenSend("+bin_summary:SV.99.00.01.00," +
                  screenHex(screenImage.md5, 16) + "\r\n");
@@ -136,6 +138,7 @@ static bool screenOtaCommand(const String &cmd, const String &arg) {
       return true;
     }
     screenImage.state = "transferring";
+    screenOtaTrace("transfer_started", cmd.c_str(), screenImage.offset);
     screenReply(cmd);
     return true;
   }
@@ -159,6 +162,7 @@ static bool screenOtaCommand(const String &cmd, const String &arg) {
       screenImage.chunk = min(screenImage.bootstrap ? 512u : 1024u,
                               screenImage.size - screenImage.offset);
       screenImage.pending = true;
+      screenOtaTrace("chunk_requested", cmd.c_str(), screenImage.offset);
       screenSend("+download_bin:" + String(screenImage.offset) + "," +
                  String(screenImage.chunk) + "\r\n");
     }
@@ -190,6 +194,7 @@ static bool screenOtaCommand(const String &cmd, const String &arg) {
     }
     screenImage.offset += screenImage.chunk;
     screenImage.pending = false;
+    screenOtaTrace("chunk_sent", cmd.c_str(), screenImage.offset);
     return true;
   }
   if (cmd == "end_ota") {
@@ -202,11 +207,13 @@ static bool screenOtaCommand(const String &cmd, const String &arg) {
       screenSend("+end_ota:" + screenHex(screenImage.md5, 16) + "\r\n");
     screenImage.active = false;
     screenImage.state = screenImage.bootstrap ? "factory_installing" : "staged_verified";
+    screenOtaTrace("transfer_end_verified", cmd.c_str(), screenImage.offset);
     return true;
   }
   screenImage.active = false;
   screenImage.pending = false;
   screenImage.state = "cancelled";
+  screenOtaTrace("transfer_cancelled", cmd.c_str(), screenImage.offset);
   screenReply(cmd);
   return true;
 }
