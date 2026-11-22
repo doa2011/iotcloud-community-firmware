@@ -678,7 +678,11 @@ static void screenServicesPoll(uint32_t now) {
   if (!strcmp(screenGuard.state, "pending") &&
       (int32_t)(now - screenGuard.deadline) >= 0) {
     screenGuard.state = "timeout";
+    screenOtaTrace("guard_reply_timeout", "GUARD_INSTALL", screenGuard.offset);
     invalidateBusinessStatusCache();
+  }
+  if (screenImage.active && (int32_t)(now - screenImage.deadline) >= 0) {
+    screenOtaTrace("image_transfer_timeout", screenImage.state, screenImage.offset);
   }
   if (screenImage.active && (int32_t)(now - screenImage.deadline) >= 0) {
     screenImage.active = false;
