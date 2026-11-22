@@ -181,7 +181,11 @@ def create_certificate(args):
     with tempfile.TemporaryDirectory(prefix='bry-ota-cert-') as temp:
         conf = Path(temp) / 'openssl.cnf'
         conf.write_text('[req]\nprompt=no\ndistinguished_name=dn\nx509_extensions=ext\n'
-                        f'[dn]\nCN={HOST}\n[ext]\nsubjectAltName=DNS:{HOST},DNS:newlifemulti-cdh.daikin-china.com.cn,DNS:newlifemulti-cdh-core.daikin-china.com.cn,IP:{args.address}\n')
+                        f'[dn]\nCN={HOST}\n[ext]\n'
+                        'basicConstraints=critical,CA:TRUE\n'
+                        'keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign\n'
+                        'extendedKeyUsage=serverAuth\n'
+                        f'subjectAltName=DNS:{HOST},DNS:newlifemulti-cdh.daikin-china.com.cn,DNS:newlifemulti-cdh-core.daikin-china.com.cn,IP:{args.address}\n')
         subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-sha256', '-nodes',
                         '-days', '30', '-config', str(conf), '-keyout', str(args.key),
                         '-out', str(args.cert)], check=True, stdout=subprocess.DEVNULL,

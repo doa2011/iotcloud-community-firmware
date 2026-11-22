@@ -5,6 +5,7 @@ import http.client
 import json
 from pathlib import Path
 import ssl
+import subprocess
 import tempfile
 import threading
 import unittest
@@ -19,6 +20,10 @@ class LocalOTA(unittest.TestCase):
         cls.root = Path(cls.temp.name)
         cls.cert, cls.key = cls.root / 'cert.pem', cls.root / 'key.pem'
         ota.create_certificate(argparse.Namespace(cert=cls.cert, key=cls.key, address='127.0.0.1'))
+        cert_text = subprocess.run(['openssl', 'x509', '-in', str(cls.cert), '-noout', '-text'],
+                                   check=True, capture_output=True, text=True).stdout
+        if 'CA:TRUE' not in cert_text:
+            raise AssertionError('generated migration CA must be a CA certificate')
 
     @classmethod
     def tearDownClass(cls):
