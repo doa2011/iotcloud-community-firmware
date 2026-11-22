@@ -432,6 +432,7 @@ void loop(){
   #ifdef IOTCLOUD_BRY88_SCREEN
   g3OnlinePoll();
   screenPoll(millis());
+  if (!otaActive && !g3OnlineBusy) screenLogPoll(millis());
   // UART publications invalidate status near the end of this iteration.
   // Publish their replacement before tickless idle exposes a busy window.
   if(businessStatusInvalid)pollBusinessStatusCache(millis());
