@@ -118,7 +118,7 @@ jobs:
 
   firmware:
     name: ${{ matrix.model }} firmware variants
-    if: false # This focused validation run builds G3 only.
+    if: ${{ false }} # This focused validation run builds G3 only.
     needs: [frontend]
     strategy:
       fail-fast: false
@@ -273,11 +273,13 @@ jobs:
   esp:
     name: DAIKIN ESP32 ${{ matrix.variant }} firmware
     needs: frontend
-    if: matrix.variant == 'g3'
     strategy:
       fail-fast: false
       matrix:
         variant: [full, hub, g3]
+        exclude:
+          - variant: full
+          - variant: hub
     env:
       PHICOMM_FIRMWARE_VARIANT: ${{ matrix.variant }}
     runs-on: >-
@@ -484,7 +486,7 @@ jobs:
 
   s30:
     name: S30-V1B BK7231N firmware
-    if: false # This focused validation run builds G3 only.
+    if: ${{ false }} # This focused validation run builds G3 only.
     needs: frontend
     runs-on: ubuntu-22.04
     steps:
@@ -883,7 +885,7 @@ jobs:
   validation-evidence:
     name: Validate complete test evidence
     needs: [frontend, firmware, esp, s30, release-checks, feature-tests]
-    if: false # Full multi-product release evidence is intentionally out of scope.
+    if: ${{ false }} # Full multi-product release evidence is intentionally out of scope.
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
