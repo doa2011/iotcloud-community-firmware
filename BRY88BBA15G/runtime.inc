@@ -440,8 +440,17 @@ static void screenCommand(const uint8_t *p, size_t n, size_t payloadAt,
     while (topicEnd < n && p[topicEnd] != ' ')
       ++topicEnd;
     String topic((const char *)p + 4, topicEnd - 4);
-    bool ok = screenSession && payloadAt &&
+    // The screen MCU may outlive an ESP32-only OTA/restart. Its factory
+    // owner keeps publishing upload_snapshot, but the volatile local session
+    // is recreated on every ESP32 boot. Accept one identity-checked snapshot
+    // as the session re-entry handshake instead of dropping telemetry forever.
+    bool bootstrap = !screenSession && topic.endsWith("/upload_snapshot");
+    bool ok = payloadAt && (screenSession || bootstrap) &&
               screenPublication(topic, p + payloadAt, payloadSize);
+    if (ok && bootstrap) {
+      screenSession = true;
+      screenNextSnapshot = millis() + 15000;
+    }
     screenReply("pub", ok, ok ? 0 : 0x43);
     return;
   }
