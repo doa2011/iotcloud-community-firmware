@@ -124,6 +124,7 @@ int main() {
   assert(screenModulePowerBegin());
   auto oldSession = screenPowerSession;
   screenBridge.session++;delay(1);
+  screenModulePowerPoll(ms);
   assert(screenModulePowerHealthy() && !screenPowerFailed);
   assert(screenPowerSession == screenBridge.session && screenPowerSession != oldSession);
   assert(screenPowerLeased && !screenPowerRequest);
