@@ -40,7 +40,8 @@ static void screenLogPoll(uint32_t now) {
                    silent?g3diag::WARN:g3diag::INFO,
                    screenLastRx?uint32_t(now-screenLastRx):0);
   }
-  if(screenEventLog.faults()==screenLogSavedFaults ||
+  // Avoid a write on every boot in a device stuck in a reset loop.
+  if(now<60000u || screenEventLog.faults()==screenLogSavedFaults ||
      otaActive || screenOtaActive() ||
      (screenLogEverSaved&&uint32_t(now-screenLogSavedAt)<1800000u))
     return;
