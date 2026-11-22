@@ -150,7 +150,10 @@ int main() {
     assert(!screenPowerLeased && sent==last);
     screenModulePowerEnd();delay(1);
   }
-  /* A reset MCU may publish its first normal Guard heartbeat after the
+  /* Regression boundary: first Guard heartbeat may arrive at 5 s, while the
+ * HTTP prepare caller now waits up to 12 s; missing heartbeat remains bounded.
+ */
+/* A reset MCU may publish its first normal Guard heartbeat after the
    * upload request starts. The HTTP prepare must wait, not fail immediately. */
   screenModulePowerEnd();delay(1);
   guardAvailable=false;guardReadyAt=ms+5000;
