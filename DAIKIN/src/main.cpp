@@ -321,6 +321,7 @@ void setup(){
     for(auto path:{"/api/v1/auth/login","/api/v1/auth/logout","/api/v1/info","/api/v1/status","/api/v1/command","/api/v1/ota/upload","/api/v1/ota/upload-unsigned","/api/v1/config/backup","/api/v1/config/restore"}){httpd_uri_t options={};options.uri=path;options.method=HTTP_OPTIONS;options.handler=optionsHandler;httpd_register_uri_handler(web,&options);}
     for(auto path:{"/api/v1/config/backup","/api/v1/config/restore"}){httpd_uri_t backup={};backup.uri=path;backup.method=strstr(path,"restore")?HTTP_POST:HTTP_GET;backup.handler=backupHandler;httpd_register_uri_handler(web,&backup);}
 #ifdef IOTCLOUD_BRY88_SCREEN
+    httpd_uri_t diagDownload={};diagDownload.uri="/api/v1/diagnostics/logs/download";diagDownload.method=HTTP_GET;diagDownload.handler=screenLogDownloadHandler;httpd_register_uri_handler(web,&diagDownload);
     httpd_uri_t screenUpload={};screenUpload.uri="/api/v1/screen/ota/upload";screenUpload.method=HTTP_POST;screenUpload.handler=screenUploadHandler;httpd_register_uri_handler(web,&screenUpload);
     screenUpload.method=HTTP_OPTIONS;screenUpload.handler=optionsHandler;httpd_register_uri_handler(web,&screenUpload);
 #endif
