@@ -86,7 +86,7 @@ static uint16_t screenFlashTraceRead=0;
 static uint32_t screenFlashTraceDropped=0;
 static void screenFlashLogInit() {screenFlashLog.begin();}
 static void screenFlashLogPoll() {
-  if(!screenFlashLog.ready()||screenOtaActive()||otaActive||g3OnlineBusy||screenUploadBusy)return;
+  if(!screenFlashLog.ready()||screenOtaActive())return;
   // One bounded flash record per owner-loop pass, never from UART callbacks.
   if(screenFlashTraceRead==screenUartTraceNext)return;
   const ScreenUartTrace &e=screenUartTrace[screenFlashTraceRead];
