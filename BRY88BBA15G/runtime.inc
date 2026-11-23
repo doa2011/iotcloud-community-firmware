@@ -672,7 +672,7 @@ static void screenInit() {
     }
     nvs_close(handle);
   }
-  Serial.printf("[G3-GW] gateway MAC=%s source=%s\\n",
+  Serial.printf("[G3-GW] gateway MAC=%s source=%s\n",
                 screenGateway.c_str(), screenGatewaySource);
   screenServicesInit();
   screenSend("\r\n+screen_link_reset:1\r\n");
