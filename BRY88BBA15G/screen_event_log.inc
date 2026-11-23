@@ -78,7 +78,8 @@ struct ScreenUartTrace {
   uint8_t captured;
   uint8_t data[64];
 };
-static ScreenUartTrace screenUartTrace[256]={};
+static constexpr uint16_t SCREEN_UART_TRACE_CAPACITY=32;
+static ScreenUartTrace screenUartTrace[SCREEN_UART_TRACE_CAPACITY]={};
 static uint16_t screenUartTraceNext=0,screenUartTraceCount=0;
 static uint32_t screenUartTraceOverwritten=0;
 static g3flashlog::Store screenFlashLog;
@@ -91,7 +92,7 @@ static void screenFlashLogPoll() {
   if(screenFlashTraceRead==screenUartTraceNext)return;
   const ScreenUartTrace &e=screenUartTrace[screenFlashTraceRead];
   if(!screenFlashLog.append(e.ms,e.direction!=0,e.data,e.captured))++screenFlashTraceDropped;
-  screenFlashTraceRead=(screenFlashTraceRead+1)%256;
+  screenFlashTraceRead=(screenFlashTraceRead+1)%SCREEN_UART_TRACE_CAPACITY;
 }
 
 static void screenTraceUart(bool tx,const uint8_t *bytes,size_t n,size_t payloadAt) {
@@ -101,10 +102,10 @@ static void screenTraceUart(bool tx,const uint8_t *bytes,size_t n,size_t payload
   e.ms=millis();e.length=n>65535?65535:n;e.direction=tx?1:0;
   e.captured=n<sizeof(e.data)?n:sizeof(e.data);
   memcpy(e.data,bytes,e.captured);
-  const uint16_t following=(screenUartTraceNext+1)%256;
-  if(following==screenFlashTraceRead) {screenFlashTraceRead=(screenFlashTraceRead+1)%256;++screenFlashTraceDropped;}
+  const uint16_t following=(screenUartTraceNext+1)%SCREEN_UART_TRACE_CAPACITY;
+  if(following==screenFlashTraceRead) {screenFlashTraceRead=(screenFlashTraceRead+1)%SCREEN_UART_TRACE_CAPACITY;++screenFlashTraceDropped;}
   screenUartTraceNext=following;
-  if(screenUartTraceCount<256)++screenUartTraceCount;
+  if(screenUartTraceCount<SCREEN_UART_TRACE_CAPACITY)++screenUartTraceCount;
   else ++screenUartTraceOverwritten;
 }
 
