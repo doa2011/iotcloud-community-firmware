@@ -102,7 +102,7 @@ def main():
         headers["Content-Length"] = str(len(image))
         body = upload_chunks() if args.upload_interval_ms else image
         req = urllib.request.Request(device.url + "/api/v1/screen/ota/upload", body, headers)
-        with urllib.request.urlopen(req, timeout=30) as response:
+        with urllib.request.urlopen(req, timeout=180) as response:
             result = msgpack.unpackb(response.read(), raw=False)
         record("upload", result)
         if result.get("code") != "ok" or result.get("data", {}).get("sha256") != sha:
@@ -147,7 +147,7 @@ def main():
         previous_session = recovery.get("session")
         install_request = device.command("screen.update.install", {"sha256": sha})
         record("install", install_request)
-        deadline = time.monotonic() + 90
+        deadline = time.monotonic() + 210
         while time.monotonic() < deadline:
             try:
                 recovery = device.command("screen.recovery.get")

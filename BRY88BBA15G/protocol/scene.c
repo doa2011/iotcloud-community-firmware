@@ -1,3 +1,4 @@
+#include "media_wire.h"
 #include "scene.h"
 #include <math.h>
 #include <string.h>
@@ -11,14 +12,7 @@ void scene_put32(uint8_t *p, uint32_t n) {
     p[i] = (uint8_t)(n >> (i * 8));
 }
 uint32_t scene_crc32(const void *v, size_t n) {
-  const uint8_t *p = v;
-  uint32_t c = ~0u;
-  while (n--) {
-    c ^= *p++;
-    for (unsigned i = 0; i < 8; i++)
-      c = (c >> 1) ^ (0xedb88320u & -(c & 1));
-  }
-  return ~c;
+  return media_crc32(v, n);
 }
 static bool utf8(const char *s, size_t cap, bool lines) {
   size_t i = 0;

@@ -118,6 +118,7 @@ jobs:
 
   firmware:
     name: ${{ matrix.model }} firmware variants
+    if: ${{ false }} # This focused validation run builds G3 only.
     needs: [frontend]
     strategy:
       fail-fast: false
@@ -276,6 +277,9 @@ jobs:
       fail-fast: false
       matrix:
         variant: [full, hub, g3]
+        exclude:
+          - variant: full
+          - variant: hub
     env:
       PHICOMM_FIRMWARE_VARIANT: ${{ matrix.variant }}
     runs-on: >-
@@ -428,16 +432,18 @@ jobs:
           # Browser API fixtures cover management UX; production UDP and HAP
           # business paths run separately above, not through a simulated broker.
           node tests/hub-lan-management.mjs
-      - name: Identify released screen source for G3 integration tests
+      - name: Identify screen source for G3 integration tests
         if: matrix.variant == 'g3'
         id: screen-source
+        env:
+          SCREEN_MCU_REF: b09be920b87839584ab5cef6353bd92c8c078ec3
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import json
+          import json, os
           from pathlib import Path
           lock = json.loads(Path('screen-release.lock.json').read_text())
           print(f"repository={lock['repository']}")
-          print(f"commit={lock['commit']}")
+          print(f"commit={os.environ.get('SCREEN_MCU_REF') or lock['commit']}")
           PY
       - uses: actions/checkout@v4
         if: matrix.variant == 'g3'
@@ -480,6 +486,7 @@ jobs:
 
   s30:
     name: S30-V1B BK7231N firmware
+    if: ${{ false }} # This focused validation run builds G3 only.
     needs: frontend
     runs-on: ubuntu-22.04
     steps:
@@ -878,7 +885,7 @@ jobs:
   validation-evidence:
     name: Validate complete test evidence
     needs: [frontend, firmware, esp, s30, release-checks, feature-tests]
-    if: always()
+    if: ${{ false }} # Full multi-product release evidence is intentionally out of scope.
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4

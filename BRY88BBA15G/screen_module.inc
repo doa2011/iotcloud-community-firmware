@@ -7,7 +7,7 @@ static std::atomic<bool> screenPowerWanted{false}, screenPowerReady{false},
 static bool screenPowerLeased;
 static bool screenPowerRetried;
 static uint32_t screenPowerSession, screenPowerRequest, screenPowerRenewAt,
-                screenPowerExpiresAt;
+                screenPowerExpiresAt, screenPowerWaitDeadline;
 static struct {
   uint32_t session, at, request, deadline, remaining, frames, transitions;
   uint8_t flags;
@@ -43,6 +43,19 @@ static void screenModulePowerPoll(uint32_t now) {
     screenPowerRetried = false;
     return;
   }
+  /* A long-press reset starts a new MCU session. The old PD12 lease and
+   * request IDs belong to the dead session; discard them and acquire a fresh
+   * lease after normal service returns instead of permanently latching the
+   * startup/OTA controller as failed. */
+  if (screenPowerLeased && screenPowerSession != screenBridge.session) {
+    screenPowerLeased = false;
+    screenPowerReady = false;
+    screenPowerFailed = false;
+    screenPowerRequest = 0;
+    screenPowerRetried = false;
+    screenModule = {};
+    screenModule.session = screenBridge.session;
+  }
   /* Recovery owns PD12 in internal SRAM and already keeps it low. Its
    * minimal UART service cannot answer a normal-business module request;
    * stale capabilities must never block uploading a recovery image. */
@@ -60,9 +73,23 @@ static void screenModulePowerPoll(uint32_t now) {
   if (screenPowerFailed) return;
   /* Flash writes can drop a periodic guard announcement. Once SET-low is
    * acknowledged, the bounded lease and its renewal ACK own liveness. */
-  if (screenImage.active || screenRecovering || screenGuard.mode ||
-      (!screenPowerLeased && !screenGuardAvailable())) {
+  if (screenImage.active || screenRecovering || screenGuard.mode) {
     screenPowerReady = false; screenPowerFailed = true; return;
+  }
+  /* A normal MCU publishes its Guard heartbeat every 5 seconds. After an MCU
+   * reset or ESP32 restart, the UART link can be ready before that first
+   * announcement reaches us. Do not turn this expected startup gap into the
+   * permanent "MCU startup control unavailable" latch. Wait for up to 12 s
+   * for a fresh Guard announcement, then proceed through the usual ACKed
+   * PD12 lease. Factory peers without the extension still use their legacy
+   * OTA path above. */
+  if (!screenPowerLeased && !screenGuardAvailable()) {
+    if (screenPowerWaitDeadline &&
+        (int32_t)(now - screenPowerWaitDeadline) >= 0) {
+      screenPowerReady = false;
+      screenPowerFailed = true;
+    }
+    return;
   }
   if (screenPowerLeased && screenPowerSession != screenBridge.session) {
     screenPowerReady = false; screenPowerFailed = true; return;
@@ -109,18 +136,21 @@ static void screenModulePowerPoll(uint32_t now) {
 }
 static void screenModulePowerEnd() {
   screenPowerWanted = false;
+  screenPowerWaitDeadline = 0;
 }
 static bool screenModulePowerBegin() {
   bool expected = false;
   if (!screenPowerWanted.compare_exchange_strong(expected, true)) return false;
   screenPowerReady = false; screenPowerFailed = false;
+  screenPowerWaitDeadline = millis() + 12000;
   uint32_t start = millis();
   while (!screenPowerReady.load()) {
-    if (screenPowerFailed.load() || uint32_t(millis() - start) >= 4000) {
+    if (screenPowerFailed.load() || uint32_t(millis() - start) >= 12000) {
       screenModulePowerEnd(); return false;
     }
     delay(1);
   }
+  screenPowerWaitDeadline = 0;
   return true;
 }
 static bool screenModulePowerHealthy() {
