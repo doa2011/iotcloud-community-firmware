@@ -22,9 +22,10 @@ static void screenLogInit() {
        ==sizeof(screenFaultSnapshot))
     screenFaultSnapshotValid=g3diag::valid(screenFaultSnapshot);
   screenLogEvent(g3diag::BOOT,g3diag::INFO,esp_reset_reason());
-  screenFlashLog.begin();
+
 }
 static void screenFlashLogPoll();
+static void screenFlashLogInit();
 static void screenLogPoll(uint32_t now) {
   screenFlashLogPoll();
   if(uint32_t(now-screenLogHeartbeatAt)>=1000u) {
@@ -83,6 +84,7 @@ static uint32_t screenUartTraceOverwritten=0;
 static g3flashlog::Store screenFlashLog;
 static uint16_t screenFlashTraceRead=0;
 static uint32_t screenFlashTraceDropped=0;
+static void screenFlashLogInit() {screenFlashLog.begin();}
 static void screenFlashLogPoll() {
   if(!screenFlashLog.ready()||screenOtaActive()||otaActive||g3OnlineBusy||screenUploadBusy)return;
   // One bounded flash record per owner-loop pass, never from UART callbacks.
