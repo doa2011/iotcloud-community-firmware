@@ -24,6 +24,7 @@ static void screenLogInit() {
   screenLogEvent(g3diag::BOOT,g3diag::INFO,esp_reset_reason());
   screenFlashLog.begin();
 }
+static void screenFlashLogPoll();
 static void screenLogPoll(uint32_t now) {
   screenFlashLogPoll();
   if(uint32_t(now-screenLogHeartbeatAt)>=1000u) {
