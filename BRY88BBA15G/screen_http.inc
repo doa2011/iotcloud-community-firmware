@@ -45,7 +45,7 @@ static esp_err_t screenLogDownloadHandler(httpd_req_t *req) {
       for(unsigned j=0;j<saved.captured;j++)
         snprintf(hex+2*j,sizeof(hex)-2*j,"%02X",saved.bytes[j]);
       n=snprintf(line,sizeof(line),
-        "{\"kind\":\"flash_uart\",\"seq\":%lu,\"ms\":%lu,\"dir\":\"%s\",\"length\":%u,\"captured\":%u,\"hex\":\"%s\"}\\n",
+        "{\"kind\":\"flash_uart\",\"seq\":%lu,\"ms\":%lu,\"dir\":\"%s\",\"length\":%u,\"captured\":%u,\"hex\":\"%s\"}\n",
         (unsigned long)saved.sequence,(unsigned long)saved.ms,
         saved.direction?"tx":"rx",(unsigned)saved.length,
         (unsigned)saved.captured,hex);
