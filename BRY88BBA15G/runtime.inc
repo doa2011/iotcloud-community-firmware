@@ -80,9 +80,11 @@ static esp_pm_lock_handle_t screenWakeLock, screenTxLock;
 static bool screenWakeHeld=false, screenTxHeld=false;
 static uint32_t screenTxAt=0;
 // All UART writers run in the application owner, including binary MCU OTA.
+static void screenTraceUart(bool tx,const uint8_t *bytes,size_t n,size_t payloadAt=0);
 static size_t screenUartWrite(const uint8_t *bytes,size_t n) {
   if(!screenTxHeld){ESP_ERROR_CHECK(esp_pm_lock_acquire(screenTxLock));screenTxHeld=true;}
   size_t written=screenUart.write(bytes,n);
+  screenTraceUart(true,bytes,written);
   screenTxAt=millis();
   return written;
 }
@@ -435,6 +437,7 @@ static void screenCommand(const uint8_t *p, size_t n, size_t payloadAt,
                           size_t payloadSize) {
   screenLastRx = millis();
   ++screenFrames;
+  screenTraceUart(false,p,n,payloadAt);
   if (screenGuardLine(p, n))
     return;
   if (screenExtendedLine(p, n))
