@@ -11,6 +11,7 @@ static bool screenFaultSnapshotValid=false;
 static uint32_t screenLogSavedFaults=0, screenLogSavedAt=0;
 static bool screenLogEverSaved=false;
 static bool screenLogSnapshotStale=false, screenLogUartSilent=false;
+static uint32_t screenLogHeartbeatAt=0;
 static void screenLogEvent(uint16_t code,uint8_t severity,uint32_t arg=0) {
   screenEventLog.add(millis(),code,severity,arg);
 }
@@ -22,6 +23,13 @@ static void screenLogInit() {
   screenLogEvent(g3diag::BOOT,g3diag::INFO,esp_reset_reason());
 }
 static void screenLogPoll(uint32_t now) {
+  if(uint32_t(now-screenLogHeartbeatAt)>=1000u) {
+    screenLogHeartbeatAt=now;
+    const uint32_t rxAge=screenLastRx?uint32_t(now-screenLastRx):0xFFFFu;
+    const uint32_t snapshotAge=screenSnapshotAt?uint32_t(now-screenSnapshotAt):0xFFFFu;
+    screenLogEvent(g3diag::HEARTBEAT,g3diag::INFO,
+                   ((rxAge>65535u?65535u:rxAge)<<16)|(snapshotAge>65535u?65535u:snapshotAge));
+  }
   // Allow first boot/association to finish before diagnosing absent data.
   const bool stale=screenSnapshot.containsKey("status")
       ? uint32_t(now-screenSnapshotAt)>=20000u
