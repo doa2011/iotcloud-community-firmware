@@ -1,3 +1,29 @@
+/* Read-only bounded diagnostic export. No flash writes or MCU commands. */
+static esp_err_t screenLogDownloadHandler(httpd_req_t *req) {
+  if (!authorized(req)) return ESP_OK;
+  httpd_resp_set_type(req, "application/x-ndjson; charset=utf-8");
+  httpd_resp_set_hdr(req, "Content-Disposition",
+                     "attachment; filename=\"g3-diagnostics.jsonl\"");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  char line[192];
+  int n=snprintf(line,sizeof(line),
+      "{\"schema\":1,\"source\":\"G3\",\"ram_capacity\":%u,\"ram_used\":%u,\"overwritten\":%lu}\n",
+      (unsigned)g3diag::CAPACITY,(unsigned)screenEventLog.size(),
+      (unsigned long)screenEventLog.overwritten());
+  if(n<0 || n>=(int)sizeof(line) ||
+     httpd_resp_send_chunk(req,line,n)!=ESP_OK) return ESP_FAIL;
+  for(size_t i=screenEventLog.size();i>0;--i) {
+    const auto &e=screenEventLog.at(i-1);
+    n=snprintf(line,sizeof(line),
+      "{\"ms\":%lu,\"event\":%u,\"severity\":%u,\"arg\":%lu,\"repeat\":%lu}\n",
+      (unsigned long)e.uptime_ms,(unsigned)e.code,(unsigned)e.severity,
+      (unsigned long)e.argument,(unsigned long)e.repeat);
+    if(n<0 || n>=(int)sizeof(line) ||
+       httpd_resp_send_chunk(req,line,n)!=ESP_OK) return ESP_FAIL;
+  }
+  return httpd_resp_send_chunk(req,nullptr,0);
+}
+
 static esp_err_t screenUploadHandler(httpd_req_t *req) {
   if (!authorized(req))
     return ESP_OK;
