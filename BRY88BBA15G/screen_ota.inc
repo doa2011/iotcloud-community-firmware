@@ -113,7 +113,7 @@ static bool screenOtaCommand(const String &cmd, const String &arg) {
       screenImage.pending = false;
       screenImage.state = "waiting_for_start";
       /* Thirteen bounded 32-KiB erases can take up to 65 s on GPIO NOR. */
-      screenImage.deadline = millis() + 90000;
+      screenImage.deadline = millis() + 150000;
       Serial.println("screen OTA metadata requested");
       screenSend("+bin_summary:SV.99.00.01.00," +
                  screenHex(screenImage.md5, 16) + "\r\n");
@@ -128,7 +128,7 @@ static bool screenOtaCommand(const String &cmd, const String &arg) {
     screenReply(cmd, false, 0x70);
     return true;
   }
-  screenImage.deadline = millis() + 60000;
+  screenImage.deadline = millis() + 120000;
   if (cmd == "start_ota") {
     Serial.printf("screen OTA start: %s\n", arg.c_str());
     if (arg != "1 20" || screenImage.offset || screenImage.pending) {
