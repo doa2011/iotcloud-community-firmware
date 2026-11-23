@@ -21,16 +21,17 @@ static esp_err_t screenLogDownloadHandler(httpd_req_t *req) {
     if(n<0 || n>=(int)sizeof(line) ||
        httpd_resp_send_chunk(req,line,n)!=ESP_OK) return ESP_FAIL;
   }
-  // UART records are bounded and contain command identifiers only, never
-  // raw MQTT payloads, Wi-Fi credentials or MCU OTA firmware bytes.
+  // Raw UART data may contain passwords, tokens and binary payloads.
+  // Keep this endpoint authenticated and prevent intermediary caching.
   for(size_t i=screenUartTraceCount;i>0;--i) {
     const ScreenUartTrace &e=screenUartTrace[(screenUartTraceNext+256-i)%256];
-    char prefix[33]={};
-    for(unsigned j=0;j<e.prefix_length;j++)
-      snprintf(prefix+2*j,sizeof(prefix)-2*j,"%02X",e.prefix[j]);
+    char hex[129]={};
+    for(unsigned j=0;j<e.captured;j++)
+      snprintf(hex+2*j,sizeof(hex)-2*j,"%02X",e.data[j]);
     n=snprintf(line,sizeof(line),
-      "{\"kind\":\"uart\",\"ms\":%lu,\"dir\":\"%s\",\"length\":%u,\"cmd_hex\":\"%s\",\"redacted\":true}\n",
-      (unsigned long)e.ms,e.direction?"tx":"rx",(unsigned)e.length,prefix);
+      "{\"kind\":\"uart\",\"ms\":%lu,\"dir\":\"%s\",\"length\":%u,\"captured\":%u,\"truncated\":%s,\"hex\":\"%s\"}\n",
+      (unsigned long)e.ms,e.direction?"tx":"rx",(unsigned)e.length,
+      (unsigned)e.captured,e.length>e.captured?"true":"false",hex);
     if(n<0 || n>=(int)sizeof(line) ||
        httpd_resp_send_chunk(req,line,n)!=ESP_OK)return ESP_FAIL;
   }
