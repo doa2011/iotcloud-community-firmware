@@ -18,7 +18,7 @@ int main() {
   assert(sizeof(capture)==528);
   assert(g3diag::valid(capture));
   assert(capture.count==32);
-  assert(capture.entries[0].argument==149);
+  assert(capture.entries[0].argument==g3diag::CAPACITY+23);
   auto damaged=capture;
   damaged.entries[1].argument^=0x1234u;
   assert(!g3diag::valid(damaged));
