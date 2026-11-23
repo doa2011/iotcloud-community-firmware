@@ -10,10 +10,10 @@ int main() {
   events.add(102, g3diag::UART_LOSS,g3diag::ERROR,2);
   assert(events.size()==2);
   assert(events.at(0).repeat==2);
-  for(unsigned i=0;i<150;i++)events.add(1000+i*31000,g3diag::SNAPSHOT_LOST,g3diag::ERROR,i);
+  for(unsigned i=0;i<g3diag::CAPACITY+24;i++)events.add(1000+i*31000,g3diag::SNAPSHOT_LOST,g3diag::ERROR,i);
   assert(events.size()==g3diag::CAPACITY);
-  assert(events.overwritten()==24);
-  assert(events.at(0).argument==149);
+  assert(events.overwritten()==26);
+  assert(events.at(0).argument==g3diag::CAPACITY+23);
   const auto capture=g3diag::capture(events);
   assert(sizeof(capture)==528);
   assert(g3diag::valid(capture));
