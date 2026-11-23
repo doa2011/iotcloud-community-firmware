@@ -5,7 +5,7 @@ static esp_err_t screenLogDownloadHandler(httpd_req_t *req) {
   httpd_resp_set_hdr(req, "Content-Disposition",
                      "attachment; filename=\"g3-diagnostics.jsonl\"");
   httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-  char line[192];
+  char line[384];
   int n=snprintf(line,sizeof(line),
       "{\"schema\":1,\"source\":\"G3\",\"ram_capacity\":%u,\"ram_used\":%u,\"overwritten\":%lu}\n",
       (unsigned)g3diag::CAPACITY,(unsigned)screenEventLog.size(),
