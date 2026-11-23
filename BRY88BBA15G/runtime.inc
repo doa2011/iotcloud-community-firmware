@@ -664,6 +664,7 @@ static void screenInit() {
   }
   screenServicesInit();
   screenLogInit();
+  screenFlashLogInit();
   screenSend("\r\n+screen_link_reset:1\r\n");
   Serial.printf("screen UART1 RX17 TX16 initialized; firmware %s\n", version);
 }
