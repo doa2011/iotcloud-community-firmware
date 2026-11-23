@@ -1,3 +1,61 @@
+/* Read-only bounded diagnostic export. No flash writes or MCU commands. */
+static esp_err_t screenLogDownloadHandler(httpd_req_t *req) {
+  if (!authorized(req)) return ESP_OK;
+  httpd_resp_set_type(req, "application/x-ndjson; charset=utf-8");
+  httpd_resp_set_hdr(req, "Content-Disposition",
+                     "attachment; filename=\"g3-diagnostics.jsonl\"");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  char line[384];
+  int n=snprintf(line,sizeof(line),
+      "{\"schema\":1,\"source\":\"G3\",\"ram_capacity\":%u,\"ram_used\":%u,\"overwritten\":%lu}\n",
+      (unsigned)g3diag::CAPACITY,(unsigned)screenEventLog.size(),
+      (unsigned long)screenEventLog.overwritten());
+  if(n<0 || n>=(int)sizeof(line) ||
+     httpd_resp_send_chunk(req,line,n)!=ESP_OK) return ESP_FAIL;
+  for(size_t i=screenEventLog.size();i>0;--i) {
+    const auto &e=screenEventLog.at(i-1);
+    n=snprintf(line,sizeof(line),
+      "{\"ms\":%lu,\"event\":%u,\"severity\":%u,\"arg\":%lu,\"repeat\":%lu}\n",
+      (unsigned long)e.uptime_ms,(unsigned)e.code,(unsigned)e.severity,
+      (unsigned long)e.argument,(unsigned long)e.repeat);
+    if(n<0 || n>=(int)sizeof(line) ||
+       httpd_resp_send_chunk(req,line,n)!=ESP_OK) return ESP_FAIL;
+  }
+  // Raw UART data may contain passwords, tokens and binary payloads.
+  // Keep this endpoint authenticated and prevent intermediary caching.
+  for(size_t i=screenUartTraceCount;i>0;--i) {
+    const ScreenUartTrace &e=screenUartTrace[(screenUartTraceNext+SCREEN_UART_TRACE_CAPACITY-i)%SCREEN_UART_TRACE_CAPACITY];
+    char hex[129]={};
+    for(unsigned j=0;j<e.captured;j++)
+      snprintf(hex+2*j,sizeof(hex)-2*j,"%02X",e.data[j]);
+    n=snprintf(line,sizeof(line),
+      "{\"kind\":\"uart\",\"ms\":%lu,\"dir\":\"%s\",\"length\":%u,\"captured\":%u,\"truncated\":%s,\"hex\":\"%s\"}\n",
+      (unsigned long)e.ms,e.direction?"tx":"rx",(unsigned)e.length,
+      (unsigned)e.captured,e.length>e.captured?"true":"false",hex);
+    if(n<0 || n>=(int)sizeof(line) ||
+       httpd_resp_send_chunk(req,line,n)!=ESP_OK)return ESP_FAIL;
+  }
+  // Persistent records survive ESP32 resets; sequence orders the ring.
+  // Exported after volatile records, each with a monotonically advancing seq.
+  if(screenFlashLog.ready()) {
+    g3flashlog::Entry saved={};
+    for(uint32_t i=0;i<screenFlashLog.slots();++i) {
+      if(!screenFlashLog.read(i,saved))continue;
+      char hex[89]={};
+      for(unsigned j=0;j<saved.captured;j++)
+        snprintf(hex+2*j,sizeof(hex)-2*j,"%02X",saved.bytes[j]);
+      n=snprintf(line,sizeof(line),
+        "{\"kind\":\"flash_uart\",\"seq\":%lu,\"ms\":%lu,\"dir\":\"%s\",\"length\":%u,\"captured\":%u,\"hex\":\"%s\"}\n",
+        (unsigned long)saved.sequence,(unsigned long)saved.ms,
+        saved.direction?"tx":"rx",(unsigned)saved.length,
+        (unsigned)saved.captured,hex);
+      if(n<0||n>=(int)sizeof(line)||
+         httpd_resp_send_chunk(req,line,n)!=ESP_OK)return ESP_FAIL;
+    }
+  }
+  return httpd_resp_send_chunk(req,nullptr,0);
+}
+
 static esp_err_t screenUploadHandler(httpd_req_t *req) {
   if (!authorized(req))
     return ESP_OK;

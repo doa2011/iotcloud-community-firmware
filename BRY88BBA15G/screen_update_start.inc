@@ -40,7 +40,7 @@ static const char *screenUpdateStart(JsonObjectConst params) {
   screenImage.bootstrap = bootstrap;
   screenImage.offset = 0;
   screenOtaError = "";
-  screenImage.deadline = millis() + 60000;
+  screenImage.deadline = millis() + 120000;
   screenImage.state = "waiting_for_mcu";
   if (!screenMediaQuiesce()) {
     screenImage.active = false;
@@ -59,6 +59,7 @@ static const char *screenUpdateStart(JsonObjectConst params) {
     sent = screenDelivery(screenRoot() + "/mqtt/service/ota", request, 0);
   } else
     sent = screenSend("+screen_recover:1\r\n");
+  Serial.printf("screen OTA request mode=%s sent=%u\n", bootstrap ? "factory-bootstrap" : "stage", sent ? 1u : 0u);
   if (!sent) {
     screenImage.active = false;
     return "busy";

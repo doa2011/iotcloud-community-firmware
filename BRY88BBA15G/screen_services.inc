@@ -678,9 +678,11 @@ static void screenServicesPoll(uint32_t now) {
   if (!strcmp(screenGuard.state, "pending") &&
       (int32_t)(now - screenGuard.deadline) >= 0) {
     screenGuard.state = "timeout";
+    screenLogEvent(g3diag::GUARD_REPLY_TIMEOUT,g3diag::ERROR,screenGuard.operation);
     invalidateBusinessStatusCache();
   }
   if (screenImage.active && (int32_t)(now - screenImage.deadline) >= 0) {
+    screenLogEvent(g3diag::MCU_OTA_TIMEOUT,g3diag::ERROR,screenImage.offset);
     screenImage.active = false;
     screenImage.pending = false;
     screenImage.state = "timeout";

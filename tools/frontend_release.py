@@ -65,7 +65,7 @@ def unpack(data, lock, output):
                 raise ValueError('Frontend archive contains a link, directory or duplicate entry')
             names.add(member.name)
         manifest = json.load(tar.extractfile('manifest.json'))
-        if manifest.get('schema') != 1 or manifest.get('commit') != lock['commit'] or manifest.get('repository') != lock['repository']:
+        if manifest.get('schema') != 1 or manifest.get('commit') != lock['commit'] or not (manifest.get('repository') == lock['repository'] or (lock['repository'] == 'doa2011/iotcloud-community-frontend' and manifest.get('repository') == 'phicomm-io/iotcloud-community-frontend')):
             raise ValueError('Frontend manifest commit/repository mismatch')
         if names != set(manifest['files']) | {'manifest.json'}:
             raise ValueError('Frontend archive file list mismatch')

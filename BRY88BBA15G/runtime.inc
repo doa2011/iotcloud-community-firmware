@@ -35,6 +35,7 @@ static const char *screenApplySettings(JsonObjectConst, JsonObject);
 static void screenGetSettings(JsonObject);
 static bool screenCalibrationResponse(const String &, const String &, int);
 static bool screenWeatherStockRequest(const String &);
+static void screenLogEvent(uint16_t code,uint8_t severity,uint32_t arg);
 static bry::StockFrame stockFrame;
 static HardwareSerial screenUart(1);
 // HardwareSerial reports errors from its event task. Only the UART owner
@@ -57,6 +58,7 @@ static void screenUartReceiveError(hardwareSerial_error_t error) {
 }
 static void screenUartRecoverRx(uint32_t now) {
   if (!screenRxLoss.exchange(0, std::memory_order_acquire)) return;
+  screenLogEvent(2,3,screenRxLastError.load());
   // Raw maintenance owns its receive state and failure/ACK policy.
   if (screenOtaActive()) return;
   stockFrame.reset();
@@ -78,9 +80,11 @@ static esp_pm_lock_handle_t screenWakeLock, screenTxLock;
 static bool screenWakeHeld=false, screenTxHeld=false;
 static uint32_t screenTxAt=0;
 // All UART writers run in the application owner, including binary MCU OTA.
+static void screenTraceUart(bool tx,const uint8_t *bytes,size_t n,size_t payloadAt=0);
 static size_t screenUartWrite(const uint8_t *bytes,size_t n) {
   if(!screenTxHeld){ESP_ERROR_CHECK(esp_pm_lock_acquire(screenTxLock));screenTxHeld=true;}
   size_t written=screenUart.write(bytes,n);
+  screenTraceUart(true,bytes,written);
   screenTxAt=millis();
   return written;
 }
@@ -111,6 +115,7 @@ static unsigned screenHead = 0, screenTail = 0;
 static String screenPendingToken;
 static uint32_t screenPendingAt = 0;
 static int screenPendingCode = -1;
+#include "screen_event_log.inc"
 static bool screenSend(const String &line, uint32_t delayMs = 0) {
   if (line.length() > 3072)
     return false;
@@ -227,6 +232,7 @@ static void screenStatus(JsonObject out) {
   // This was previously a dead diagnostic helper and could not be inspected
   // from /api/v1/status when MCU telemetry stopped.
   screenUartDiagnostics(s);
+  screenLogStatus(s.createNestedObject("event_log"));
   s["business_session"] = screenSession ? "local_adapter" : "offline";
   s["upstream_connected"] = mqttConnected;
   s["ble_provisioning_supported"] = false;
@@ -431,6 +437,7 @@ static void screenCommand(const uint8_t *p, size_t n, size_t payloadAt,
                           size_t payloadSize) {
   screenLastRx = millis();
   ++screenFrames;
+  screenTraceUart(false,p,n,payloadAt);
   if (screenGuardLine(p, n))
     return;
   if (screenExtendedLine(p, n))
@@ -656,6 +663,8 @@ static void screenInit() {
     nvs_close(handle);
   }
   screenServicesInit();
+  screenLogInit();
+  screenFlashLogInit();
   screenSend("\r\n+screen_link_reset:1\r\n");
   Serial.printf("screen UART1 RX17 TX16 initialized; firmware %s\n", version);
 }
