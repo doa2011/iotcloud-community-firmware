@@ -29,7 +29,7 @@ static esp_err_t screenLogDownloadHandler(httpd_req_t *req) {
     for(unsigned j=0;j<e.prefix_length;j++)
       snprintf(prefix+2*j,sizeof(prefix)-2*j,"%02X",e.prefix[j]);
     n=snprintf(line,sizeof(line),
-      "{\"kind\":\"uart\",\"ms\":%lu,\"dir\":\"%s\",\"length\":%u,\"cmd_hex\":\"%s\",\"redacted\":true}\\n",
+      "{\"kind\":\"uart\",\"ms\":%lu,\"dir\":\"%s\",\"length\":%u,\"cmd_hex\":\"%s\",\"redacted\":true}\n",
       (unsigned long)e.ms,e.direction?"tx":"rx",(unsigned)e.length,prefix);
     if(n<0 || n>=(int)sizeof(line) ||
        httpd_resp_send_chunk(req,line,n)!=ESP_OK)return ESP_FAIL;
