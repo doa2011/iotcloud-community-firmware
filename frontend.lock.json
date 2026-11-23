@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "repository": "doa2011/iotcloud-community-frontend",
-  "commit": "bae9dea7ba361512e933883278c315c830553daa",
-  "release": "frontend-bae9dea7ba361512e933883278c315c830553daa",
+  "commit": "514b9596be3a6882e0de79ce0da58b01bd351658",
+  "release": "frontend-514b9596be3a6882e0de79ce0da58b01bd351658",
   "asset": "frontend.tar.gz",
-  "sha256": "0d7e2c85cc4e1cd94c8c9b0ec4b8da38c84098f6df145062455eea57eb365643"
+  "sha256": "6cca535d6c4752b12193776b03894ca096c363c347c38bc017f8f36b97193073"
 }
