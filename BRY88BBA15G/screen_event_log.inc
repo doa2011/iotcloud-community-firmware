@@ -5,6 +5,7 @@
  * Never writes while OTA or a screen upload is active. No credentials.
  */
 #include "screen_event_log.h"
+#include "screen_flash_log.h"
 static g3diag::Ring screenEventLog;
 static g3diag::Saved screenFaultSnapshot={};
 static bool screenFaultSnapshotValid=false;
@@ -21,8 +22,10 @@ static void screenLogInit() {
        ==sizeof(screenFaultSnapshot))
     screenFaultSnapshotValid=g3diag::valid(screenFaultSnapshot);
   screenLogEvent(g3diag::BOOT,g3diag::INFO,esp_reset_reason());
+  screenFlashLog.begin();
 }
 static void screenLogPoll(uint32_t now) {
+  screenFlashLogPoll();
   if(uint32_t(now-screenLogHeartbeatAt)>=1000u) {
     screenLogHeartbeatAt=now;
     const uint32_t rxAge=screenLastRx?uint32_t(now-screenLastRx):0xFFFFu;
@@ -76,6 +79,18 @@ struct ScreenUartTrace {
 static ScreenUartTrace screenUartTrace[256]={};
 static uint16_t screenUartTraceNext=0,screenUartTraceCount=0;
 static uint32_t screenUartTraceOverwritten=0;
+static g3flashlog::Store screenFlashLog;
+static uint16_t screenFlashTraceRead=0;
+static uint32_t screenFlashTraceDropped=0;
+static void screenFlashLogPoll() {
+  if(!screenFlashLog.ready()||screenOtaActive()||otaActive||g3OnlineBusy||screenUploadBusy)return;
+  // One bounded flash record per owner-loop pass, never from UART callbacks.
+  if(screenFlashTraceRead==screenUartTraceNext)return;
+  const ScreenUartTrace &e=screenUartTrace[screenFlashTraceRead];
+  if(!screenFlashLog.append(e.ms,e.direction!=0,e.data,e.captured))++screenFlashTraceDropped;
+  screenFlashTraceRead=(screenFlashTraceRead+1)%256;
+}
+
 static void screenTraceUart(bool tx,const uint8_t *bytes,size_t n,size_t payloadAt) {
   (void)payloadAt;
   if(!bytes||!n)return;
@@ -83,13 +98,19 @@ static void screenTraceUart(bool tx,const uint8_t *bytes,size_t n,size_t payload
   e.ms=millis();e.length=n>65535?65535:n;e.direction=tx?1:0;
   e.captured=n<sizeof(e.data)?n:sizeof(e.data);
   memcpy(e.data,bytes,e.captured);
-  screenUartTraceNext=(screenUartTraceNext+1)%256;
+  const uint16_t following=(screenUartTraceNext+1)%256;
+  if(following==screenFlashTraceRead) {screenFlashTraceRead=(screenFlashTraceRead+1)%256;++screenFlashTraceDropped;}
+  screenUartTraceNext=following;
   if(screenUartTraceCount<256)++screenUartTraceCount;
   else ++screenUartTraceOverwritten;
 }
 
 static void screenLogStatus(JsonObject out) {
   out["schema"]=1;
+  out["flash_ready"]=screenFlashLog.ready();
+  out["flash_bytes"]=g3flashlog::TOTAL;
+  out["flash_sequence"]=screenFlashLog.sequence();
+  out["flash_queue_dropped"]=screenFlashTraceDropped;
   out["ram_capacity"]=g3diag::CAPACITY;
   out["ram_used"]=screenEventLog.size();
   out["ram_overwritten"]=screenEventLog.overwritten();
