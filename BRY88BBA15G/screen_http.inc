@@ -35,6 +35,24 @@ static esp_err_t screenLogDownloadHandler(httpd_req_t *req) {
     if(n<0 || n>=(int)sizeof(line) ||
        httpd_resp_send_chunk(req,line,n)!=ESP_OK)return ESP_FAIL;
   }
+  // Persistent records survive ESP32 resets; sequence orders the ring.
+  // Exported after volatile records, each with a monotonically advancing seq.
+  if(screenFlashLog.ready()) {
+    g3flashlog::Entry saved={};
+    for(uint32_t i=0;i<screenFlashLog.slots();++i) {
+      if(!screenFlashLog.read(i,saved))continue;
+      char hex[89]={};
+      for(unsigned j=0;j<saved.captured;j++)
+        snprintf(hex+2*j,sizeof(hex)-2*j,"%02X",saved.bytes[j]);
+      n=snprintf(line,sizeof(line),
+        "{\"kind\":\"flash_uart\",\"seq\":%lu,\"ms\":%lu,\"dir\":\"%s\",\"length\":%u,\"captured\":%u,\"hex\":\"%s\"}\\n",
+        (unsigned long)saved.sequence,(unsigned long)saved.ms,
+        saved.direction?"tx":"rx",(unsigned)saved.length,
+        (unsigned)saved.captured,hex);
+      if(n<0||n>=(int)sizeof(line)||
+         httpd_resp_send_chunk(req,line,n)!=ESP_OK)return ESP_FAIL;
+    }
+  }
   return httpd_resp_send_chunk(req,nullptr,0);
 }
 
