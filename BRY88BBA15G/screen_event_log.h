@@ -22,7 +22,7 @@ struct Record {
   uint8_t reserved;
 };
 static_assert(sizeof(Record)==16, "Flash diagnostic record ABI");
-constexpr size_t CAPACITY=128;  // 2 KiB, fixed bound
+constexpr size_t CAPACITY=1024;  // 16 KiB, bounded diagnostic capture
 constexpr size_t SAVED=32;     // 512 B plus header, persisted only on faults
 class Ring {
  public:
