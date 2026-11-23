@@ -21,6 +21,19 @@ static esp_err_t screenLogDownloadHandler(httpd_req_t *req) {
     if(n<0 || n>=(int)sizeof(line) ||
        httpd_resp_send_chunk(req,line,n)!=ESP_OK) return ESP_FAIL;
   }
+  // UART records are bounded and contain command identifiers only, never
+  // raw MQTT payloads, Wi-Fi credentials or MCU OTA firmware bytes.
+  for(size_t i=screenUartTraceCount;i>0;--i) {
+    const ScreenUartTrace &e=screenUartTrace[(screenUartTraceNext+256-i)%256];
+    char prefix[33]={};
+    for(unsigned j=0;j<e.prefix_length;j++)
+      snprintf(prefix+2*j,sizeof(prefix)-2*j,"%02X",e.prefix[j]);
+    n=snprintf(line,sizeof(line),
+      "{\"kind\":\"uart\",\"ms\":%lu,\"dir\":\"%s\",\"length\":%u,\"cmd_hex\":\"%s\",\"redacted\":true}\\n",
+      (unsigned long)e.ms,e.direction?"tx":"rx",(unsigned)e.length,prefix);
+    if(n<0 || n>=(int)sizeof(line) ||
+       httpd_resp_send_chunk(req,line,n)!=ESP_OK)return ESP_FAIL;
+  }
   return httpd_resp_send_chunk(req,nullptr,0);
 }
 
