@@ -24,7 +24,7 @@ static esp_err_t screenLogDownloadHandler(httpd_req_t *req) {
   // Raw UART data may contain passwords, tokens and binary payloads.
   // Keep this endpoint authenticated and prevent intermediary caching.
   for(size_t i=screenUartTraceCount;i>0;--i) {
-    const ScreenUartTrace &e=screenUartTrace[(screenUartTraceNext+256-i)%256];
+    const ScreenUartTrace &e=screenUartTrace[(screenUartTraceNext+SCREEN_UART_TRACE_CAPACITY-i)%SCREEN_UART_TRACE_CAPACITY];
     char hex[129]={};
     for(unsigned j=0;j<e.captured;j++)
       snprintf(hex+2*j,sizeof(hex)-2*j,"%02X",e.data[j]);
