@@ -62,6 +62,40 @@ static void screenLogPoll(uint32_t now) {
     screenLogEverSaved=true;
   }
 }
+
+// Bounded UART trace: decoded RX frames and TX writes. Never store arbitrary
+// text payloads: provisioning, tokens, MQTT JSON and OTA image may be secret.
+// Preserve command prefix and length; for binary frames record a short HEX
+// prefix only when not in an OTA session.
+struct ScreenUartTrace {
+  uint32_t ms;
+  uint16_t length;
+  uint8_t direction; // 0=RX, 1=TX
+  uint8_t prefix_length;
+  uint8_t prefix[16];
+};
+static ScreenUartTrace screenUartTrace[256]={};
+static uint16_t screenUartTraceNext=0,screenUartTraceCount=0;
+static uint32_t screenUartTraceOverwritten=0;
+static void screenTraceUart(bool tx,const uint8_t *bytes,size_t n,size_t payloadAt) {
+  if(!bytes||!n)return;
+  ScreenUartTrace &e=screenUartTrace[screenUartTraceNext];
+  e.ms=millis();e.length=n>65535?65535:n;e.direction=tx?1:0;
+  e.prefix_length=0;
+  // Only a command identifier, never argument, credentials or payload.
+  // TX +sub_recv may contain JSON; capture its fixed command name only.
+  if(!screenOtaActive() && !payloadAt) {
+    while(e.prefix_length<sizeof(e.prefix) && e.prefix_length<n) {
+      uint8_t b=bytes[e.prefix_length];
+      if(b==' '||b=='\\r'||b=='\\n'||b==':'||b==','||b<0x21||b>0x7e)break;
+      e.prefix[e.prefix_length++]=b;
+    }
+  }
+  screenUartTraceNext=(screenUartTraceNext+1)%256;
+  if(screenUartTraceCount<256)++screenUartTraceCount;
+  else ++screenUartTraceOverwritten;
+}
+
 static void screenLogStatus(JsonObject out) {
   out["schema"]=1;
   out["ram_capacity"]=g3diag::CAPACITY;
