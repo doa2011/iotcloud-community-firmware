@@ -85,6 +85,21 @@ static bool screenConfigBackupSnapshotRestore() {
   screenConfigBackupSnapshotDiscard();
   return ok;
 }
+class ScreenBackupCrcWriter {
+  uint32_t crc = 0xffffffffu;
+public:
+  size_t write(uint8_t value) { return write(&value, 1); }
+  size_t write(const uint8_t *data, size_t size) {
+    for (size_t i = 0; i < size; ++i) {
+      crc ^= data[i];
+      for (unsigned bit = 0; bit < 8; ++bit)
+        crc = (crc >> 1) ^ (0xedb88320u & (0u - (crc & 1u)));
+    }
+    return size;
+  }
+  uint32_t value() const { return crc ^ 0xffffffffu; }
+};
+
 static bool screenConfigBackupCapture(JsonObject parent) {
   if (!screenStoreAvailable || !screenStoreMutex)
     return false;
