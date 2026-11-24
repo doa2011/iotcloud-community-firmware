@@ -205,6 +205,7 @@ static String backupExecute(){
         return "{\"code\":\"restore_rollback_failed\"}";
       return "{\"code\":\"storage_error\"}";
     }
+    screenConfigBackupSnapshotDiscard();
 #else
     if(!saveConfigTransaction(candidate,true))
       return "{\"code\":\"storage_error\"}";
