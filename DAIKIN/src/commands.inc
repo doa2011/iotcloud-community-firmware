@@ -198,7 +198,7 @@ static void state(JsonObject out){
   // Bootstrap is allowed before the first loop; normal reads only copy cache.
   if((!businessStatusReady||businessStatusInvalid)&&!pollBusinessStatusCache(millis()))return;
 #ifdef IOTCLOUD_BRY88_SCREEN
-  DynamicJsonDocument decoded(8192);
+  DynamicJsonDocument decoded(G3_BUSINESS_STATUS_JSON_CAPACITY);
   const String &wire=cachedBusinessState();
   if(!deserializeMsgPack(decoded,wire.c_str(),wire.length()))out.set(decoded.as<JsonObjectConst>());
 #else
