@@ -2,30 +2,43 @@
  * Includes the ESP32-owned screen configuration record, but deliberately does
  * not copy the MCU's independent font bank or wallpaper pixel bank.
  */
-static DynamicJsonDocument screenBackupSnapshotWeather(screenWeatherConfigBytes);
-static DynamicJsonDocument screenBackupSnapshotSettings(1024);
-static screen_scene screenBackupSnapshotScene = {};
-static display_policy screenBackupSnapshotPolicy = {};
-static screen_appearance screenBackupSnapshotAppearance = {};
-static reminder_schedule screenBackupSnapshotSchedule = {};
-static reminder_notice screenBackupSnapshotNotices[REMINDER_MAX] = {};
-static bool screenBackupSnapshotStartupAuto = true;
-static bool screenBackupSnapshotValid = false;
+struct ScreenConfigBackupSnapshot {
+  screen_scene scene = {};
+  display_policy policy = {};
+  screen_appearance appearance = {};
+  reminder_schedule schedule = {};
+  reminder_notice notices[REMINDER_MAX] = {};
+  bool startupAuto = true;
+  DynamicJsonDocument weather;
+  DynamicJsonDocument settings;
+  ScreenConfigBackupSnapshot()
+      : weather(screenWeatherConfigBytes), settings(1024) {}
+};
+static ScreenConfigBackupSnapshot *screenBackupSnapshot = nullptr;
 
+static void screenConfigBackupSnapshotDiscard() {
+  delete screenBackupSnapshot;
+  screenBackupSnapshot = nullptr;
+}
 static bool screenConfigBackupSnapshotCapture() {
-  if (!screenBackupSnapshotWeather.set(screenWeatherConfig) ||
-      !screenBackupSnapshotSettings.set(screenSavedSettings) ||
-      screenBackupSnapshotWeather.overflowed() ||
-      screenBackupSnapshotSettings.overflowed())
+  if (!screenBackupSnapshot)
+    screenBackupSnapshot = new (std::nothrow) ScreenConfigBackupSnapshot();
+  if (!screenBackupSnapshot)
     return false;
-  screenBackupSnapshotScene = screenScene;
-  screenBackupSnapshotPolicy = screenDisplayPolicy;
-  screenBackupSnapshotAppearance = screenAppearance;
-  screenBackupSnapshotSchedule = screenSchedule;
-  memcpy(screenBackupSnapshotNotices, screenNotices,
-         sizeof(screenBackupSnapshotNotices));
-  screenBackupSnapshotStartupAuto = screenStartupAuto;
-  screenBackupSnapshotValid = true;
+  if (!screenBackupSnapshot->weather.set(screenWeatherConfig) ||
+      !screenBackupSnapshot->settings.set(screenSavedSettings) ||
+      screenBackupSnapshot->weather.overflowed() ||
+      screenBackupSnapshot->settings.overflowed()) {
+    screenConfigBackupSnapshotDiscard();
+    return false;
+  }
+  screenBackupSnapshot->scene = screenScene;
+  screenBackupSnapshot->policy = screenDisplayPolicy;
+  screenBackupSnapshot->appearance = screenAppearance;
+  screenBackupSnapshot->schedule = screenSchedule;
+  memcpy(screenBackupSnapshot->notices, screenNotices,
+         sizeof(screenBackupSnapshot->notices));
+  screenBackupSnapshot->startupAuto = screenStartupAuto;
   return true;
 }
 static void screenConfigBackupRuntimeReset() {
@@ -52,40 +65,26 @@ static void screenConfigBackupRuntimeReset() {
   invalidateBusinessStatusCache();
 }
 static bool screenConfigBackupSnapshotApply(bool persist) {
-  if (!screenBackupSnapshotValid)
+  if (!screenBackupSnapshot)
     return false;
-  screenScene = screenBackupSnapshotScene;
-  screenDisplayPolicy = screenBackupSnapshotPolicy;
-  screenAppearance = screenBackupSnapshotAppearance;
-  screenSchedule = screenBackupSnapshotSchedule;
-  memcpy(screenNotices, screenBackupSnapshotNotices, sizeof(screenNotices));
-  screenStartupAuto = screenBackupSnapshotStartupAuto;
-  if (!screenWeatherConfig.set(screenBackupSnapshotWeather) ||
-      !screenSavedSettings.set(screenBackupSnapshotSettings) ||
+  screenScene = screenBackupSnapshot->scene;
+  screenDisplayPolicy = screenBackupSnapshot->policy;
+  screenAppearance = screenBackupSnapshot->appearance;
+  screenSchedule = screenBackupSnapshot->schedule;
+  memcpy(screenNotices, screenBackupSnapshot->notices, sizeof(screenNotices));
+  screenStartupAuto = screenBackupSnapshot->startupAuto;
+  if (!screenWeatherConfig.set(screenBackupSnapshot->weather) ||
+      !screenSavedSettings.set(screenBackupSnapshot->settings) ||
       screenWeatherConfig.overflowed() || screenSavedSettings.overflowed())
     return false;
   screenConfigBackupRuntimeReset();
   return !persist || screenSave();
 }
 static bool screenConfigBackupSnapshotRestore() {
-  return screenConfigBackupSnapshotApply(true);
+  const bool ok = screenConfigBackupSnapshotApply(true);
+  screenConfigBackupSnapshotDiscard();
+  return ok;
 }
-
-class ScreenBackupCrcWriter {
-  uint32_t crc = 0xffffffffu;
-public:
-  size_t write(uint8_t value) { return write(&value, 1); }
-  size_t write(const uint8_t *data, size_t size) {
-    for (size_t i = 0; i < size; ++i) {
-      crc ^= data[i];
-      for (unsigned bit = 0; bit < 8; ++bit)
-        crc = (crc >> 1) ^ (0xedb88320u & (0u - (crc & 1u)));
-    }
-    return size;
-  }
-  uint32_t value() const { return crc ^ 0xffffffffu; }
-};
-
 static bool screenConfigBackupCapture(JsonObject parent) {
   if (!screenStoreAvailable || !screenStoreMutex)
     return false;
@@ -322,6 +321,7 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
   if (screenWeatherConfig.overflowed() || screenSavedSettings.overflowed() ||
       !screenSave()) {
     screenConfigBackupSnapshotApply(false);
+    screenConfigBackupSnapshotDiscard();
     screenStorageError = "config_restore_write";
     return "storage_error";
   }
