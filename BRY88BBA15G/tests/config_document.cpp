@@ -1,4 +1,5 @@
 #include "screen_config_document.h"
+#include "screen_settings_snapshot.h"
 #include "screen_store_writer.h"
 #include <cassert>
 #include <cstdio>
@@ -20,6 +21,30 @@ static bool eraseFlash(void *, uint32_t at, size_t n) {
   std::memset(flash+at, 255, n); return true;
 }
 int main() {
+  // A delayed upstream snapshot must not overwrite the locally persisted
+  // screen request shown by status and screen.settings.get.
+  StaticJsonDocument<1024> snapshot, saved, parent;
+  snapshot["display"]["luminance"] = 10;
+  snapshot["display"]["data_type"] = 1;
+  snapshot["display"]["power_screen_time"] = 2;
+  snapshot["display"]["battery_screen_time"] = 1;
+  snapshot["no_disturb"]["state"] = false;
+  saved["display"]["luminance"] = 65;
+  saved["display"]["data_type"] = 0;
+  saved["display"]["power_screen_time"] = 1;
+  saved["display"]["battery_screen_time"] = 2;
+  screenSettingsSnapshot(parent.to<JsonObject>(), snapshot.as<JsonObjectConst>(),
+                         saved.as<JsonObjectConst>());
+  assert(parent["settings"]["display"]["luminance"] == 65);
+  assert(parent["settings"]["display"]["data_type"] == 0);
+  assert(parent["settings"]["display"]["power_screen_time"] == 1);
+  assert(parent["settings"]["no_disturb"]["state"] == false);
+  assert(parent["saved_settings"]["display"]["luminance"] == 65);
+  StaticJsonDocument<512> emptySnapshot, fallbackParent;
+  screenSettingsSnapshot(fallbackParent.to<JsonObject>(),
+                         emptySnapshot.as<JsonObjectConst>(),
+                         saved.as<JsonObjectConst>());
+  assert(fallbackParent["settings"]["display"]["luminance"] == 65);
   std::memset(flash, 255, sizeof(flash));
   bry_store store = {};
   store.read = readFlash; store.write = writeFlash; store.erase = eraseFlash;
