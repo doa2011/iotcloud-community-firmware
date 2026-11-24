@@ -194,19 +194,15 @@ static String backupExecute(){
     if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())
       return "{\"code\":\"busy\"}";
 #ifdef IOTCLOUD_BRY88_SCREEN
-    DynamicJsonDocument previousScreen(screenExtra);
-    if(!previousScreen.capacity()||
-       !screenConfigBackupCapture(previousScreen.to<JsonObject>()))
-      return "{\"code\":\"busy\"}";
     const char *screenResult=screenConfigBackupRestore(
         backup["screen"].as<JsonObjectConst>());
     if(strcmp(screenResult,"ok"))
-      return strcmp(screenResult,"busy")
-          ? "{\"code\":\"invalid_backup\"}" : "{\"code\":\"busy\"}";
+      return !strcmp(screenResult,"busy") ? "{\"code\":\"busy\"}" :
+          !strcmp(screenResult,"storage_error") ? "{\"code\":\"storage_error\"}" :
+          "{\"code\":\"invalid_backup\"}";
     if(!saveConfigTransaction(candidate,true)){
-      const char *rollback=screenConfigBackupRestore(
-          previousScreen["screen"].as<JsonObjectConst>());
-      if(strcmp(rollback,"ok"))return "{\"code\":\"restore_rollback_failed\"}";
+      if(!screenConfigBackupSnapshotRestore())
+        return "{\"code\":\"restore_rollback_failed\"}";
       return "{\"code\":\"storage_error\"}";
     }
 #else
