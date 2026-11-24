@@ -75,8 +75,11 @@ int main() {
 
   std::string wire;
   assert(serializeMsgPack(fixedPool, wire) == measureMsgPack(fixedPool));
+  // Mutable input enables ArduinoJson zero-copy decoding, avoiding key/string duplication.
   DynamicJsonDocument decoded(G3_BUSINESS_STATUS_JSON_CAPACITY);
-  assert(!deserializeMsgPack(decoded, wire));
+  auto err = deserializeMsgPack(decoded, &wire[0], wire.size());
+  if (err) std::fprintf(stderr, "decode error: %s, pool used: %zu\n", err.c_str(), decoded.memoryUsage());
+  assert(!err);
   assert(!decoded.overflowed());
   assert(decoded["screen"]["brightness"]["requested_percent"] == 100);
   std::printf("PASS G3 full status snapshot: %zu / %u JSON bytes, %zu MessagePack bytes\n",
