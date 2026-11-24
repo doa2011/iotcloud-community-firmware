@@ -112,7 +112,7 @@ int main() {
     // The public PHCB backup wraps this exact screen record. Its copy must
     // retain layout, brightness, sleep policy and appearance metadata without
     // embedding either independent MCU resource bank.
-    DynamicJsonDocument envelope(32768);
+    DynamicJsonDocument envelope(65536);
     envelope["schema"] = 2;
     envelope["model"] = "daikin";
     envelope["variant"] = "g3";
@@ -126,7 +126,7 @@ int main() {
     assert(!envelope.overflowed());
     std::string backup;
     assert(serializeJson(envelope, backup) == measureJson(envelope));
-    DynamicJsonDocument imported(32768);
+    DynamicJsonDocument imported(65536);
     assert(!deserializeJson(imported, backup));
     assert(imported["hardware_model"] == "BRY88BBA15G");
     assert(imported["screen_crc32"] == scene_crc32(screenWire.data(), screenWire.size()));
