@@ -152,7 +152,7 @@ static String backupExecute(){
     out["model"]="daikin";out["variant"]=DAIKIN_VARIANT;
     out["config_version"]=1;out["firmware_version"]=version;out["config"]=config;
 #ifdef IOTCLOUD_BRY88_SCREEN
-    if(!screenConfigBackupCapture(out.to<JsonObject>()))return "{\"code\":\"busy\"}";
+    if(!screenConfigBackupCapture(out.as<JsonObject>()))return "{\"code\":\"busy\"}";
 #endif
     if(out.overflowed())return "{\"code\":\"busy\"}";
     const size_t length=measureJson(out);String text;
