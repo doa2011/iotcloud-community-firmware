@@ -3,7 +3,9 @@
  * not copy the MCU's independent font bank or wallpaper pixel bank.
  */
 static bool screenConfigBackupCapture(JsonObject parent) {
-  if (!screenStoreAvailable || !screenStore.owned || !screenStoreMutex)
+  if (!screenStoreAvailable || !screenStoreMutex)
+    return false;
+  if (!screenStore.owned && !screenSave())
     return false;
   if (!screenSceneWire.prepare(screenScene))
     return false;
