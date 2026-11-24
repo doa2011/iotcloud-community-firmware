@@ -21,8 +21,8 @@ from frontend_release import download, read_lock, unpack
 
 def build_source(lock, source):
     """Checkout the exact object, then use its own pinned build dependencies."""
-    def run(*args):
-        return subprocess.run(args, cwd=source, check=True)
+    def run(*args, **kwargs):
+        return subprocess.run(args, cwd=source, check=True, **kwargs)
 
     source.mkdir()
     run('git', 'init', '--quiet')
@@ -34,7 +34,8 @@ def build_source(lock, source):
         raise ValueError('Frontend source checkout does not match the locked commit')
     run(sys.executable, '-m', 'pip', 'install', '-r', 'requirements-build.txt')
     run('npm', 'ci', '--prefix', 'frontend')
-    run(sys.executable, 'tools/build_release.py')
+    run(sys.executable, 'tools/build_release.py',
+        env=dict(os.environ, PHICOMM_FRONTEND_REPOSITORY=lock['repository']))
     generated = read_lock(source / 'build/frontend.lock.json')
     if generated != lock:
         raise ValueError('Rebuilt frontend lock differs from the committed lock')

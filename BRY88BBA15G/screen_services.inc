@@ -772,3 +772,5 @@ static bool screenExtendedLine(const uint8_t *p, size_t n) {
   }
   return false;
 }
+
+#include "screen_config_backup.inc"

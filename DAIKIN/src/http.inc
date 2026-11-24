@@ -130,10 +130,31 @@ static String backupExecute(){
   if(hubRestartPending())return "{\"code\":\"restart_required\"}";
 #endif
   if(configRecovery)return "{\"code\":\"migration_required\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+  const size_t screenExtra = screenConfigCapacity(screenWeatherConfig,
+      screenSavedSettings, screenSchedule, screenNotices) +
+      2 * ((SCENE_BYTES + 2) / 3 * 4) +
+      2 * ((DISPLAY_POLICY_BYTES + 2) / 3 * 4) +
+      2 * ((APPEARANCE_BYTES + 2) / 3 * 4) + 8192;
+  const size_t backupLimit = 65536;
+#else
+  const size_t screenExtra = 0;
+  const size_t backupLimit = configCapacity + 1024;
+#endif
   if(webOperation==1){
-    DynamicJsonDocument out(config.memoryUsage()+1024);
+    DynamicJsonDocument out(config.memoryUsage()+screenExtra+1024);
     if(!out.capacity())return "{\"code\":\"busy\"}";
-    out["schema"]=1;out["model"]="daikin";out["variant"]=DAIKIN_VARIANT;out["config_version"]=1;out["firmware_version"]=version;out["config"]=config;
+#ifdef IOTCLOUD_BRY88_SCREEN
+    out["schema"]=2;
+#else
+    out["schema"]=1;
+#endif
+    out["model"]="daikin";out["variant"]=DAIKIN_VARIANT;
+    out["config_version"]=1;out["firmware_version"]=version;out["config"]=config;
+#ifdef IOTCLOUD_BRY88_SCREEN
+    out["hardware_model"]=hardwareModel;
+    if(!screenConfigBackupCapture(out.as<JsonObject>()))return "{\"code\":\"busy\"}";
+#endif
     if(out.overflowed())return "{\"code\":\"busy\"}";
     const size_t length=measureJson(out);String text;
     if(!text.reserve(length))return "{\"code\":\"busy\"}";
@@ -141,8 +162,8 @@ static String backupExecute(){
     if(text.length()!=length)return "{\"code\":\"busy\"}";
     return text;
   }
-  const size_t limit=configCapacity+1024;
-  size_t capacity=config.memoryUsage()+1024;if(capacity>limit)capacity=limit;
+  size_t capacity=config.memoryUsage()+screenExtra+1024;
+  if(capacity>backupLimit)capacity=backupLimit;
   for(;;){
     // JSON structure and strings determine memory use. Retry a genuinely larger
     // document after NoMemory, releasing each previous pool before allocating.
@@ -150,16 +171,45 @@ static String backupExecute(){
     if(!backup.capacity())return "{\"code\":\"busy\"}";
     auto error=deserializeJson(backup,webBody.c_str(),webBody.length());
     if(error==DeserializationError::NoMemory){
-      if(capacity==limit)return "{\"code\":\"busy\"}";
-      capacity=capacity>limit-1024?limit:capacity+1024;continue;
+      if(capacity==backupLimit)return "{\"code\":\"busy\"}";
+      capacity=capacity>backupLimit-1024?backupLimit:capacity+1024;continue;
     }
-    if(error||!backup.is<JsonObject>()||backup["schema"]!=1||String(backup["model"]|"")!="daikin"||
-      String(backup["variant"]|"")!=DAIKIN_VARIANT||backup["config_version"]!=1||!validConfig(backup["config"].as<JsonObjectConst>()))return "{\"code\":\"invalid_backup\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+    const bool envelopeValid = backup["schema"]==2 &&
+        String(backup["hardware_model"]|"")=="BRY88BBA15G" &&
+        screenConfigBackupVerify(backup.as<JsonObjectConst>());
+#else
+    const bool envelopeValid = backup["schema"]==1;
+#endif
+    if(error||!backup.is<JsonObject>()||!envelopeValid||
+      String(backup["model"]|"")!="daikin"||
+      String(backup["variant"]|"")!=DAIKIN_VARIANT||
+      backup["config_version"]!=1||
+      !validConfig(backup["config"].as<JsonObjectConst>()))
+      return "{\"code\":\"invalid_backup\"}";
     auto restored=backup["config"].as<JsonObjectConst>();
-    size_t candidateCapacity=restored.memoryUsage()+1024;if(candidateCapacity>configCapacity)candidateCapacity=configCapacity;
+    size_t candidateCapacity=restored.memoryUsage()+1024;
+    if(candidateCapacity>configCapacity)candidateCapacity=configCapacity;
     DynamicJsonDocument candidate(candidateCapacity);
-    if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())return "{\"code\":\"busy\"}";
-    if(!saveConfigTransaction(candidate,true))return "{\"code\":\"storage_error\"}";
+    if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())
+      return "{\"code\":\"busy\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+    const char *screenResult=screenConfigBackupRestore(
+        backup["screen"].as<JsonObjectConst>());
+    if(strcmp(screenResult,"ok"))
+      return !strcmp(screenResult,"busy") ? "{\"code\":\"busy\"}" :
+          !strcmp(screenResult,"storage_error") ? "{\"code\":\"storage_error\"}" :
+          "{\"code\":\"invalid_backup\"}";
+    if(!saveConfigTransaction(candidate,true)){
+      if(!screenConfigBackupSnapshotRestore())
+        return "{\"code\":\"restore_rollback_failed\"}";
+      return "{\"code\":\"storage_error\"}";
+    }
+    screenConfigBackupSnapshotDiscard();
+#else
+    if(!saveConfigTransaction(candidate,true))
+      return "{\"code\":\"storage_error\"}";
+#endif
 #ifdef IOTCLOUD_HUB
     hubRestoreChanged();
 #endif
@@ -172,7 +222,12 @@ static esp_err_t backupHandler(httpd_req_t *req){
   if(!passwordSet)return jsonResponse(req,"403 Forbidden","{\"code\":\"set_web_password_first\"}");
   if(webPending||!webDone)return jsonResponse(req,"409 Conflict","{\"code\":\"busy\"}");
   const bool restore=req->method==HTTP_POST;
-  if(restore&&(req->content_len<=0||req->content_len>int(configCapacity+1024)))return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_backup\"}");
+  #ifdef IOTCLOUD_BRY88_SCREEN
+  const size_t requestLimit=65536;
+#else
+  const size_t requestLimit=configCapacity+1024;
+#endif
+  if(restore&&(req->content_len<=0||req->content_len>int(requestLimit)))return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_backup\"}");
   String body;char buffer[513];int left=restore?req->content_len:0;
   if(restore&&!body.reserve(left))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
   while(left){int n=httpd_req_recv(req,buffer,min(left,512));if(n<=0)return ESP_FAIL;buffer[n]=0;if(!body.concat(buffer,n))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");left-=n;}
