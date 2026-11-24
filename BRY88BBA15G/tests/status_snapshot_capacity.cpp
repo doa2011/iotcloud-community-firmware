@@ -75,7 +75,7 @@ int main() {
 
   std::string wire;
   assert(serializeMsgPack(fixedPool, wire) == measureMsgPack(fixedPool));
-  DynamicJsonDocument decoded(8192);
+  DynamicJsonDocument decoded(G3_BUSINESS_STATUS_JSON_CAPACITY);
   assert(!deserializeMsgPack(decoded, wire));
   assert(!decoded.overflowed());
   assert(decoded["screen"]["brightness"]["requested_percent"] == 100);
