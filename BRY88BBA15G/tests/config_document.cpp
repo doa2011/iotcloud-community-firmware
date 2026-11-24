@@ -118,12 +118,18 @@ int main() {
     envelope["variant"] = "g3";
     envelope["config_version"] = 1;
     envelope["firmware_version"] = "1.0.0-test";
+    envelope["hardware_model"] = "BRY88BBA15G";
+    std::string screenWire;
+    assert(serializeMsgPack(restored, screenWire) == measureMsgPack(restored));
+    envelope["screen_crc32"] = scene_crc32(screenWire.data(), screenWire.size());
     envelope["screen"] = restored.as<JsonObjectConst>();
     assert(!envelope.overflowed());
     std::string backup;
     assert(serializeJson(envelope, backup) == measureJson(envelope));
     DynamicJsonDocument imported(32768);
     assert(!deserializeJson(imported, backup));
+    assert(imported["hardware_model"] == "BRY88BBA15G");
+    assert(imported["screen_crc32"] == scene_crc32(screenWire.data(), screenWire.size()));
     assert(imported["screen"]["schema"] == 2);
     assert(imported["screen"]["settings"]["display"]["luminance"] == 0);
     assert(imported["screen"]["policy"].as<std::string>() == policy);
