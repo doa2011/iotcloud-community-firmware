@@ -71,6 +71,21 @@ static bool screenConfigBackupSnapshotRestore() {
   return screenConfigBackupSnapshotApply(true);
 }
 
+class ScreenBackupCrcWriter {
+  uint32_t crc = 0xffffffffu;
+public:
+  size_t write(uint8_t value) { return write(&value, 1); }
+  size_t write(const uint8_t *data, size_t size) {
+    for (size_t i = 0; i < size; ++i) {
+      crc ^= data[i];
+      for (unsigned bit = 0; bit < 8; ++bit)
+        crc = (crc >> 1) ^ (0xedb88320u & (0u - (crc & 1u)));
+    }
+    return size;
+  }
+  uint32_t value() const { return crc ^ 0xffffffffu; }
+};
+
 static bool screenConfigBackupCapture(JsonObject parent) {
   if (!screenStoreAvailable || !screenStoreMutex)
     return false;
@@ -103,10 +118,10 @@ static bool screenConfigBackupCapture(JsonObject parent) {
           policy.c_str(), appearance.c_str(), screenStartupAuto) ||
       doc.overflowed())
     return false;
-  String wire;
-  if (serializeMsgPack(doc, wire) != measureMsgPack(doc))
+  ScreenBackupCrcWriter writer;
+  if (serializeMsgPack(doc, writer) != measureMsgPack(doc))
     return false;
-  parent["screen_crc32"] = scene_crc32(wire.c_str(), wire.length());
+  parent["screen_crc32"] = writer.value();
   parent["screen"] = doc.as<JsonObjectConst>();
   return parent.containsKey("screen") && parent.containsKey("screen_crc32");
 }
@@ -115,11 +130,10 @@ static bool screenConfigBackupVerify(JsonObjectConst parent) {
       !parent["screen_crc32"].is<uint32_t>())
     return false;
   JsonObjectConst screen = parent["screen"].as<JsonObjectConst>();
-  String wire;
-  if (serializeMsgPack(screen, wire) != measureMsgPack(screen))
+  ScreenBackupCrcWriter writer;
+  if (serializeMsgPack(screen, writer) != measureMsgPack(screen))
     return false;
-  return scene_crc32(wire.c_str(), wire.length()) ==
-         parent["screen_crc32"].as<uint32_t>();
+  return writer.value() == parent["screen_crc32"].as<uint32_t>();
 }
 
 static bool screenBackupPageValid(const screen_scene &scene, unsigned page) {
