@@ -34,8 +34,23 @@ static bool screenConfigBackupCapture(JsonObject parent) {
           policy.c_str(), appearance.c_str(), screenStartupAuto) ||
       doc.overflowed())
     return false;
+  String wire;
+  if (serializeMsgPack(doc, wire) != measureMsgPack(doc))
+    return false;
+  parent["screen_crc32"] = scene_crc32(wire.c_str(), wire.length());
   parent["screen"] = doc.as<JsonObjectConst>();
-  return parent.containsKey("screen");
+  return parent.containsKey("screen") && parent.containsKey("screen_crc32");
+}
+static bool screenConfigBackupVerify(JsonObjectConst parent) {
+  if (!parent["screen"].is<JsonObjectConst>() ||
+      !parent["screen_crc32"].is<uint32_t>())
+    return false;
+  JsonObjectConst screen = parent["screen"].as<JsonObjectConst>();
+  String wire;
+  if (serializeMsgPack(screen, wire) != measureMsgPack(screen))
+    return false;
+  return scene_crc32(wire.c_str(), wire.length()) ==
+         parent["screen_crc32"].as<uint32_t>();
 }
 
 static bool screenBackupPageValid(const screen_scene &scene, unsigned page) {
