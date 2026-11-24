@@ -79,11 +79,15 @@ struct ScreenImage {
 static ScreenImage screenImage;
 #include "screen_brightness.inc"
 #include "screen_config_document.h"
+#include "screen_settings_snapshot.h"
 #include "screen_store_writer.h"
 #include "screen_flash_erase.h"
+static void screenCopyEffectiveSettings(JsonObject parent) {
+  screenSettingsSnapshot(parent, screenSnapshot["setting"].as<JsonObjectConst>(),
+                         screenSavedSettings.as<JsonObjectConst>());
+}
 static void screenGetSettings(JsonObject data) {
-  data["settings"] = screenSnapshot["setting"];
-  data["saved_settings"] = screenSavedSettings;
+  screenCopyEffectiveSettings(data);
   data["snapshot_age_ms"] = nullptr;
   if (screenSnapshot.containsKey("setting"))
     data["snapshot_age_ms"] = uint32_t(millis() - screenSnapshotAt);

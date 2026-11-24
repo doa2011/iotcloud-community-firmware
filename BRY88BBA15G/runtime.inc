@@ -18,6 +18,7 @@ static bool screenMediaResync(uint32_t);
 static bool screenMediaAnnounce(const String &);
 static bool screenMediaNegotiating();
 static void screenServicesStatus(JsonObject);
+static void screenCopyEffectiveSettings(JsonObject);
 static void screenRelayPowerStatus(JsonObject, bool);
 static void screenServicesInit();
 static void screenServicesPoll(uint32_t);
@@ -238,7 +239,7 @@ static void screenStatus(JsonObject out) {
   s["gateway_mac_source"] = screenGatewaySource;
   s["weather_available"] = false;
   screenServicesStatus(s);
-  s["settings"] = screenSnapshot["setting"];
+  screenCopyEffectiveSettings(s);
   s["settings_request"]["token"] = screenPendingToken;
   s["settings_request"]["code"] = screenPendingCode;
   s["settings_request"]["state"] = screenSettingsRequestState();
