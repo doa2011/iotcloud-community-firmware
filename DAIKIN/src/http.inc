@@ -136,7 +136,7 @@ static String backupExecute(){
       2 * ((SCENE_BYTES + 2) / 3 * 4) +
       2 * ((DISPLAY_POLICY_BYTES + 2) / 3 * 4) +
       2 * ((APPEARANCE_BYTES + 2) / 3 * 4) + 8192;
-  const size_t backupLimit = configCapacity + 32768;
+  const size_t backupLimit = 65536;
 #else
   const size_t screenExtra = 0;
   const size_t backupLimit = configCapacity + 1024;
@@ -226,7 +226,7 @@ static esp_err_t backupHandler(httpd_req_t *req){
   if(webPending||!webDone)return jsonResponse(req,"409 Conflict","{\"code\":\"busy\"}");
   const bool restore=req->method==HTTP_POST;
   #ifdef IOTCLOUD_BRY88_SCREEN
-  const size_t requestLimit=configCapacity+32768;
+  const size_t requestLimit=65536;
 #else
   const size_t requestLimit=configCapacity+1024;
 #endif
