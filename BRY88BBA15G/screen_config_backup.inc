@@ -35,7 +35,7 @@ static bool screenConfigBackupCapture(JsonObject parent) {
       doc.overflowed())
     return false;
   parent["screen"] = doc.as<JsonObjectConst>();
-  return !parent.overflowed();
+  return parent.containsKey("screen");
 }
 
 static bool screenBackupPageValid(const screen_scene &scene, unsigned page) {
