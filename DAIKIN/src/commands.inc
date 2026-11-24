@@ -1,6 +1,9 @@
 #include "product_name.h"
 #include "diagnostics_ids.h"
 #include "device_name.h"
+#ifdef IOTCLOUD_BRY88_SCREEN
+#include "../../BRY88BBA15G/business_status_capacity.h"
+#endif
 static void otaPartitionStatus(JsonObject out){
   // Report the table installed on this device, independently of the build CSV.
   const auto *running=esp_ota_get_running_partition();
@@ -160,7 +163,7 @@ static bool pollBusinessStatusCache(uint32_t now){
 #ifdef IOTCLOUD_BRY88_SCREEN
   // Only the encoded publication survives this call. Release its scratch pool
   // before weather admission; a resident 6 KiB pool can starve later TLS jobs.
-  DynamicJsonDocument businessStatusDocument(6400);
+  DynamicJsonDocument businessStatusDocument(G3_BUSINESS_STATUS_JSON_CAPACITY);
 #endif
   businessStatusDocument.clear();buildBusinessState(businessStatusDocument.to<JsonObject>(),now);
 #ifdef IOTCLOUD_BRY88_SCREEN
@@ -195,7 +198,7 @@ static void state(JsonObject out){
   // Bootstrap is allowed before the first loop; normal reads only copy cache.
   if((!businessStatusReady||businessStatusInvalid)&&!pollBusinessStatusCache(millis()))return;
 #ifdef IOTCLOUD_BRY88_SCREEN
-  DynamicJsonDocument decoded(8192);
+  DynamicJsonDocument decoded(G3_BUSINESS_STATUS_JSON_CAPACITY);
   const String &wire=cachedBusinessState();
   if(!deserializeMsgPack(decoded,wire.c_str(),wire.length()))out.set(decoded.as<JsonObjectConst>());
 #else
@@ -211,6 +214,7 @@ static void diagnostics(JsonObject out){
   screenPowerStatus(out.createNestedObject("power_management"),true);
   screenUartDiagnostics(out);
   out["business_status_json_pool_bytes"]=businessStatusPoolBytes;
+  out["business_status_json_pool_capacity"]=G3_BUSINESS_STATUS_JSON_CAPACITY;
   out["business_status_json_pool_overflows"]=businessStatusPoolOverflows;
   out["business_status_build_failure"]=businessStatusBuildFailure;
 #endif

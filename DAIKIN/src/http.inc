@@ -82,7 +82,19 @@ static bool publicReadCommand(const String &body,String &response,bool binaryErr
   if(phv_get(&root,"request_id",&id)&&(!phv_text(&id,requestId,sizeof(requestId))||!requestId[0]))return false;
   auto busy=[&](){StaticJsonDocument<256> error;error["code"]="busy";if(*requestId)error["request_id"]=requestId;response="";if(binaryErrors)serializeWireMP(error,response);else serializeJson(error,response);};
   String data;
-  if(!businessReadSnapshot.copy(data,false,millis())){busy();return true;}
+  // The application owner refreshes the immutable snapshot independently of
+  // this HTTP task. A brief invalidation/lock hand-off is not a lost device:
+  // yield for a bounded interval so the owner can publish the next snapshot.
+  bool copied = false;
+  for (unsigned attempt = 0; attempt < 8; ++attempt) {
+    if (businessReadSnapshot.copy(data, false, millis())) {
+      copied = true;
+      break;
+    }
+    if (attempt + 1 < 8)
+      delay(10);
+  }
+  if (!copied) { busy(); return true; }
   ph_writer writer;
   if(!phw_init_capacity(&writer,PH_WIRE_MSGPACK,data.length()+160)){busy();return true;}
   ph_buf cached={const_cast<char*>(data.c_str()),data.length(),data.length()+1,nullptr,nullptr,0};
@@ -280,8 +292,14 @@ static esp_err_t infoHandler(httpd_req_t *req){
 }
 static esp_err_t statusHandler(httpd_req_t *req){
   if(!authorized(req))return ESP_OK;
+  if(otaActive)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
   String response;
-  if(otaActive||!businessReadSnapshot.copy(response,true,millis()))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
+  bool copied=false;
+  for(unsigned attempt=0;attempt<8;++attempt){
+    if(businessReadSnapshot.copy(response,true,millis())){copied=true;break;}
+    if(attempt+1<8)delay(10);
+  }
+  if(!copied)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
   return jsonResponse(req,"200 OK",response);
 }
 static esp_err_t optionsHandler(httpd_req_t *req){httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Access-Control-Allow-Methods","GET, POST, OPTIONS");httpd_resp_set_hdr(req,"Access-Control-Allow-Headers","Content-Type, Authorization, X-IoTCloud-Target-Variant, X-IoTCloud-Confirm");return httpd_resp_send(req,nullptr,0);}

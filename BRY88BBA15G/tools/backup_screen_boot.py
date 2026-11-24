@@ -34,7 +34,7 @@ class Device:
             self.headers["Authorization"] = "Basic " + base64.b64encode(auth.encode()).decode()
 
     def command(self, action, params=None):
-        query = action in ("status.get", "screen.recovery.get", "screen.boot.result.get")
+        query = action in ("status.get", "diagnostics.get", "screen.log.get", "screen.recovery.get", "screen.boot.result.get")
         body = msgpack.packb({"request_id": uuid.uuid4().hex, "action": action,
                              "params": params or {}}, use_bin_type=True)
         req = urllib.request.Request(self.url + "/api/v1/command", body, self.headers)

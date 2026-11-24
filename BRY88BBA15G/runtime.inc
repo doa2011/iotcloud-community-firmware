@@ -100,6 +100,7 @@ static uint32_t screenLastRx = 0, screenFrames = 0, screenDataAt = 0,
                 screenNextSnapshot = 0, screenSnapshotAt = 0;
 static String screenMcuVersion, screenGalleryVersion, screenGateway;
 static bool screenSession = false, screenProvisioning = false;
+static bool screenFactoryResetPending = false;
 static const char *screenGatewaySource = "fallback";
 static constexpr const char *SCREEN_DEFAULT_GATEWAY = "020000000001";
 static uint8_t screenRaw[64];
@@ -568,7 +569,7 @@ static void screenCommand(const uint8_t *p, size_t n, size_t payloadAt,
     // Provisioning uses the shared management AP. BLUFI isn't advertised.
     screenProvisioning = true;
     startAccessPoint();
-    screenReply(cmd, false, 0x70);
+    screenReply(cmd);
   } else if (cmd == "stop_ble_cfg") {
     screenProvisioning = false;
     screenReply(cmd);
@@ -576,7 +577,26 @@ static void screenCommand(const uint8_t *p, size_t n, size_t payloadAt,
     screenSend("+ble_state:0\r\n");
   else if (cmd == "espnow_state?")
     screenSend("+espnow_state:0\r\n");
-  else if (cmd == "clear_net_cfg") {
+  else if (cmd == "factory_reset") {
+    // Coordinate the rear-key long press across both processors. Persist the
+    // empty application configuration and revoke local credentials before
+    // acknowledging; erase ESP-IDF station credentials and reboot into AP mode.
+    if (screenFactoryResetPending) {
+      screenReply(cmd);
+    } else {
+      bool ok = resetConfiguration();
+      if (ok) {
+        screenFactoryResetPending = true;
+        screenProvisioning = true;
+        WiFi.disconnect(false, true);
+        startAccessPoint();
+        screenReply(cmd);
+        rebootAt = millis() + 1200;
+      } else {
+        screenReply(cmd, false, 0x71);
+      }
+    }
+  } else if (cmd == "clear_net_cfg") {
     DynamicJsonDocument next(2048);
     next.set(config);
     next.remove("wifi");
