@@ -92,6 +92,18 @@ static inline void screenSettingsRestoreReadback(ScreenSettingsRestoreState &s,
   screenSettingsRestoreRetry(s, now, -4);
 }
 
+
+static inline bool screenSettingsRestoreAckTimeout(
+    ScreenSettingsRestoreState &s, uint32_t session, uint32_t now,
+    int code = -2) {
+  if (s.session != session ||
+      s.phase != SCREEN_SETTINGS_RESTORE_WAIT_ACK ||
+      !screenSettingsRestoreDue(now, s.retry_at))
+    return false;
+  screenSettingsRestoreRetry(s, now, code);
+  return true;
+}
+
 static inline void screenSettingsRestoreTransportFailure(
     ScreenSettingsRestoreState &s, uint32_t session, uint32_t now, int code) {
   if (s.session != session) screenSettingsRestoreReset(s, session);
