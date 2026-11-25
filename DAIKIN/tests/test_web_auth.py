@@ -94,3 +94,6 @@ int main(){
   self.assertIn('if(!authorized(req))return ESP_OK;',backup)
   self.assertNotIn('WiFi.localIP()',backup)
   self.assertNotIn('WiFi.softAPIP()',backup)
+  self.assertIn('httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");',backup)
+  self.assertLess(backup.index('Access-Control-Allow-Origin'),backup.index('if(!authorized(req))'))
+  self.assertIn('const size_t requestLimit=65536;',backup)
