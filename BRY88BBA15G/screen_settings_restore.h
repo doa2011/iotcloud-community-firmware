@@ -63,18 +63,19 @@ static inline void screenSettingsRestoreRetry(ScreenSettingsRestoreState &s,
   s.retry_at = now + (s.attempts >= 3 ? 30000u : 2000u);
 }
 
-static inline void screenSettingsRestoreAck(ScreenSettingsRestoreState &s,
+static inline bool screenSettingsRestoreAck(ScreenSettingsRestoreState &s,
                                              uint32_t session, uint32_t now,
                                              int code) {
   if (s.session != session || s.phase != SCREEN_SETTINGS_RESTORE_WAIT_ACK)
-    return;
+    return false;
   s.last_code = code;
   if (code == 0) {
     s.phase = SCREEN_SETTINGS_RESTORE_WAIT_READBACK;
     s.retry_at = now + 5000u;
-  } else {
-    screenSettingsRestoreRetry(s, now, code);
+    return true;
   }
+  screenSettingsRestoreRetry(s, now, code);
+  return false;
 }
 
 static inline void screenSettingsRestoreReadback(ScreenSettingsRestoreState &s,

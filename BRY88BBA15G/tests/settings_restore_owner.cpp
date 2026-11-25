@@ -25,7 +25,7 @@ int main() {
   screenSettingsRestoreBegin(state, 101, 100, 90);
   assert(state.phase == SCREEN_SETTINGS_RESTORE_WAIT_ACK);
   assert(!screenSettingsRestoreReady(state, 101, 101));
-  screenSettingsRestoreAck(state, 101, 200, 0);
+  assert(screenSettingsRestoreAck(state, 101, 200, 0));
   assert(state.phase == SCREEN_SETTINGS_RESTORE_WAIT_READBACK);
   screenSettingsRestoreReadback(state, 101, 201, false);
   assert(state.phase == SCREEN_SETTINGS_RESTORE_IDLE);
@@ -34,7 +34,7 @@ int main() {
   assert(screenSettingsRestoreReady(state, 101, 2201));
 
   screenSettingsRestoreBegin(state, 101, 2201, 200);
-  screenSettingsRestoreAck(state, 101, 2202, 0);
+  assert(screenSettingsRestoreAck(state, 101, 2202, 0));
   screenSettingsRestoreReadback(state, 101, 2203, true);
   assert(state.phase == SCREEN_SETTINGS_RESTORE_CONFIRMED);
   assert(!screenSettingsRestoreReady(state, 101, 9999));
@@ -42,16 +42,16 @@ int main() {
   screenSettingsRestoreReset(state, 202);
   assert(screenSettingsRestoreReady(state, 202, 0));
   screenSettingsRestoreBegin(state, 202, 0, 0);
-  screenSettingsRestoreAck(state, 202, 1, 7);
+  assert(!screenSettingsRestoreAck(state, 202, 1, 7));
   assert(state.phase == SCREEN_SETTINGS_RESTORE_IDLE);
   assert(state.last_code == 7 && state.retry_at == 2001);
   assert(!screenSettingsRestoreReady(state, 202, 2000));
   assert(screenSettingsRestoreReady(state, 202, 2001));
 
   screenSettingsRestoreBegin(state, 202, 2001, 0);
-  screenSettingsRestoreAck(state, 202, 2002, -2);
+  assert(!screenSettingsRestoreAck(state, 202, 2002, -2));
   screenSettingsRestoreBegin(state, 202, 4002, 0);
-  screenSettingsRestoreAck(state, 202, 4003, -2);
+  assert(!screenSettingsRestoreAck(state, 202, 4003, -2));
   assert(state.phase == SCREEN_SETTINGS_RESTORE_FAILED);
   assert(state.retry_at == 34003);
   assert(!screenSettingsRestoreReady(state, 202, 34002));
@@ -59,7 +59,7 @@ int main() {
   assert(state.attempts == 0);
 
   screenSettingsRestoreBegin(state, 0xFFFFFFFFu, 0xFFFFFF00u, 0);
-  screenSettingsRestoreAck(state, 0xFFFFFFFFu, 0xFFFFFF10u, 0);
+  assert(screenSettingsRestoreAck(state, 0xFFFFFFFFu, 0xFFFFFF10u, 0));
   screenSettingsRestoreReadback(state, 0xFFFFFFFFu, 0xFFFFFF20u, false);
   assert(state.phase == SCREEN_SETTINGS_RESTORE_IDLE);
   assert(screenSettingsRestoreReady(state, 0xFFFFFFFFu, 0x000006F0u));

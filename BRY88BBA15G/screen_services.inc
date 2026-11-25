@@ -353,8 +353,9 @@ static void screenRestoreSettings() {
     if (screenPendingToken != screenSettingsRestoreToken) {
       screenSettingsRestoreAck(screenSettingsRestoreState, session, now, -3);
     } else if (screenPendingCode != -1) {
-      screenSettingsRestoreAck(screenSettingsRestoreState, session, now,
-                               screenPendingCode);
+      if (screenSettingsRestoreAck(screenSettingsRestoreState, session, now,
+                                   screenPendingCode))
+        screenRequestSnapshot();
     } else {
       return;
     }
