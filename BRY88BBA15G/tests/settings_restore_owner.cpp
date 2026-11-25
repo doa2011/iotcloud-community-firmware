@@ -63,6 +63,24 @@ int main() {
   screenSettingsRestoreReadback(state, 0xFFFFFFFFu, 0xFFFFFF20u, false);
   assert(state.phase == SCREEN_SETTINGS_RESTORE_IDLE);
   assert(screenSettingsRestoreReady(state, 0xFFFFFFFFu, 0x000006F0u));
+
+  // Missing ACK must leave WAIT_ACK at its deadline and permit bounded retry.
+  ScreenSettingsRestoreState timeoutState;
+  screenSettingsRestoreReset(timeoutState, 303);
+  screenSettingsRestoreBegin(timeoutState, 303, 1000, 900);
+  assert(!screenSettingsRestoreAckTimeout(timeoutState, 303, 10999));
+  assert(timeoutState.phase == SCREEN_SETTINGS_RESTORE_WAIT_ACK);
+  assert(screenSettingsRestoreAckTimeout(timeoutState, 303, 11000));
+  assert(timeoutState.phase == SCREEN_SETTINGS_RESTORE_IDLE);
+  assert(timeoutState.last_code == -2 && timeoutState.retry_at == 13000);
+  assert(screenSettingsRestoreReady(timeoutState, 303, 13000));
+  screenSettingsRestoreBegin(timeoutState, 303, 13000, 12000);
+  assert(screenSettingsRestoreAckTimeout(timeoutState, 303, 23000));
+  screenSettingsRestoreBegin(timeoutState, 303, 25000, 24000);
+  assert(screenSettingsRestoreAckTimeout(timeoutState, 303, 35000));
+  assert(timeoutState.phase == SCREEN_SETTINGS_RESTORE_FAILED);
+  assert(timeoutState.retry_at == 65000);
+
   std::puts("Settings restore owner: ACK, retry, readback, mismatch, "
             "session reset and millis wrap passed");
 }
