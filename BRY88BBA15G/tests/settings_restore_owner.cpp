@@ -62,7 +62,7 @@ int main() {
   screenSettingsRestoreAck(state, 0xFFFFFFFFu, 0xFFFFFF10u, 0);
   screenSettingsRestoreReadback(state, 0xFFFFFFFFu, 0xFFFFFF20u, false);
   assert(state.phase == SCREEN_SETTINGS_RESTORE_IDLE);
-  assert(screenSettingsRestoreReady(state, 0xFFFFFFFFu, 0x000006E8u));
+  assert(screenSettingsRestoreReady(state, 0xFFFFFFFFu, 0x000006F0u));
   std::puts("Settings restore owner: ACK, retry, readback, mismatch, "
             "session reset and millis wrap passed");
 }
