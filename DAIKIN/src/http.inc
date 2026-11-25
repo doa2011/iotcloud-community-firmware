@@ -162,18 +162,27 @@ static String backupExecute(){
     if(text.length()!=length)return "{\"code\":\"busy\"}";
     return text;
   }
-  size_t capacity=config.memoryUsage()+screenExtra+1024;
+  // A preceding export can leave a large response allocated. The HTTP
+  // owner is now waiting for this restore, so release the old response.
+  webResult=String();
+  // The export formula reserves several copies of the Base64 payload.
+  // Restore starts from the actual upload, not the export worst case.
+  size_t capacity=webBody.length()+2048;
   if(capacity>backupLimit)capacity=backupLimit;
   for(;;){
     // JSON structure and strings determine memory use. Retry a genuinely larger
     // document after NoMemory, releasing each previous pool before allocating.
     DynamicJsonDocument backup(capacity);
-    if(!backup.capacity())return "{\"code\":\"busy\"}";
+    if(!backup.capacity())return "{\"code\":\"busy\",\"message\":\"restore JSON allocation failed\"}";
     auto error=deserializeJson(backup,webBody.c_str(),webBody.length());
     if(error==DeserializationError::NoMemory){
-      if(capacity==backupLimit)return "{\"code\":\"busy\"}";
-      capacity=capacity>backupLimit-1024?backupLimit:capacity+1024;continue;
+      if(capacity==backupLimit)return "{\"code\":\"busy\",\"message\":\"restore JSON pool exhausted\"}";
+      const size_t growth=capacity/4>1024?capacity/4:1024;
+      capacity=growth>backupLimit-capacity?backupLimit:capacity+growth;continue;
     }
+    // The const input overload copies strings into the document. Release the
+    // upload before allocating the decoded layout and rollback state.
+    webBody=String();
 #ifdef IOTCLOUD_BRY88_SCREEN
     const bool envelopeValid = backup["schema"]==2 &&
         String(backup["hardware_model"]|"")=="BRY88BBA15G" &&
@@ -186,20 +195,21 @@ static String backupExecute(){
       String(backup["variant"]|"")!=DAIKIN_VARIANT||
       backup["config_version"]!=1||
       !validConfig(backup["config"].as<JsonObjectConst>()))
-      return "{\"code\":\"invalid_backup\"}";
+      return "{\"code\":\"invalid_backup\",\"message\":\"restore envelope, checksum or device config validation failed\"}";
     auto restored=backup["config"].as<JsonObjectConst>();
     size_t candidateCapacity=restored.memoryUsage()+1024;
     if(candidateCapacity>configCapacity)candidateCapacity=configCapacity;
     DynamicJsonDocument candidate(candidateCapacity);
     if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())
-      return "{\"code\":\"busy\"}";
+      return "{\"code\":\"busy\",\"message\":\"restore device config allocation failed\"}";
 #ifdef IOTCLOUD_BRY88_SCREEN
     const char *screenResult=screenConfigBackupRestore(
         backup["screen"].as<JsonObjectConst>());
     if(strcmp(screenResult,"ok"))
-      return !strcmp(screenResult,"busy") ? "{\"code\":\"busy\"}" :
-          !strcmp(screenResult,"storage_error") ? "{\"code\":\"storage_error\"}" :
-          "{\"code\":\"invalid_backup\"}";
+      return !strcmp(screenResult,"busy") ? "{\"code\":\"busy\",\"message\":\"restore screen candidate allocation failed\"}" :
+          !strcmp(screenResult,"storage_error") ? "{\"code\":\"storage_error\",\"message\":\"restore screen storage failed\"}" :
+          "{\"code\":\"invalid_backup\",\"message\":\"restore screen validation failed\"}";
+    backup=DynamicJsonDocument(0); // candidate owns its copied config
     if(!saveConfigTransaction(candidate,true)){
       if(!screenConfigBackupSnapshotRestore())
         return "{\"code\":\"restore_rollback_failed\"}";
@@ -213,6 +223,10 @@ static String backupExecute(){
 #ifdef IOTCLOUD_HUB
     hubRestoreChanged();
 #endif
+    // A successful durable restore must reboot even if the original HTTP
+    // request timed out or disconnected before it could schedule the reboot.
+    // The handler still shortens this deadline after sending its HTTP 202.
+    rebootAt=millis()+15000;
     return "{\"code\":\"accepted\"}";
   }
 }
