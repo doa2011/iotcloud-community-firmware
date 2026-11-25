@@ -340,8 +340,6 @@ static void screenRestoreSettings() {
     screenSettingsRestoreReset(screenSettingsRestoreState, session);
     screenSettingsRestoreToken = "";
     screenSettingsSession = 0;
-    screenSettingsRestoreReset(screenSettingsRestoreState, 0);
-    screenSettingsRestoreToken = "";
   }
   if (screenSettingsSession == session)
     return;
@@ -848,6 +846,8 @@ static bool screenExtendedLine(const uint8_t *p, size_t n) {
     screenSceneAck = 0;
     screenSceneSession = 0;
     screenSettingsSession = 0;
+    screenSettingsRestoreReset(screenSettingsRestoreState, 0);
+    screenSettingsRestoreToken = "";
   }
   return false;
 }
