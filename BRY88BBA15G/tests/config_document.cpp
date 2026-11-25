@@ -105,6 +105,37 @@ int main() {
     assert(restored["layout"].as<std::string>() == layout);
     assert(restored["policy"].as<std::string>() == policy);
     assert(restored["appearance"].as<std::string>() == appearance);
+    assert(restored["schema"] == 2);
+    assert(restored.size() == 11);
+    assert(!restored.containsKey("font_data"));
+    assert(!restored.containsKey("wallpaper_data"));
+    // The public PHCB backup wraps this exact screen record. Its copy must
+    // retain layout, brightness, sleep policy and appearance metadata without
+    // embedding either independent MCU resource bank.
+    DynamicJsonDocument envelope(131072);
+    envelope["schema"] = 2;
+    envelope["model"] = "daikin";
+    envelope["variant"] = "g3";
+    envelope["config_version"] = 1;
+    envelope["firmware_version"] = "1.0.0-test";
+    envelope["hardware_model"] = "BRY88BBA15G";
+    std::string screenWire;
+    assert(serializeMsgPack(restored, screenWire) == measureMsgPack(restored));
+    envelope["screen_crc32"] = scene_crc32(screenWire.data(), screenWire.size());
+    envelope["screen"] = restored.as<JsonObjectConst>();
+    assert(!envelope.overflowed());
+    std::string backup;
+    assert(serializeJson(envelope, backup) == measureJson(envelope));
+    DynamicJsonDocument imported(131072);
+    assert(!deserializeJson(imported, backup));
+    assert(imported["hardware_model"] == "BRY88BBA15G");
+    assert(imported["screen_crc32"] == scene_crc32(screenWire.data(), screenWire.size()));
+    assert(imported["screen"]["schema"] == 2);
+    assert(imported["screen"]["settings"]["display"]["luminance"] == 0);
+    assert(imported["screen"]["policy"].as<std::string>() == policy);
+    assert(imported["screen"]["appearance"].as<std::string>() == appearance);
+    assert(!imported["screen"].containsKey("font_data"));
+    assert(!imported["screen"].containsKey("wallpaper_data"));
     bool automatic=false;
     assert(screenConfigStartupAuto(restored.as<JsonObjectConst>(),automatic)&&automatic);
     doc["startup_auto_resume"]=false;
