@@ -53,6 +53,8 @@ static void screenConfigBackupRuntimeReset() {
   screenAppearanceAttempts = 0;
   screenAppearanceError = "";
   screenSettingsSession = 0;
+  screenSettingsRestoreReset(screenSettingsRestoreState, screenBridge.session);
+  screenSettingsRestoreToken = "";
   screenSchedule.started = false;
   screenWeatherGeneration++;
   screenWeather = {};
