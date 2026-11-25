@@ -217,6 +217,10 @@ static String backupExecute(){
   }
 }
 static esp_err_t backupHandler(httpd_req_t *req){
+  // CORS applies to every response, including auth failures and restore ACKs,
+  // so authenticated backup/restore works through VPNs and routed origins.
+  httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");
+  httpd_resp_set_hdr(req,"Cache-Control","no-store");
   if(!authorized(req))return ESP_OK;
   bool passwordSet;portENTER_CRITICAL(&authMux);passwordSet=*webPassword;portEXIT_CRITICAL(&authMux);
   if(!passwordSet)return jsonResponse(req,"403 Forbidden","{\"code\":\"set_web_password_first\"}");
