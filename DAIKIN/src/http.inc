@@ -213,7 +213,7 @@ static String backupExecute(){
 #ifdef IOTCLOUD_HUB
     hubRestoreChanged();
 #endif
-    rebootAt=millis()+1500;return "{\"code\":\"accepted\"}";
+    return "{\"code\":\"accepted\"}";
   }
 }
 static esp_err_t backupHandler(httpd_req_t *req){
@@ -239,7 +239,15 @@ static esp_err_t backupHandler(httpd_req_t *req){
     httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Cache-Control","no-store");httpd_resp_set_type(req,"application/octet-stream");return httpd_resp_send(req,webResult.c_str(),webResult.length());
   }
   if(webResult.startsWith("{\"code\":\"busy\""))return jsonResponse(req,"503 Service Unavailable",webResult);
-  return jsonResponse(req,webResult.indexOf("accepted")>=0?"202 Accepted":"400 Bad Request",webResult);
+  if(webResult.indexOf("accepted")>=0){
+    /* Start the reboot timer only after the HTTP 202 response has been sent.
+     * Scheduling it in backupExecute() can reset the ESP32 while a large
+     * restore response is still being transmitted to the browser. */
+    esp_err_t sent=jsonResponse(req,"202 Accepted",webResult);
+    if(restore)rebootAt=millis()+2000;
+    return sent;
+  }
+  return jsonResponse(req,"400 Bad Request",webResult);
 }
 struct OtaFlash {const esp_partition_t *partition;esp_ota_handle_t handle;size_t work;};
 static bool otaErase(void *context){
