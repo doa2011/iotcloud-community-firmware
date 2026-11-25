@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <string.h>
 #include <ArduinoJson.h>
 
 enum ScreenSettingsRestorePhase : uint8_t {
