@@ -2,6 +2,8 @@
  * Includes the ESP32-owned screen configuration record, but deliberately does
  * not copy the MCU's independent font bank or wallpaper pixel bank.
  */
+#include "screen_config_restore_candidate.h"
+
 struct ScreenConfigBackupSnapshot {
   screen_scene scene = {};
   display_policy policy = {};
@@ -220,42 +222,40 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
       !backup["notices"].is<JsonArrayConst>())
     return "invalid_backup";
 
+  auto next = screenConfigRestoreCandidateCreate();
   std::unique_ptr<uint8_t[]> layout(new (std::nothrow) uint8_t[SCENE_BYTES]);
-  if (!layout) return "busy";
+  if (!next || !layout) return "busy";
   size_t layoutBytes = 0;
-  screen_scene nextScene = {};
   if (!screenUnbase64(backup["layout"], layout.get(), SCENE_BYTES,
                       layoutBytes) ||
       layoutBytes != SCENE_BYTES ||
-      !scene_decode(&nextScene, layout.get(), layoutBytes) ||
-      !scene_validate(&nextScene))
+      !scene_decode(&next->scene, layout.get(), layoutBytes) ||
+      !scene_validate(&next->scene))
     return "invalid_backup";
 
   uint8_t policyBytes[DISPLAY_POLICY_BYTES], appearanceBytes[APPEARANCE_BYTES];
   size_t policyLength = 0, appearanceLength = 0;
-  display_policy nextPolicy = {};
-  screen_appearance nextAppearance = {};
   if (!screenUnbase64(backup["policy"], policyBytes, sizeof(policyBytes),
                       policyLength) ||
       policyLength != sizeof(policyBytes) ||
-      !display_policy_decode(&nextPolicy, policyBytes, policyLength) ||
-      !display_policy_valid(&nextPolicy) ||
+      !display_policy_decode(&next->policy, policyBytes, policyLength) ||
+      !display_policy_valid(&next->policy) ||
       !screenUnbase64(backup["appearance"], appearanceBytes,
                       sizeof(appearanceBytes), appearanceLength) ||
       appearanceLength != sizeof(appearanceBytes) ||
-      !appearance_decode(&nextAppearance, appearanceBytes, appearanceLength))
+      !appearance_decode(&next->appearance, appearanceBytes, appearanceLength))
     return "invalid_backup";
-  if (!screenBackupPageValid(nextScene, nextPolicy.idle_page))
+  if (!screenBackupPageValid(next->scene, next->policy.idle_page))
     return "invalid_backup";
-  for (unsigned i = 0; i < nextPolicy.count; ++i)
-    if (!screenBackupPageValid(nextScene, nextPolicy.plans[i].page))
+  for (unsigned i = 0; i < next->policy.count; ++i)
+    if (!screenBackupPageValid(next->scene, next->policy.plans[i].page))
       return "invalid_backup";
-  if (nextPolicy.home_page_id &&
-      !screenBackupPageId(nextScene, nextPolicy.home_page_id, true))
+  if (next->policy.home_page_id &&
+      !screenBackupPageId(next->scene, next->policy.home_page_id, true))
     return "invalid_backup";
-  for (unsigned i = 0; i < nextPolicy.page_count; ++i)
-    if (!screenBackupPageId(nextScene,
-            nextPolicy.page_overrides[i].page_id, false))
+  for (unsigned i = 0; i < next->policy.page_count; ++i)
+    if (!screenBackupPageId(next->scene,
+            next->policy.page_overrides[i].page_id, false))
       return "invalid_backup";
 
   DynamicJsonDocument nextWeather(screenWeatherConfigBytes);
@@ -278,10 +278,8 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
       backup["rules"].size() > REMINDER_MAX ||
       backup["notices"].size() > REMINDER_MAX)
     return "invalid_backup";
-  reminder_schedule nextSchedule = {};
-  nextSchedule.timezone = timezone;
-  nextSchedule.wake = wake;
-  reminder_notice nextNotices[REMINDER_MAX] = {};
+  next->schedule.timezone = timezone;
+  next->schedule.wake = wake;
   unsigned index = 0;
   for (JsonObjectConst o : backup["rules"].as<JsonArrayConst>()) {
     if (o.size() != 10 || !o["id"].is<uint32_t>() ||
@@ -300,8 +298,8 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
     if (!r.id || r.id >= 0x80000000u || !reminder_validate(&r))
       return "invalid_backup";
     for (unsigned i = 0; i < index; ++i)
-      if (nextSchedule.rules[i].id == r.id) return "invalid_backup";
-    nextSchedule.rules[index++] = r;
+      if (next->schedule.rules[i].id == r.id) return "invalid_backup";
+    next->schedule.rules[index++] = r;
   }
   index = 0;
   for (JsonObjectConst o : backup["notices"].as<JsonArrayConst>()) {
@@ -318,18 +316,18 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
     if (!r.id || r.wake > 2)
       return "invalid_backup";
     for (unsigned i = 0; i < index; ++i)
-      if (nextNotices[i].id == r.id) return "invalid_backup";
-    nextNotices[index++] = r;
+      if (next->notices[i].id == r.id) return "invalid_backup";
+    next->notices[index++] = r;
   }
 
   if (!screenConfigBackupSnapshotCapture())
     return "busy";
 
-  screenScene = nextScene;
-  screenDisplayPolicy = nextPolicy;
-  screenAppearance = nextAppearance;
-  screenSchedule = nextSchedule;
-  memcpy(screenNotices, nextNotices, sizeof(nextNotices));
+  screenScene = next->scene;
+  screenDisplayPolicy = next->policy;
+  screenAppearance = next->appearance;
+  screenSchedule = next->schedule;
+  memcpy(screenNotices, next->notices, sizeof(screenNotices));
   screenStartupAuto = backup["startup_auto_resume"].as<bool>();
   screenWeatherConfig.set(nextWeather);
   screenSavedSettings.set(nextSettings);
