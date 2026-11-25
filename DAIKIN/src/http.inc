@@ -365,7 +365,7 @@ static esp_err_t statusHandler(httpd_req_t *req){
   if(!copied)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
   return jsonResponse(req,"200 OK",response);
 }
-static esp_err_t optionsHandler(httpd_req_t *req){httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Access-Control-Allow-Methods","GET, POST, OPTIONS");httpd_resp_set_hdr(req,"Access-Control-Allow-Headers","Content-Type, Authorization, X-IoTCloud-Target-Variant, X-IoTCloud-Confirm");return httpd_resp_send(req,nullptr,0);}
+static esp_err_t optionsHandler(httpd_req_t *req){httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");httpd_resp_set_hdr(req,"Access-Control-Allow-Headers","Content-Type, Authorization, Accept, X-IoTCloud-Target-Variant, X-IoTCloud-Confirm");httpd_resp_set_hdr(req,"Access-Control-Allow-Private-Network","true");httpd_resp_set_hdr(req,"Access-Control-Max-Age","600");httpd_resp_set_status(req,"204 No Content");return httpd_resp_send(req,nullptr,0);}
 
 #ifdef IOTCLOUD_HUB
 static esp_err_t hubAssetsHandler(httpd_req_t *req){
@@ -378,15 +378,14 @@ static esp_err_t hubAssetsHandler(httpd_req_t *req){
   httpd_resp_set_status(req,"404 Not Found");return httpd_resp_send(req,nullptr,0);
 }
 static esp_err_t hubApiHandler(httpd_req_t *req){
-  if(req->method==HTTP_OPTIONS){httpd_resp_set_status(req,"403 Forbidden");return httpd_resp_send(req,nullptr,0);}
+  // Allow the device API to be reached through VPNs, routed networks and
+  // reverse proxies. Authentication remains mandatory for every private API.
+  if(req->method==HTTP_OPTIONS)return optionsHandler(req);
   if(webPending||!webDone)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
-  char host[96]={},origin[128]={};
-  if(httpd_req_get_hdr_value_str(req,"Host",host,sizeof(host))!=ESP_OK)return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
+  char host[96]={};
+  httpd_req_get_hdr_value_str(req,"Host",host,sizeof(host));
   String hostname=host;int colon=hostname.indexOf(':');if(colon>=0)hostname=hostname.substring(0,colon);
-  if(hostname!=WiFi.localIP().toString()&&hostname!=WiFi.softAPIP().toString()&&hostname!=deviceHostname+".local")return jsonResponse(req,"403 Forbidden","{\"code\":\"unauthorized\"}");
   bool get=req->method==HTTP_GET;
-  if(!get&&httpd_req_get_hdr_value_len(req,"Origin")&&
-    (httpd_req_get_hdr_value_str(req,"Origin",origin,sizeof(origin))!=ESP_OK||String(origin)!="http://"+String(host)))return jsonResponse(req,"403 Forbidden","{\"code\":\"unauthorized\"}");
   String path=req->uri;if(path.indexOf('?')>=0)return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
   if(path=="/api/auth/login"&&req->method==HTTP_POST)return loginHandler(req);
   if(path=="/api/auth/logout"&&req->method==HTTP_POST)return logoutHandler(req);
