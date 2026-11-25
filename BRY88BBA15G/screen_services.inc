@@ -24,6 +24,7 @@ static uint32_t screenFlashConfigured = 0, screenFlashPhysical = 0;
 #include "protocol/display_diag.h"
 #include "protocol/page_control.h"
 #include "scene_wire_cache.h"
+#include "screen_settings_restore.h"
 static screen_appearance screenAppearance;
 static uint32_t screenAppearanceAck,screenAppearanceSession,screenAppearanceSentAt;
 static unsigned screenAppearanceAttempts;
@@ -82,7 +83,6 @@ static ScreenImage screenImage;
 #include "screen_brightness.inc"
 #include "screen_config_document.h"
 #include "screen_settings_snapshot.h"
-#include "screen_settings_restore.h"
 #include "screen_store_writer.h"
 #include "screen_flash_erase.h"
 static void screenCopyEffectiveSettings(JsonObject parent) {
