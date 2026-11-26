@@ -55,7 +55,7 @@
   "commit": "b09be920b87839584ab5cef6353bd92c8c078ec3",
   "album_extension": {
     "repository": "doa2011/iotcloud-bry88bba15g-screenmcu",
-    "commit": "b4bb51161d6ea796ced78942212df5fa2bb7aa31",
+    "commit": "4c7856c1f607fbb1463bd3002c5f85a48096527d",
     "files": [
       "protocol/media_wire.h",
       "protocol/scene.c",
