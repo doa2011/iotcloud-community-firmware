@@ -416,6 +416,7 @@ static void screenMediaGet(JsonObject out, bool all = true) {
   out["pixel_crc32"] = media_u32(screenMedia.snapshot + 16);
   out["url_supported"] = (screenBridge.capabilities & SCREEN_CAP_URL_PUSH) != 0;
   out["update_supported"] = (screenBridge.capabilities & SCREEN_CAP_PUSH_UPDATE) != 0;
+  out["native_album_supported"] = screenMediaAvailable() && screenMedia.snapshot[31] >= 5;
   out["policy_supported"] = (screenBridge.capabilities & SCREEN_CAP_PUSH_POLICY) != 0;
   out["last_push_id"] = media_u32(screenMedia.snapshot + 32);
   out["source_error"] = media_u32(screenMedia.snapshot + 36);
@@ -678,7 +679,12 @@ static const char *screenMediaCommand(const String &action,
   }
   uint8_t p[MEDIA_PACKET_MAX] = {};
   size_t n = 0;
-  if (action == "screen.media.begin") {
+  if (action == "screen.album.set" || action == "screen.album.clear") {
+    if (!screenMediaAvailable() || screenMedia.snapshot[31] < 5) return "unsupported";
+    if (params.size() != 1 || !params["id"].is<uint32_t>() || !params["id"].as<uint32_t>()) return "invalid_params";
+    p[0] = action.endsWith("set") ? MEDIA_ALBUM_SET : MEDIA_ALBUM_CLEAR;
+    media_put32(p + 1, params["id"]);n = 5;
+  } else if (action == "screen.media.begin") {
     if (params.size() != 5 ||
         !screenFields(params, "|id||total||crc32||width||height|"))
       return "invalid_params";

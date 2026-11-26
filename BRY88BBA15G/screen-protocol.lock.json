@@ -25,7 +25,7 @@
     "protocol/display_diag.h": "3528e75108e691b6d243c2087fc7e9c4dea80b835d01883675dad7491f167bef",
     "protocol/page_control.h": "dcf0c15f7a9addc63513d1b57714f215deb51101529a8659ed28fee2126d92dc",
     "protocol/media_wire.c": "5717c89acee252538b39b61a6096ac5a01e4e6a93893b6f2877d9d73b21ce559",
-    "protocol/media_wire.h": "e13fd584ca906e003e1033335c396f74be24a177d44594a0d819a2936c889fea"
+    "protocol/media_wire.h": "e66baa846b2d0f06cd33c3707702c1086e53600183e87da7cdb1f6f711e6f29d"
   },
   "source_paths": {
     "protocol/screen_link.c": "protocol/screen_link.c",
@@ -52,5 +52,12 @@
     "protocol/media_wire.c": "protocol/media_wire.c",
     "protocol/media_wire.h": "protocol/media_wire.h"
   },
-  "commit": "b09be920b87839584ab5cef6353bd92c8c078ec3"
+  "commit": "b09be920b87839584ab5cef6353bd92c8c078ec3",
+  "album_extension": {
+    "repository": "doa2011/iotcloud-bry88bba15g-screenmcu",
+    "commit": "e410fe93ab1531e7f98028fe23bcb7ee1eba94bf",
+    "files": [
+      "protocol/media_wire.h"
+    ]
+  }
 }
