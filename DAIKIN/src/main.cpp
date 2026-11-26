@@ -367,6 +367,9 @@ void loop(){
     if(webOperation==3){if(otaActive){hubHttpStatus=503;webResult="{\"code\":\"busy\"}";}else hubApiExecute();}else
 #endif
     if(webOperation==4){if(businessStatusReady)webResult=cachedHttpStatus();else webResult="{\"code\":\"busy\"}";}else webResult=otaActive?"{\"code\":\"busy\",\"message\":\"OTA active\"}":webOperation?backupExecute():execute(webBody);}
+    // The owner has finished using the upload, including authorization,
+    // allocation and OTA rejection paths. Never retain a failed backup body.
+    if(webOperation==1||webOperation==2)webBody=String();
     portENTER_CRITICAL(&webMux);webPending=false;
 #ifdef IOTCLOUD_HUB
     webDone=!hubHttpDeferred;

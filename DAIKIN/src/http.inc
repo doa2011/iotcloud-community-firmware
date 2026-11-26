@@ -209,13 +209,10 @@ static String backupExecute(){
     if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())
       return "{\"code\":\"busy\",\"message\":\"restore device config allocation failed\"}";
 #ifdef IOTCLOUD_BRY88_SCREEN
-    const char *screenResult=screenConfigBackupRestore(
-        backup["screen"].as<JsonObjectConst>());
+    const char *screenResult=screenConfigBackupRestore(backup);
     if(strcmp(screenResult,"ok"))
-      return !strcmp(screenResult,"busy") ? "{\"code\":\"busy\",\"message\":\"restore screen candidate allocation failed\"}" :
-          !strcmp(screenResult,"storage_error") ? "{\"code\":\"storage_error\",\"message\":\"restore screen storage failed\"}" :
-          "{\"code\":\"invalid_backup\",\"message\":\"restore screen validation failed\"}";
-    backup=DynamicJsonDocument(0); // candidate owns its copied config
+      return String("{\"code\":\"")+screenResult+"\",\"message\":\"restore stage: "+screenBackupRestoreStage+"\"}";
+    // The screen restore has already released the input envelope.
     if(!saveConfigTransaction(candidate,true)){
       if(!screenConfigBackupSnapshotRestore())
         return "{\"code\":\"restore_rollback_failed\"}";
@@ -252,15 +249,20 @@ static esp_err_t backupHandler(httpd_req_t *req){
   const size_t requestLimit=configCapacity+1024;
 #endif
   if(restore&&(req->content_len<=0||req->content_len>int(requestLimit)))return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_backup\"}");
+  // Completed response is no longer borrowed by the HTTP server. Free a
+  // prior large export before reserving a restore upload.
+  webResult=String();
   String body;char buffer[513];int left=restore?req->content_len:0;
-  if(restore&&!body.reserve(left))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
+  if(restore&&!body.reserve(left))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\",\"message\":\"restore upload allocation failed\"}");
   while(left){int n=httpd_req_recv(req,buffer,min(left,512));if(n<=0)return ESP_FAIL;buffer[n]=0;if(!body.concat(buffer,n))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");left-=n;}
   if(!captureWebAuthorization(req))return ESP_OK;
   webBody=std::move(body);webOperation=restore?2:1;webDone=false;
   portENTER_CRITICAL(&webMux);webPending=true;portEXIT_CRITICAL(&webMux);
   uint32_t started=millis();while(!webDone){if(uint32_t(millis()-started)>=10000)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"timeout\"}");delay(1);}
   if(!restore&&webResult.startsWith("{\"schema\":")){
-    httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Cache-Control","no-store");httpd_resp_set_type(req,"application/octet-stream");return httpd_resp_send(req,webResult.c_str(),webResult.length());
+    httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Cache-Control","no-store");httpd_resp_set_type(req,"application/octet-stream");
+    const esp_err_t sent=httpd_resp_send(req,webResult.c_str(),webResult.length());
+    webResult=String();return sent;
   }
   if(webResult.startsWith("{\"code\":\"busy\""))return jsonResponse(req,"503 Service Unavailable",webResult);
   if(webResult.indexOf("accepted")>=0){

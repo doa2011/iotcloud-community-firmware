@@ -5,11 +5,7 @@
 #include "screen_config_restore_candidate.h"
 
 struct ScreenConfigBackupSnapshot {
-  screen_scene scene = {};
-  display_policy policy = {};
-  screen_appearance appearance = {};
-  reminder_schedule schedule = {};
-  reminder_notice notices[REMINDER_MAX] = {};
+  std::unique_ptr<ScreenConfigRestoreCandidate> state;
   bool startupAuto = true;
   DynamicJsonDocument weather;
   DynamicJsonDocument settings;
@@ -23,8 +19,9 @@ static void screenConfigBackupSnapshotDiscard() {
   screenBackupSnapshot = nullptr;
 }
 static bool screenConfigBackupSnapshotCapture() {
-  if (!screenBackupSnapshot)
-    screenBackupSnapshot = new (std::nothrow) ScreenConfigBackupSnapshot();
+  if (screenBackupSnapshot)
+    return false;
+  screenBackupSnapshot = new (std::nothrow) ScreenConfigBackupSnapshot();
   if (!screenBackupSnapshot)
     return false;
   if (!screenBackupSnapshot->weather.set(screenWeatherConfig) ||
@@ -34,13 +31,7 @@ static bool screenConfigBackupSnapshotCapture() {
     screenConfigBackupSnapshotDiscard();
     return false;
   }
-  screenBackupSnapshot->scene = screenScene;
-  screenBackupSnapshot->policy = screenDisplayPolicy;
-  screenBackupSnapshot->appearance = screenAppearance;
-  screenBackupSnapshot->schedule = screenSchedule;
-  memcpy(screenBackupSnapshot->notices, screenNotices,
-         sizeof(screenBackupSnapshot->notices));
-  screenBackupSnapshot->startupAuto = screenStartupAuto;
+   screenBackupSnapshot->startupAuto = screenStartupAuto;
   return true;
 }
 static void screenConfigBackupRuntimeReset() {
@@ -69,13 +60,14 @@ static void screenConfigBackupRuntimeReset() {
   invalidateBusinessStatusCache();
 }
 static bool screenConfigBackupSnapshotApply(bool persist) {
-  if (!screenBackupSnapshot)
+  if (!screenBackupSnapshot || !screenBackupSnapshot->state)
     return false;
-  screenScene = screenBackupSnapshot->scene;
-  screenDisplayPolicy = screenBackupSnapshot->policy;
-  screenAppearance = screenBackupSnapshot->appearance;
-  screenSchedule = screenBackupSnapshot->schedule;
-  memcpy(screenNotices, screenBackupSnapshot->notices, sizeof(screenNotices));
+  const auto &old = *screenBackupSnapshot->state;
+  screenScene = old.scene;
+  screenDisplayPolicy = old.policy;
+  screenAppearance = old.appearance;
+  screenSchedule = old.schedule;
+  memcpy(screenNotices, old.notices, sizeof(screenNotices));
   screenStartupAuto = screenBackupSnapshot->startupAuto;
   if (!screenWeatherConfig.set(screenBackupSnapshot->weather) ||
       !screenSavedSettings.set(screenBackupSnapshot->settings) ||
@@ -216,7 +208,10 @@ static bool screenBackupWeatherValid(JsonObjectConst weather) {
  * writes the inactive SCFG slot and commits it only after readback CRC passes.
  * On any write failure, restore the previous in-memory configuration.
  */
-static const char *screenConfigBackupRestore(JsonObjectConst backup) {
+static const char *screenBackupRestoreStage = "idle";
+static const char *screenConfigBackupRestore(DynamicJsonDocument &envelope) {
+  screenBackupRestoreStage = "screen_envelope";
+  JsonObjectConst backup = envelope["screen"].as<JsonObjectConst>();
   if (!screenStoreAvailable || !screenStoreMutex)
     return "storage_error";
   if (backup.size() != 11 || backup["schema"] != 2 ||
@@ -232,9 +227,13 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
       !backup["notices"].is<JsonArrayConst>())
     return "invalid_backup";
 
+  screenBackupRestoreStage = "screen_candidate";
   auto next = screenConfigRestoreCandidateCreate();
+  if (!next) return "busy";
+  screenBackupRestoreStage = "layout_buffer";
   std::unique_ptr<uint8_t[]> layout(new (std::nothrow) uint8_t[SCENE_BYTES]);
-  if (!next || !layout) return "busy";
+  if (!layout) return "busy";
+  screenBackupRestoreStage = "layout_decode";
   size_t layoutBytes = 0;
   if (!screenUnbase64(backup["layout"], layout.get(), SCENE_BYTES,
                       layoutBytes) ||
@@ -242,7 +241,9 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
       !scene_decode(&next->scene, layout.get(), layoutBytes) ||
       !scene_validate(&next->scene))
     return "invalid_backup";
+  layout.reset();
 
+  screenBackupRestoreStage = "policy_appearance";
   uint8_t policyBytes[DISPLAY_POLICY_BYTES], appearanceBytes[APPEARANCE_BYTES];
   size_t policyLength = 0, appearanceLength = 0;
   if (!screenUnbase64(backup["policy"], policyBytes, sizeof(policyBytes),
@@ -268,8 +269,10 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
             next->policy.page_overrides[i].page_id, false))
       return "invalid_backup";
 
+  screenBackupRestoreStage = "weather_settings";
   DynamicJsonDocument nextWeather(screenWeatherConfigBytes);
   DynamicJsonDocument nextSettings(1024);
+  if (!nextWeather.capacity() || !nextSettings.capacity()) return "busy";
   if (!nextWeather.set(backup["weather"]) ||
       !nextSettings.set(backup["settings"]) ||
       nextWeather.overflowed() || nextSettings.overflowed() ||
@@ -282,6 +285,7 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
       return "invalid_backup";
   }
 
+  screenBackupRestoreStage = "reminders";
   const int timezone = backup["timezone"].as<int>();
   const unsigned wake = backup["wake"].as<unsigned>();
   if (timezone < -720 || timezone > 840 || wake > 2 ||
@@ -330,25 +334,39 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
     next->notices[index++] = r;
   }
 
+  const bool startupAuto = backup["startup_auto_resume"].as<bool>();
+  // Every field has been validated and copied. The device config candidate
+  // is also owned by the caller. Release the complete input JSON now.
+  envelope = DynamicJsonDocument(0);
+  screenBackupRestoreStage = "rollback_snapshot";
   if (!screenConfigBackupSnapshotCapture())
     return "busy";
 
-  screenScene = next->scene;
-  screenDisplayPolicy = next->policy;
-  screenAppearance = next->appearance;
-  screenSchedule = next->schedule;
-  memcpy(screenNotices, next->notices, sizeof(screenNotices));
-  screenStartupAuto = backup["startup_auto_resume"].as<bool>();
-  screenWeatherConfig.set(nextWeather);
-  screenSavedSettings.set(nextSettings);
-  if (screenWeatherConfig.overflowed() || screenSavedSettings.overflowed() ||
-      !screenSave()) {
-    screenConfigBackupSnapshotApply(false);
+  screenConfigRestoreExchange(screenScene, next->scene);
+  screenConfigRestoreExchange(screenDisplayPolicy, next->policy);
+  screenConfigRestoreExchange(screenAppearance, next->appearance);
+  screenConfigRestoreExchange(screenSchedule, next->schedule);
+  screenConfigRestoreExchange(screenNotices, next->notices);
+  screenBackupSnapshot->state = std::move(next);
+  screenStartupAuto = startupAuto;
+  const bool weatherOk = screenWeatherConfig.set(nextWeather);
+  const bool settingsOk = screenSavedSettings.set(nextSettings);
+  nextWeather = DynamicJsonDocument(0);
+  nextSettings = DynamicJsonDocument(0);
+  screenBackupRestoreStage = "screen_persist";
+  if (!weatherOk || !settingsOk || screenWeatherConfig.overflowed() ||
+      screenSavedSettings.overflowed() || !screenSave()) {
+    const bool rolledBack = screenConfigBackupSnapshotApply(false);
     screenConfigBackupSnapshotDiscard();
+    if (!rolledBack) {
+      screenStorageError = "config_restore_rollback";
+      return "restore_rollback_failed";
+    }
     screenStorageError = "config_restore_write";
     return "storage_error";
   }
 
   screenConfigBackupRuntimeReset();
+  screenBackupRestoreStage = "complete";
   return "ok";
 }
