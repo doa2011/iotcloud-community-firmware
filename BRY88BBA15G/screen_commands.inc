@@ -553,8 +553,12 @@ static __attribute__((noinline)) const char *screenLegacyServicesCommand(
         strcmp(screenImage.state, "staged_verified"))
       return "not_ready";
     const char *result = screenGuardRequest(GUARD_INSTALL, 0, 0, data);
-    if (!strcmp(result, "accepted"))
+    if (!strcmp(result, "accepted")) {
+      screenImage.installSession = screenGuard.session;
+      screenImage.deadline = millis() + 240000;
       screenImage.state = "installing";
+      invalidateBusinessStatusCache();
+    }
     return result;
   }
   if (action == "screen.update.cancel") {

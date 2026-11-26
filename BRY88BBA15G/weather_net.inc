@@ -406,7 +406,7 @@ static void screenWeatherPoll(uint32_t now) {
       screenWeatherSentAt = now;
     }
   }
-  if (g3OnlineBusy || screenWeatherBusy || screenSyncStep || screenPowerWanted.load() || screenImage.active || screenLayoutUpload.active() ||
+  if (g3OnlineBusy || screenWeatherBusy || screenSyncStep || screenPowerPhase.load() != POWER_IDLE || screenImage.active || screenLayoutUpload.active() ||
       screenFontBusy() || screenWallpaper.active || screenWallpaper.pending ||
       !(screenWeatherConfig["enabled"] | false) ||
       WiFi.status() != WL_CONNECTED || time(nullptr) < 1700000000)
