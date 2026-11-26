@@ -28,6 +28,7 @@ static bool bry_bridge_send(void *,const void *p,size_t n,unsigned cap) {
 }
 #include "screen_module.inc"
 static bool acknowledge = true;
+static uint32_t acknowledgeAt;
 static void delay(unsigned n) {
   ms += n;
   if (guardReadyAt && (int32_t)(ms - guardReadyAt) >= 0) {
@@ -35,6 +36,7 @@ static void delay(unsigned n) {
     guardReadyAt = 0;
   }
   screenModulePowerPoll(ms);
+  if(acknowledgeAt && (int32_t)(ms-acknowledgeAt)>=0){acknowledge=true;acknowledgeAt=0;}
   if (acknowledge && screenPowerRequest) {
     uint8_t response[20] = {SCREEN_MSG_MODULE_STATUS, 1, 0, 5};
     scene_put32(response + 4, screenPowerRequest);
@@ -95,11 +97,19 @@ int main() {
          screenPowerRequest==renewal+1);
   acknowledge=true;delay(1);delay(1);
   assert(screenModulePowerHealthy() && !screenPowerRequest && !screenPowerRetried);
+  /* A worker must pause flash during renewals, including the one retry.
+   * Merely observing PD12 low must not unblock the worker. */
+  acknowledge=false;delay(15000);
+  assert(screenPowerAckPending && screenModulePowerHealthy());
+  auto quietStart=ms; acknowledgeAt=ms+3500;
+  assert(screenModulePowerBeforeFlash());
+  assert(ms-quietStart>=3500 && !screenPowerAckPending);
   /* A second missing renewal reply still aborts, within the old lease. */
   acknowledge=false;delay(15000);delay(3000);
   assert(screenModulePowerHealthy() && screenPowerRetried);
   delay(3000);
   assert(!screenModulePowerHealthy() && screenPowerFailed);
+  assert(!screenModulePowerBeforeFlash());
   guardAvailable=true;
   screenModulePowerEnd(); delay(1);
   assert(!screenModulePowerHealthy() && sent[2] == SCREEN_MODULE_HIGH);

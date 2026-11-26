@@ -309,6 +309,9 @@ static bool otaErase(void *context){
   auto *f=(OtaFlash*)context;
   // Writes are continuous and bounded to 1024 bytes. Let IDF erase only newly
   // reached sectors instead of blocking the HTTP task on a whole-image erase.
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(!screenModulePowerBeforeFlash())return false;
+#endif
   return esp_ota_begin(f->partition,OTA_WITH_SEQUENTIAL_WRITES,&f->handle)==ESP_OK;
 }
 static void otaYield(OtaFlash *f,size_t n){
@@ -322,11 +325,17 @@ static void otaYield(OtaFlash *f,size_t n){
 }
 static bool otaWrite(void *context,uint32_t offset,const uint8_t *data,size_t n){
   (void)offset;auto *f=(OtaFlash*)context;
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(!screenModulePowerBeforeFlash())return false;
+#endif
   if(esp_ota_write(f->handle,data,n)!=ESP_OK)return false;
   otaYield(f,n);return true;
 }
 static bool otaRead(void *context,uint32_t offset,uint8_t *data,size_t n){
   auto *f=(OtaFlash*)context;
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(!screenModulePowerBeforeFlash())return false;
+#endif
   if(esp_partition_read(f->partition,offset,data,n)!=ESP_OK)return false;
   otaYield(f,n);return true;
 }
@@ -361,14 +370,21 @@ static esp_err_t uploadFirmware(httpd_req_t *req,bool signedImage,const daikin::
   if(ok){ok=signedImage?signed_ota_write(&verifier,buffer+envelope,prefix):otaWrite(&flash,0,buffer,prefix);left-=prefix;}
   while(ok&&left>0){
 #ifdef IOTCLOUD_BRY88_SCREEN
-    if(!screenModulePowerHealthy()){modulePowerLost=true;ok=false;break;}
+    if(!screenModulePowerBeforeFlash()){modulePowerLost=true;ok=false;break;}
 #endif
     int n=httpd_req_recv(req,(char*)buffer,min(left,512));if(n<=0){ok=false;break;}ok=signedImage?signed_ota_write(&verifier,buffer,n):otaWrite(&flash,0,buffer,n);left-=n;}
   if(ok&&signedImage)ok=signed_ota_finish(&verifier);
   // Verify the actual staged identity again after signature/digest validation.
   if(ok)ok=otaRead(&flash,0,buffer,prefix)&&daikin::matchingFirmwarePrefix(buffer,prefix,expected,self->project_name);
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(ok&&!screenModulePowerBeforeFlash()){modulePowerLost=true;ok=false;}
+#endif
   if(ok){ok=esp_ota_end(flash.handle)==ESP_OK;flash.handle=0;}
   if(flash.handle)esp_ota_abort(flash.handle);
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(ok&&!screenModulePowerBeforeFlash()){modulePowerLost=true;ok=false;}
+  if(!ok&&!screenModulePowerHealthy())modulePowerLost=true;
+#endif
   if(ok)ok=esp_ota_set_boot_partition(partition)==ESP_OK;
   otaActive=false;
 #ifdef IOTCLOUD_BRY88_SCREEN

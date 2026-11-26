@@ -757,6 +757,10 @@ static void screenServicesPoll(uint32_t now) {
   screenMediaPoll(now);
   screenLayoutUpload.expire(now);
   screenModulePowerPoll(now);
+  // Preserve UART RX and media link heartbeats, but defer unrelated scene,
+  // settings, weather, font and reminder work during ESP application OTA.
+  // These tasks can generate bursts of responses while the flash cache is off.
+  if (screenPowerPhase.load()!=POWER_IDLE) return;
   screenAppearancePoll();
   screenWallpaperPoll(now);screenFontPoll(now);
   if (!strcmp(screenGuard.state, "pending") &&
