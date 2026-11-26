@@ -56,7 +56,9 @@ enum {
   MEDIA_SELECT,
   MEDIA_PUSH_URL,
   MEDIA_PUSH_UPDATE,
-  MEDIA_PUSH_POLICY
+  MEDIA_PUSH_POLICY,
+  MEDIA_ALBUM_SET,
+  MEDIA_ALBUM_CLEAR
 };
 /* Presence mask for MEDIA_PUSH_UPDATE. Source bytes follow the mask only
  * when at least one MEDIA_UPDATE_SOURCE bit is set. */
