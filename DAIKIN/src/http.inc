@@ -133,17 +133,20 @@ static String backupExecute(){
 #ifdef IOTCLOUD_BRY88_SCREEN
   const size_t screenExtra = screenConfigCapacity(screenWeatherConfig,
       screenSavedSettings, screenSchedule, screenNotices) +
-      2 * ((SCENE_BYTES + 2) / 3 * 4) +
-      2 * ((DISPLAY_POLICY_BYTES + 2) / 3 * 4) +
-      2 * ((APPEARANCE_BYTES + 2) / 3 * 4) + 8192;
+      ((SCENE_BYTES + 2) / 3 * 4) +
+      ((DISPLAY_POLICY_BYTES + 2) / 3 * 4) +
+      ((APPEARANCE_BYTES + 2) / 3 * 4) + 3 + 1024;
   const size_t backupLimit = 65536;
 #else
   const size_t screenExtra = 0;
   const size_t backupLimit = configCapacity + 1024;
 #endif
   if(webOperation==1){
+    // The HTTP owner has queued this export; the prior response is no longer
+    // in use. Release it before reserving the new envelope and output.
+    webResult=String();
     DynamicJsonDocument out(config.memoryUsage()+screenExtra+1024);
-    if(!out.capacity())return "{\"code\":\"busy\"}";
+    if(!out.capacity())return "{\"code\":\"busy\",\"message\":\"backup envelope allocation failed\"}";
 #ifdef IOTCLOUD_BRY88_SCREEN
     out["schema"]=2;
 #else
@@ -153,13 +156,16 @@ static String backupExecute(){
     out["config_version"]=1;out["firmware_version"]=version;out["config"]=config;
 #ifdef IOTCLOUD_BRY88_SCREEN
     out["hardware_model"]=hardwareModel;
-    if(!screenConfigBackupCapture(out.as<JsonObject>()))return "{\"code\":\"busy\"}";
+    if(!screenConfigBackupCapture(out.as<JsonObject>()))return "{\"code\":\"busy\",\"message\":\"backup screen capture failed\"}";
 #endif
-    if(out.overflowed())return "{\"code\":\"busy\"}";
+    if(out.overflowed())return "{\"code\":\"busy\",\"message\":\"backup JSON pool exhausted\"}";
     const size_t length=measureJson(out);String text;
-    if(!text.reserve(length))return "{\"code\":\"busy\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+    if(length>backupLimit)return "{\"code\":\"invalid_backup\",\"message\":\"backup exceeds restore limit\"}";
+#endif
+    if(!text.reserve(length))return "{\"code\":\"busy\",\"message\":\"backup output allocation failed\"}";
     serializeJson(out,text);
-    if(text.length()!=length)return "{\"code\":\"busy\"}";
+    if(text.length()!=length)return "{\"code\":\"busy\",\"message\":\"backup serialization incomplete\"}";
     return text;
   }
   // A preceding export can leave a large response allocated. The HTTP

@@ -128,20 +128,28 @@ static bool screenConfigBackupCapture(JsonObject parent) {
   String appearance = screenBase64(appearanceBytes, sizeof(appearanceBytes));
   if (appearance.length() != 4 * ((sizeof(appearanceBytes) + 2) / 3))
     return false;
-  DynamicJsonDocument doc(screenConfigCapacity(screenWeatherConfig,
-      screenSavedSettings, screenSchedule, screenNotices));
-  if (!doc.capacity() ||
-      !screenConfigDocument(doc, layout.c_str(), screenWeatherConfig,
-          screenSavedSettings, screenSchedule, screenNotices,
-          policy.c_str(), appearance.c_str(), screenStartupAuto) ||
-      doc.overflowed())
+  // Compose directly into the envelope; no second JSON pool. Store owned
+  // copies of all three temporary Base64 strings before leaving this scope.
+  JsonObject doc = parent.createNestedObject("screen");
+  if (doc.isNull()) return false;
+  screenConfigFields(doc, "", screenWeatherConfig, screenSavedSettings,
+      screenSchedule, screenNotices, "", "", screenStartupAuto);
+  doc["layout"] = layout;
+  doc["policy"] = policy;
+  doc["appearance"] = appearance;
+  if (doc.size() != 11 ||
+      !doc["layout"].is<const char *>() ||
+      !doc["policy"].is<const char *>() ||
+      !doc["appearance"].is<const char *>() ||
+      strlen(doc["layout"].as<const char *>()) != layout.length() ||
+      strlen(doc["policy"].as<const char *>()) != policy.length() ||
+      strlen(doc["appearance"].as<const char *>()) != appearance.length())
     return false;
   ScreenBackupCrcWriter writer;
   if (serializeMsgPack(doc, writer) != measureMsgPack(doc))
     return false;
   parent["screen_crc32"] = writer.value();
-  parent["screen"] = doc.as<JsonObjectConst>();
-  return parent.containsKey("screen") && parent.containsKey("screen_crc32");
+  return parent.containsKey("screen_crc32");
 }
 static bool screenConfigBackupVerify(JsonObjectConst parent) {
   if (!parent["screen"].is<JsonObjectConst>() ||

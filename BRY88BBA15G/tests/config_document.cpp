@@ -109,6 +109,23 @@ int main() {
     assert(restored.size() == 11);
     assert(!restored.containsKey("font_data"));
     assert(!restored.containsKey("wallpaper_data"));
+    // Exercise the device's single-pool composer at the actual payload size.
+    // Temporary strings must remain valid after the capture scope exits.
+    DynamicJsonDocument compact(capacity + layout.size() + policy.size() +
+                                appearance.size() + 3 + 2048);
+    {
+      std::string a=layout, b=policy, c=appearance;
+      JsonObject screen=compact.createNestedObject("screen");
+      screenConfigFields(screen, "", weather, settings, schedule, notices, "", "");
+      screen["layout"]=a; screen["policy"]=b; screen["appearance"]=c;
+    }
+    assert(!compact.overflowed());
+    assert(compact["screen"]["layout"].as<std::string>() == layout);
+    assert(compact["screen"]["policy"].as<std::string>() == policy);
+    assert(compact["screen"]["appearance"].as<std::string>() == appearance);
+    std::string compactWire;
+    assert(serializeMsgPack(compact["screen"], compactWire) == wire.size());
+    assert(compactWire == wire);
     // The public PHCB backup wraps this exact screen record. Its copy must
     // retain layout, brightness, sleep policy and appearance metadata without
     // embedding either independent MCU resource bank.
