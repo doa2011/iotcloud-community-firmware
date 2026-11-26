@@ -3,6 +3,7 @@
  * not copy the MCU's independent font bank or wallpaper pixel bank.
  */
 #include "screen_config_restore_candidate.h"
+#include "backup_json.h"
 
 struct ScreenConfigBackupSnapshot {
   std::unique_ptr<ScreenConfigRestoreCandidate> state;
@@ -209,7 +210,7 @@ static bool screenBackupWeatherValid(JsonObjectConst weather) {
  * On any write failure, restore the previous in-memory configuration.
  */
 static const char *screenBackupRestoreStage = "idle";
-static const char *screenConfigBackupRestore(DynamicJsonDocument &envelope) {
+static const char *screenConfigBackupRestore(DynamicJsonDocument &envelope, String &upload) {
   screenBackupRestoreStage = "screen_envelope";
   JsonObjectConst backup = envelope["screen"].as<JsonObjectConst>();
   if (!screenStoreAvailable || !screenStoreMutex)
@@ -273,10 +274,10 @@ static const char *screenConfigBackupRestore(DynamicJsonDocument &envelope) {
   DynamicJsonDocument nextWeather(screenWeatherConfigBytes);
   DynamicJsonDocument nextSettings(1024);
   if (!nextWeather.capacity() || !nextSettings.capacity()) return "busy";
-  if (!nextWeather.set(backup["weather"]) ||
-      !nextSettings.set(backup["settings"]) ||
-      nextWeather.overflowed() || nextSettings.overflowed() ||
-      !screenBackupWeatherValid(nextWeather.as<JsonObjectConst>()))
+  if (!backupJsonCopyOwned(nextWeather, backup["weather"]) ||
+      !backupJsonCopyOwned(nextSettings, backup["settings"]))
+    return "busy";
+  if (!screenBackupWeatherValid(nextWeather.as<JsonObjectConst>()))
     return "invalid_backup";
   if (nextSettings.containsKey("tvoc_warmup_minutes")) {
     JsonVariant value = nextSettings["tvoc_warmup_minutes"];
@@ -338,6 +339,7 @@ static const char *screenConfigBackupRestore(DynamicJsonDocument &envelope) {
   // Every field has been validated and copied. The device config candidate
   // is also owned by the caller. Release the complete input JSON now.
   envelope = DynamicJsonDocument(0);
+  upload = String(); // all surviving fields now own their data
   screenBackupRestoreStage = "rollback_snapshot";
   if (!screenConfigBackupSnapshotCapture())
     return "busy";

@@ -173,12 +173,34 @@ static String backupExecute(){
   webResult=String();
   // The export formula reserves several copies of the Base64 payload.
   // Restore starts from the actual upload, not the export worst case.
+#ifdef IOTCLOUD_BRY88_SCREEN
+  // The 12+ KiB Base64 scene remains in the mutable HTTP upload. Only
+  // structural slots need a JSON pool; count them before parsing because
+  // a failed zero-copy parse mutates the input and cannot be retried.
+  const size_t capacity=backupJsonPoolCapacity(webBody.c_str(),webBody.length(),backupLimit);
+  if(!capacity)return "{\"code\":\"invalid_backup\",\"message\":\"restore JSON structure limit or unterminated string\"}";
+#else
   size_t capacity=webBody.length()+2048;
   if(capacity>backupLimit)capacity=backupLimit;
+#endif
   for(;;){
     // JSON structure and strings determine memory use. Retry a genuinely larger
     // document after NoMemory, releasing each previous pool before allocating.
     DynamicJsonDocument backup(capacity);
+#ifdef IOTCLOUD_BRY88_SCREEN
+    if(!backup.capacity()){
+      char detail[192];
+      snprintf(detail,sizeof(detail),"{\"code\":\"busy\",\"message\":\"restore JSON allocation failed: requested=%u largest_internal=%u free_internal=%u\"}",
+        unsigned(capacity),unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT)),
+        unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT)));
+      return String(detail);
+    }
+    auto error=deserializeJson(backup,&webBody[0],webBody.length());
+    if(error==DeserializationError::NoMemory)
+      return "{\"code\":\"busy\",\"message\":\"restore JSON structural pool exhausted\"}";
+    // Keep the mutable upload alive until screen and device candidates have
+    // copied every field. Never retry against mutated JSON input.
+#else
     if(!backup.capacity())return "{\"code\":\"busy\",\"message\":\"restore JSON allocation failed\"}";
     auto error=deserializeJson(backup,webBody.c_str(),webBody.length());
     if(error==DeserializationError::NoMemory){
@@ -189,6 +211,7 @@ static String backupExecute(){
     // The const input overload copies strings into the document. Release the
     // upload before allocating the decoded layout and rollback state.
     webBody=String();
+#endif
 #ifdef IOTCLOUD_BRY88_SCREEN
     const bool envelopeValid = backup["schema"]==2 &&
         String(backup["hardware_model"]|"")=="BRY88BBA15G" &&
@@ -203,13 +226,17 @@ static String backupExecute(){
       !validConfig(backup["config"].as<JsonObjectConst>()))
       return "{\"code\":\"invalid_backup\",\"message\":\"restore envelope, checksum or device config validation failed\"}";
     auto restored=backup["config"].as<JsonObjectConst>();
+#ifdef IOTCLOUD_BRY88_SCREEN
+    size_t candidateCapacity=restored.memoryUsage()+measureMsgPack(restored)+128;
+#else
     size_t candidateCapacity=restored.memoryUsage()+1024;
+#endif
     if(candidateCapacity>configCapacity)candidateCapacity=configCapacity;
     DynamicJsonDocument candidate(candidateCapacity);
-    if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())
-      return "{\"code\":\"busy\",\"message\":\"restore device config allocation failed\"}";
 #ifdef IOTCLOUD_BRY88_SCREEN
-    const char *screenResult=screenConfigBackupRestore(backup);
+    if(!backupJsonCopyOwned(candidate,restored))
+      return "{\"code\":\"busy\",\"message\":\"restore device config allocation failed\"}";
+    const char *screenResult=screenConfigBackupRestore(backup,webBody);
     if(strcmp(screenResult,"ok"))
       return String("{\"code\":\"")+screenResult+"\",\"message\":\"restore stage: "+screenBackupRestoreStage+"\"}";
     // The screen restore has already released the input envelope.
@@ -220,6 +247,8 @@ static String backupExecute(){
     }
     screenConfigBackupSnapshotDiscard();
 #else
+    if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())
+      return "{\"code\":\"busy\",\"message\":\"restore device config allocation failed\"}";
     if(!saveConfigTransaction(candidate,true))
       return "{\"code\":\"storage_error\"}";
 #endif

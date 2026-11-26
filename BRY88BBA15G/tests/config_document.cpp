@@ -1,9 +1,11 @@
 #include "screen_config_document.h"
+#include "backup_json.h"
 #include "screen_settings_snapshot.h"
 #include "screen_store_writer.h"
 #include <cassert>
 #include <cstdio>
 #include <string>
+#include <algorithm>
 static uint8_t flash[BRY_STORE_SIZE];
 static size_t largestWrite;
 static bool readFlash(void *, uint32_t at, void *out, size_t n) {
@@ -143,6 +145,35 @@ int main() {
     assert(!envelope.overflowed());
     std::string backup;
     assert(serializeJson(envelope, backup) == measureJson(envelope));
+    // Actual full envelope, including long Base64 and escaped punctuation,
+    // parsed in-place with a structural pool. Validate CRC and deep copies
+    // even after destroying the backing upload.
+    envelope["config"]["ssid"]=std::string("test,{[\\\"}ssid");
+    envelope["config"]["nested"]["key"]=std::string("owned-value");
+    backup.clear();
+    assert(serializeJson(envelope, backup)==measureJson(envelope));
+    const size_t parseCapacity=backupJsonPoolCapacity(backup.data(),backup.size(),65536);
+    assert(parseCapacity && (count || parseCapacity<4096));
+    DynamicJsonDocument zeroCopy(parseCapacity);
+    assert(!deserializeJson(zeroCopy,&backup[0],backup.size()));
+    std::string zeroWire;
+    serializeMsgPack(zeroCopy["screen"],zeroWire);
+    assert(zeroWire==screenWire);
+    DynamicJsonDocument ownedConfig(2048), ownedWeather(4096), ownedSettings(1024);
+    assert(backupJsonCopyOwned(ownedConfig,zeroCopy["config"]));
+    assert(backupJsonCopyOwned(ownedWeather,zeroCopy["screen"]["weather"]));
+    assert(backupJsonCopyOwned(ownedSettings,zeroCopy["screen"]["settings"]));
+    zeroCopy.clear();
+    std::fill(backup.begin(),backup.end(),'X');
+    assert(ownedConfig["ssid"].as<std::string>()==std::string("test,{[\\\"}ssid"));
+    assert(ownedConfig["nested"]["key"].as<std::string>()=="owned-value");
+    assert(ownedWeather["key"].as<std::string>()==std::string(256,'k'));
+    assert(ownedSettings["display"]["luminance"]==0);
+    assert(!backupJsonPoolCapacity("\"unterminated",13,65536));
+    std::printf("PASS zero-copy backup: %u records each, pool=%zu, upload=%zu\\n",
+                count,parseCapacity,backup.size());
+    backup.clear();
+    serializeJson(envelope,backup);
     DynamicJsonDocument imported(131072);
     assert(!deserializeJson(imported, backup));
     assert(imported["hardware_model"] == "BRY88BBA15G");
