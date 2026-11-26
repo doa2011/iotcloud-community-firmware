@@ -21,6 +21,41 @@ static ScreenGuard screenGuard;
 static bool screenGuardAvailable() {
   return screenGuard.session && uint32_t(millis() - screenGuard.seen) < 15000;
 }
+/* Raw transfer deadline and post-activation deadline are independent.
+ * A Guard ACK only acknowledges the install request, not a new boot. */
+static bool screenInstallPending() {
+  return !strcmp(screenImage.state, "installing") ||
+         !strcmp(screenImage.state, "factory_installing");
+}
+static bool screenInstallConfirm() {
+  if (!screenInstallPending() || !screenGuardAvailable() || screenGuard.mode ||
+      screenGuard.session == screenImage.installSession ||
+      !screenGuard.imageMd5[0] ||
+      screenHex(screenImage.md5, 16) != screenGuard.imageMd5)
+    return false;
+  screenImage.state = "installed";
+  return true;
+}
+static const char *screenInstallPoll(uint32_t now) {
+  if (!screenInstallPending()) return nullptr;
+  if (screenInstallConfirm()) {
+    invalidateBusinessStatusCache();
+    return nullptr;
+  }
+  if (screenGuard.session == screenImage.installSession &&
+      screenGuard.operation == GUARD_INSTALL &&
+      !strcmp(screenGuard.state, "mcu_rejected")) {
+    screenImage.state = "install_failed";
+    invalidateBusinessStatusCache();
+    return "install_rejected";
+  }
+  if ((int32_t)(now - screenImage.deadline) >= 0) {
+    screenImage.state = "timeout";
+    invalidateBusinessStatusCache();
+    return "install_boot_timeout";
+  }
+  return nullptr;
+}
 static bool screenGuardAnnounce(const String &arg) {
   unsigned version, session, sequence, mode, remaining, control, reset, clock, status;
   char extra;
@@ -70,13 +105,7 @@ static bool screenGuardImageAnnounce(const String &arg) {
       bool changed = strcmp(screenGuard.imageMd5, arg.c_str() + 2);
       memcpy(screenGuard.imageMd5, arg.c_str() + 2, 32);
       screenGuard.imageMd5[32] = 0;
-      if (screenGuardAvailable() &&
-          (!strcmp(screenImage.state, "factory_installing") ||
-           !strcmp(screenImage.state, "installing")) &&
-          screenHex(screenImage.md5, 16) == screenGuard.imageMd5) {
-        screenImage.state = "installed";
-        changed = true;
-      }
+      if (screenInstallConfirm()) changed = true;
       if (changed)
         invalidateBusinessStatusCache();
     }

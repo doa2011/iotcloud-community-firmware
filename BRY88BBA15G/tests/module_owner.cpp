@@ -167,6 +167,23 @@ int main() {
   assert(ms-guardWaitStart>=12000 && ms-guardWaitStart<=12001);
   screenModulePowerEnd();delay(1);
   guardAvailable=true;screenRecovering=false;screenGuard.mode=0;
+  /* Retry before the UART owner has consumed End. */
+  assert(screenModulePowerBegin());
+  auto prior = screenModule.request;
+  screenModulePowerEnd();
+  assert(screenPowerPhase == POWER_RELEASING && !screenModulePowerHealthy());
+  assert(screenModulePowerBegin() && screenModulePowerHealthy());
+  assert(screenModule.request == prior + 2);
+  screenModulePowerEnd();delay(1);
+  screenPowerPhase = POWER_PREPARING;
+  screenPowerFailed = true;
+  auto unchanged = sent;
+  screenModulePowerPoll(ms);
+  assert(screenPowerPhase == POWER_PREPARING && sent == unchanged);
+  assert(!screenModulePowerBegin());
+  screenPowerPhase = POWER_IDLE;
+  assert(screenModulePowerBegin() && screenModulePowerHealthy());
+  screenModulePowerEnd();delay(1);
   /* A factory peer receives no extension and retains its original OTA path. */
   screenBridge.capabilities=0;auto previous=sent;
   assert(screenModulePowerBegin() && screenModulePowerHealthy() && sent==previous);

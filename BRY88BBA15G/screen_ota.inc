@@ -202,6 +202,8 @@ static bool screenOtaCommand(const String &cmd, const String &arg) {
       screenSend("+end_ota:" + screenHex(screenImage.md5, 16) + "\r\n");
     screenImage.active = false;
     screenImage.state = screenImage.bootstrap ? "factory_installing" : "staged_verified";
+    if (screenImage.bootstrap) screenImage.deadline = millis() + 240000;
+    invalidateBusinessStatusCache();
     return true;
   }
   screenImage.active = false;

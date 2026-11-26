@@ -89,6 +89,7 @@ struct ScreenImage {
   bool valid = false, active = false, pending = false, bootstrap = false;
   uint32_t features = 0;
   uint32_t size = 0, offset = 0, chunk = 0, deadline = 0;
+  uint32_t installSession = 0; // session before activation
   uint8_t md5[16] = {}, sha[32] = {};
   const char *state = "empty";
 };
@@ -166,8 +167,28 @@ static void testLinkReset() {
   assert(screenGuardImageAnnounce(image));
   assert(invalidations == invalidated);
   screenImage.state = "installing";
+  screenImage.installSession = screenGuard.session;
+  screenImage.deadline = testMillis + 240000;
   assert(screenGuardImageAnnounce(image));
-  assert(invalidations == ++invalidated && !strcmp(screenImage.state, "installed"));
+  assert(invalidations == invalidated && screenInstallPending());
+  // An ACK or same-session digest is not evidence of a successful reboot.
+  screenGuard.operation = GUARD_INSTALL;
+  screenGuard.state = "complete";
+  assert(!screenInstallPoll(testMillis + 239999) && screenInstallPending());
+  const char *error = screenInstallPoll(testMillis + 240000);
+  assert(error && !strcmp(error, "install_boot_timeout"));
+  assert(!strcmp(screenImage.state, "timeout") && invalidations == ++invalidated);
+  screenImage.state = "installing";
+  screenImage.deadline = testMillis + 240000;
+  assert(screenGuardAnnounce("3 87654321 0 1 30000 00000403 00001400 00003001 00000000"));
+  assert(invalidations == ++invalidated);
+  assert(screenGuardImageAnnounce(image) && screenInstallPending());
+  assert(invalidations == ++invalidated);
+  assert(screenGuardAnnounce("3 87654321 0 0 30000 00000403 00001400 00003001 00000000"));
+  assert(invalidations == ++invalidated);
+  assert(!screenInstallPoll(testMillis) && !strcmp(screenImage.state, "installed"));
+  assert(invalidations == ++invalidated);
+  toMcu.clear();
   assert(screenGuardImageAnnounce("1 10000000000000000000000000000000"));
   assert(invalidations == ++invalidated);
   assert(screenGuardAnnounce("3 98765432 0 0 30000 00000403 00001400 00003001 00000000"));
