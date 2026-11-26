@@ -87,7 +87,8 @@ bool scene_validate(const screen_scene *s) {
           c->chart > SC_CH_RING || c->series_count > SCENE_SERIES ||
           (c->hours && c->hours != 1 && c->hours != 6 && c->hours != 24) ||
           c->binding2 > SC_BIND_EXTERNAL || c->binding3 > SC_BIND_EXTERNAL ||
-          c->additive > 1 || c->image_source || c->image_fit>1 ||
+          c->additive > 1 || c->image_source || c->image_fit>2 ||
+          (c->image_fit==2 && (c->x || c->y || c->w!=4 || c->h!=6)) ||
           (c->type!=SC_IMAGE&&c->image_fit) || !utf8(c->text, sizeof(c->text), true) ||
           (c->points&&c->points!=32&&c->points!=64&&c->points!=128&&c->points!=256) || c->hide_title > 1 || c->value_mode > SC_VALUE_GRADE ||
           (c->value_mode && c->type != SC_VALUE) ||
