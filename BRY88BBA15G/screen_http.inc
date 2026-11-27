@@ -119,3 +119,139 @@ static esp_err_t screenUploadHandler(httpd_req_t *req) {
   serializeWireMP(response, wire);
   return jsonResponse(req, "200 OK", wire);
 }
+
+
+// HTTP worker owns the input mailbox only while webDone=true. The loop owns
+// all UART writes and ACK checks. No image-sized RAM allocation or Flash staging.
+#include "screen_jpeg_upload.h"
+static struct {
+  ScreenJpegHeader header;
+  uint8_t packet[MEDIA_CHUNK+9]={};
+  size_t length=0;
+  uint32_t sequence=0,session=0,deadline=0;
+  const char *result="idle";
+} screenJpeg;
+static const uint8_t *screenJpegSlot(uint32_t id) {
+  for(unsigned i=0;i<MEDIA_IMAGE_SLOTS;++i) {
+    const uint8_t *p=screenMedia.snapshot+MEDIA_STATUS_IMAGES+17*i;
+    if(media_u32(p)==id)return p;
+  }
+  return nullptr;
+}
+static void screenJpegFinish(const char *result) {
+  screenJpeg.result=result;screenJpeg.sequence=0;
+  portENTER_CRITICAL(&webMux);webPending=false;webDone=true;portEXIT_CRITICAL(&webMux);
+}
+static void screenJpegOwnerPoll() {
+  if(!screenJpegBusy.load())return screenJpegFinish("aborted");
+  if(!webAuthRequired||!localAuthContextValid(&webAuthContext))
+    return screenJpegFinish("unauthorized");
+  if(otaActive||g3OnlineBusy||rebootAt||screenOtaActive()||
+     screenInstallPending()||!screenMediaAvailable())
+    return screenJpegFinish("not_ready");
+  const uint8_t op=screenJpeg.packet[0];
+  const auto &h=screenJpeg.header;
+  if(!screenJpeg.sequence) {
+    if(screenMedia.pending)return screenJpegFinish("busy");
+    if(op==MEDIA_BEGIN) {
+      if(screenJpegSlot(h.id))return screenJpegFinish("duplicate_id");
+      screenJpeg.session=screenMedia.session;
+    } else if(screenJpeg.session!=screenMedia.session) {
+      return screenJpegFinish("session_changed");
+    }
+    StaticJsonDocument<128> receipt;
+    const char *result=screenMediaSubmit(screenJpeg.packet,screenJpeg.length,
+                                          receipt.to<JsonObject>(),true);
+    if(strcmp(result,"accepted"))return screenJpegFinish(result);
+    screenJpeg.sequence=screenMedia.request;
+    screenJpeg.deadline=millis()+6500;
+    return;
+  }
+  if(screenJpeg.session!=screenMedia.session||
+     screenMedia.request!=screenJpeg.sequence||screenMedia.lastOp!=op||
+     screenMedia.lastId!=h.id)
+    return screenJpegFinish("superseded");
+  if(screenMedia.pending) {
+    if((int32_t)(millis()-screenJpeg.deadline)>=0)screenJpegFinish("timeout");
+    return;
+  }
+  if(strcmp(screenMedia.requestState,"complete")||screenMedia.result!=MEDIA_OK)
+    return screenJpegFinish("mcu_rejected");
+  const uint8_t *slot=screenJpegSlot(h.id);
+  if(op==MEDIA_CANCEL) {
+    if(slot)return screenJpegFinish("cancel_unconfirmed");
+  } else {
+    uint32_t offset=op==MEDIA_BEGIN?0:op==MEDIA_COMMIT?h.total:
+        media_u32(screenJpeg.packet+5)+screenJpeg.length-9;
+    if(!slot||!h.matches(slot,offset,op==MEDIA_COMMIT?2:1))
+      return screenJpegFinish("integrity_mismatch");
+  }
+  screenJpegFinish("ok");
+}
+static const char *screenJpegExchange(size_t length) {
+  if(webPending||!webDone)return "busy";
+  screenJpeg.length=length;
+  webOperation=5;webDone=false;
+  portENTER_CRITICAL(&webMux);webPending=true;portEXIT_CRITICAL(&webMux);
+  uint32_t start=millis();
+  while(!webDone) {
+    if(uint32_t(millis()-start)>=8000)return "owner_timeout";
+    delay(1);
+  }
+  return screenJpeg.result;
+}
+static esp_err_t screenJpegHandler(httpd_req_t *req) {
+  if(!authorized(req))return ESP_OK;
+  char type[48]={};
+  if(httpd_req_get_hdr_value_str(req,"Content-Type",type,sizeof(type))!=ESP_OK||
+     strcmp(type,"application/octet-stream"))
+    return jsonResponse(req,"415 Unsupported Media Type","{\"code\":\"invalid_params\"}");
+  if(req->content_len<=16||req->content_len>16u+MEDIA_JPEG_MAX)
+    return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
+  if(webPending||!webDone||otaActive||screenJpegBusy.exchange(true))
+    return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
+  struct Release { ~Release(){screenJpegBusy.store(false);} } release;
+  uint8_t header[16];
+  if(!receiveExact(req,header,sizeof(header)))return ESP_FAIL;
+  if(!screenJpeg.header.parse(header,req->content_len))
+    return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
+  if(!captureWebAuthorization(req))return ESP_OK;
+  uint32_t started=millis(),offset=0;
+  auto &h=screenJpeg.header;
+  h.begin(screenJpeg.packet);
+  const char *result=screenJpegExchange(17);
+  bool began=!strcmp(result,"ok");
+  while(!strcmp(result,"ok")&&offset<h.total) {
+    if(uint32_t(millis()-started)>=110000){result="upload_timeout";break;}
+    size_t n=h.chunkSize(offset);
+    h.chunk(screenJpeg.packet,offset);
+    if(!receiveExact(req,screenJpeg.packet+9,n)){result="upload_incomplete";break;}
+    result=screenJpegExchange(n+9);
+    if(!strcmp(result,"ok"))offset+=n;
+  }
+  if(!strcmp(result,"ok")) {
+    h.terminal(screenJpeg.packet,false);
+    result=screenJpegExchange(5);
+  }
+  if(strcmp(result,"ok")) {
+    // Only cancel our confirmed, unreferenced staging image. Never cancel
+    // an existing ID, a new session, or a mailbox still in flight.
+    if(began&&webDone&&!webPending) {
+      h.terminal(screenJpeg.packet,true);
+      (void)screenJpegExchange(5);
+    }
+    const String body=String("{\"code\":\"upload_failed\",\"message\":\"")+result+"\"}";
+    // An incomplete body must not be reused as another HTTP request.
+    if(offset<h.total) {
+      jsonResponse(req,"503 Service Unavailable",body);
+      return ESP_FAIL;
+    }
+    return jsonResponse(req,"503 Service Unavailable",body);
+  }
+  StaticJsonDocument<256> reply;
+  reply["code"]="ok";JsonObject data=reply.createNestedObject("data");
+  data["id"]=h.id;data["total"]=h.total;data["offset"]=offset;
+  data["crc32"]=h.crc;data["state"]="ready";data["elapsed_ms"]=millis()-started;
+  String wire;serializeWireMP(reply,wire);
+  return jsonResponse(req,"200 OK",wire);
+}

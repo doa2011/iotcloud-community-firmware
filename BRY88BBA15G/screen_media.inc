@@ -299,9 +299,11 @@ static bool screenMediaAvailable() {
          uint32_t(millis() - screenMedia.seen) < 10000;
 }
 static const char *screenMediaSubmit(const uint8_t *p, size_t n,
-                                     JsonObject out) {
+                                     JsonObject out, bool jpegOwner = false) {
   if (!screenMediaAvailable())
     return "not_ready";
+  if (screenJpegBusy.load() && !jpegOwner)
+    return "busy";
   if (screenOtaActive() || screenImage.active || screenUploadBusy ||
       screenFontBusy() || screenWallpaper.active || screenWallpaper.pending)
     return "busy";
@@ -359,6 +361,7 @@ static void screenLinkGet(JsonObject out) {
     rates.add(rate);
 }
 static const char *screenLinkSet(JsonObjectConst params, JsonObject out) {
+  if (screenJpegBusy.load()) return "busy";
   if (!screenFields(params, "|mode||rate||max_rate||apply_now|") ||
       !params["mode"].is<const char *>())
     return "invalid_params";
@@ -441,6 +444,7 @@ static void screenMediaGet(JsonObject out, bool all = true) {
   out["max_width"] = MEDIA_WIDTH_MAX;
   out["max_height"] = MEDIA_HEIGHT_MAX;
   out["chunk_bytes"] = MEDIA_CHUNK;
+  out["binary_upload_supported"] = true;
   out["queue_capacity"] = screenMedia.snapshot[28];
   out["image_capacity"] = MEDIA_IMAGE_SLOTS;
   out["stack_capacity"] = screenMedia.snapshot[30];
@@ -677,6 +681,7 @@ static const char *screenMediaCommand(const String &action,
     screenStreamGet(out);
     return "ok";
   }
+  if (screenJpegBusy.load()) return "busy";
   uint8_t p[MEDIA_PACKET_MAX] = {};
   size_t n = 0;
   if (action == "screen.album.set" || action == "screen.album.clear") {

@@ -7,7 +7,7 @@ static const char *screenUpdateStart(JsonObjectConst params) {
       !screenFields(params, "|mode||sha256|") ||
       params.size() != (bootstrap ? 2u : 1u))
     return "invalid_params";
-  if (screenUploadBusy || screenWallpaper.active || screenWallpaper.pending || screenFontBusy())
+  if (screenJpegBusy.load() || screenUploadBusy || screenWallpaper.active || screenWallpaper.pending || screenFontBusy())
     return "busy";
   screenImportArtifact();
   if (!screenImage.valid)

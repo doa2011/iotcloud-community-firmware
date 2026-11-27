@@ -83,7 +83,7 @@ static const char *g3OnlineCommand(const String &action,JsonObjectConst params,J
   }
   const bool install=action=="ota.install";
   if(!install&&action!="ota.check")return "unsupported";
-  if(g3OnlineBusy||otaActive||screenUploadBusy||screenImage.active||screenFontBusy()||screenWallpaper.active||screenWallpaper.pending||screenWeatherBusy||rebootAt)return "busy";
+  if(screenJpegBusy.load()||g3OnlineBusy||otaActive||screenUploadBusy||screenImage.active||screenFontBusy()||screenWallpaper.active||screenWallpaper.pending||screenWeatherBusy||rebootAt)return "busy";
   if(WiFi.status()!=WL_CONNECTED)return "offline";
   if(install&&(!g3Online.available||params.size()))return "not_ready";
   if(!install){const char *source=params["source"]|"";if(params.size()!=1||(strcmp(source,"github")&&strcmp(source,"cn")&&strcmp(source,"global")))return "invalid_params";strlcpy(g3Online.source,source,sizeof(g3Online.source));g3Online.available=false;}

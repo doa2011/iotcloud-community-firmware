@@ -161,7 +161,7 @@ static const char *screenGuardRequest(unsigned op, uint32_t offset, unsigned n,
                                        JsonObject data) {
   if (!screenGuardAvailable())
     return "not_supported";
-  if (screenImage.active || !strcmp(screenGuard.state, "pending"))
+  if (screenJpegBusy.load() || screenImage.active || !strcmp(screenGuard.state, "pending"))
     return "busy";
   if (screenGuard.sequence == UINT32_MAX)
     return "not_ready";

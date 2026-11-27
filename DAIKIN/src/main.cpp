@@ -230,6 +230,7 @@ static void startWifi(){
 }
 #ifdef IOTCLOUD_BRY88_SCREEN
 static bool g3OnlineBusy=false;
+static std::atomic<bool> screenJpegBusy{false};
 #include "../../BRY88BBA15G/runtime.inc"
 #include "../../BRY88BBA15G/screen_services.inc"
 #else
@@ -323,6 +324,7 @@ void setup(){
 #ifdef IOTCLOUD_BRY88_SCREEN
     httpd_uri_t screenUpload={};screenUpload.uri="/api/v1/screen/ota/upload";screenUpload.method=HTTP_POST;screenUpload.handler=screenUploadHandler;httpd_register_uri_handler(web,&screenUpload);
     screenUpload.method=HTTP_OPTIONS;screenUpload.handler=optionsHandler;httpd_register_uri_handler(web,&screenUpload);
+    httpd_uri_t jpeg={};jpeg.uri="/api/v1/screen/media/jpeg";jpeg.method=HTTP_POST;jpeg.handler=screenJpegHandler;httpd_register_uri_handler(web,&jpeg);
 #endif
     httpd_uri_t cmd={};cmd.uri="/api/v1/command";cmd.method=HTTP_POST;cmd.handler=commandHandler;httpd_register_uri_handler(web,&cmd);
     for(auto path:{"/api/v1/ota/upload","/api/v1/ota/upload-unsigned"}){httpd_uri_t ota={};ota.uri=path;ota.method=HTTP_POST;ota.handler=uploadHandler;httpd_register_uri_handler(web,&ota);}
@@ -356,6 +358,10 @@ void loop(){
   pollLocalControls(now);
   if(!otaActive){pollSessions();pollLanPairing();}
   pollBusinessStatusCache(now);pollLanBusiness();
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(webPending&&webOperation==5)screenJpegOwnerPoll();
+  else
+#endif
   if(webPending){
     if(webAuthRequired&&!localAuthContextValid(&webAuthContext)){
       webResult="{\"code\":\"unauthorized\"}";
@@ -438,7 +444,7 @@ void loop(){
   // UART publications invalidate status near the end of this iteration.
   // Publish their replacement before tickless idle exposes a busy window.
   if(businessStatusInvalid)pollBusinessStatusCache(millis());
-  screenPowerPoll(millis(),otaActive||screenUploadBusy||screenOtaActive()||g3OnlineBusy||screenPowerPhase.load()!=POWER_IDLE);
+  screenPowerPoll(millis(),otaActive||screenUploadBusy||screenOtaActive()||g3OnlineBusy||screenPowerPhase.load()!=POWER_IDLE||screenJpegBusy.load());
   // Active stop-and-wait traffic needs prompt credit/ACK service. Keep the
   // longer tickless idle interval when no media transfer owns the UART.
   delay((screenPowerPhase.load()!=POWER_IDLE||screenMediaNeedsFastPoll())?1:10);
