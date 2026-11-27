@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <string>
 #include <algorithm>
+#include <vector>
+#include <memory>
 static uint8_t flash[BRY_STORE_SIZE];
 static size_t largestWrite;
 static bool readFlash(void *, uint32_t at, void *out, size_t n) {
@@ -21,6 +23,36 @@ static bool writeFlash(void *, uint32_t at, const void *data, size_t n) {
 static bool eraseFlash(void *, uint32_t at, size_t n) {
   assert(at+n <= sizeof(flash) && !(at%4096) && !(n%4096));
   std::memset(flash+at, 255, n); return true;
+}
+// Test-side base64 fixture codec: round trip real SCN3 bytes through JSON
+// with exactly the same standard alphabet/padding as the device encoder.
+static std::string fixtureBase64(const uint8_t *p, size_t n) {
+  const char *alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  std::string out;
+  for (size_t i=0;i<n;i+=3) {
+    uint32_t a=p[i], b=i+1<n?p[i+1]:0, c=i+2<n?p[i+2]:0;
+    out+=alphabet[a>>2];out+=alphabet[((a&3)<<4)|(b>>4)];
+    out+=i+1<n?alphabet[((b&15)<<2)|(c>>6)]:'=';
+    out+=i+2<n?alphabet[c&63]:'=';
+  }
+  return out;
+}
+static std::vector<uint8_t> fixtureDecode(const std::string &s) {
+  const char *alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  std::vector<uint8_t> out;
+  assert(!(s.size()%4));
+  for(size_t i=0;i<s.size();i+=4) {
+    uint32_t v=0;
+    for(unsigned j=0;j<4;++j) {
+      const char *p=std::strchr(alphabet,s[i+j]);
+      assert(p||s[i+j]=='=');
+      v=(v<<6)|(p?uint32_t(p-alphabet):0);
+    }
+    out.push_back(v>>16);
+    if(s[i+2]!='=')out.push_back(v>>8);
+    if(s[i+3]!='=')out.push_back(v);
+  }
+  return out;
 }
 int main() {
   // A delayed upstream snapshot must not overwrite the locally persisted
@@ -65,7 +97,23 @@ int main() {
   settings["display"]["data_type"] = 0;
   settings["display"]["power_screen_time"] = 2;
   settings["display"]["battery_screen_time"] = 1;
-  std::string layout(12696, 'A'),policy(632,'B'),appearance(940,'C');
+  std::unique_ptr<screen_scene> original(new screen_scene), decoded(new screen_scene);
+  scene_defaults(original.get());
+  original->revision=42;
+  std::strcpy(original->page[5].title,"Album");
+  std::vector<uint8_t> raw(SCENE_BYTES), encoded(SCENE_BYTES);
+  assert(scene_encode(original.get(),raw.data()));
+  std::string layout=fixtureBase64(raw.data(),raw.size()),policy(632,'B'),appearance(940,'C');
+  assert(layout.size()==4*((SCENE_BYTES+2)/3));
+  assert(fixtureDecode(layout)==raw);
+  assert(scene_decode_candidate(decoded.get(),raw.data(),raw.size()));
+  assert(scene_encode(decoded.get(),encoded.data())&&encoded==raw);
+  auto malformed=raw;malformed[16]=2;
+  assert(!scene_decode_candidate(decoded.get(),malformed.data(),malformed.size()));
+  // Live decoder must still leave the current layout unchanged on rejection.
+  assert(!scene_decode(original.get(),malformed.data(),malformed.size()));
+  assert(scene_encode(original.get(),encoded.data())&&encoded==raw);
+  assert(!scene_decode_candidate(decoded.get(),raw.data(),raw.size()-1));
   for (unsigned count : {0u, 1u, 32u}) {
     for (unsigned i = 0; i < REMINDER_MAX; i++) {
       auto &r = schedule.rules[i];
@@ -159,6 +207,10 @@ int main() {
     std::string zeroWire;
     serializeMsgPack(zeroCopy["screen"],zeroWire);
     assert(zeroWire==screenWire);
+    auto decodedWire=fixtureDecode(zeroCopy["screen"]["layout"].as<std::string>());
+    assert(decodedWire==raw);
+    assert(scene_decode_candidate(decoded.get(),decodedWire.data(),decodedWire.size()));
+    assert(scene_encode(decoded.get(),encoded.data())&&encoded==raw);
     DynamicJsonDocument ownedConfig(2048), ownedWeather(4096), ownedSettings(1024);
     assert(backupJsonCopyOwned(ownedConfig,zeroCopy["config"]));
     assert(backupJsonCopyOwned(ownedWeather,zeroCopy["screen"]["weather"]));

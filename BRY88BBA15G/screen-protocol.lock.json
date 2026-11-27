@@ -9,8 +9,8 @@
     "protocol/screen_link.h": "790c53da4b7788fa83ea96a62a8493374623ae89632fcf70b91c0294de175a4d",
     "protocol/widgets.c": "6ab69c7d7f7a672098aca3510a51e86f1476abb47e0a1d8d9389d833b68c1ab1",
     "protocol/widgets.h": "9233109412dd2e8931a263d98ed06e9dc9b2dbe5b1d3e9a52f583fc274d34d71",
-    "protocol/scene.c": "28b65dcd153be6d41a2b95510c70dd7e1bc3c1a563ba04f92dd3cc3fb63131fc",
-    "protocol/scene.h": "efbbca3446c4ba78be9ae9da24f9a9d50d8247a8c37713808321199088d9c24f",
+    "protocol/scene.c": "c22a4da04114fe5aa69d508e9bc10250b88504e44d3a418681a41a4f9f535e26",
+    "protocol/scene.h": "cdb8d61f6c2d422cec63d91048935c36ecff14e45c294deacee97f058d13f11f",
     "protocol/services.c": "17da6d4705e0d27ca805a8a6111050692c92efe5f202137d1169bcbb3e6774c0",
     "protocol/services.h": "81c81f9d96e58206f05dd49ef6d1501b99d13a317d59bb41d7f40a076eeb74a8",
     "protocol/guard.h": "34a685cd5c3b0f5b498c4f78b5535027efd6f07330a4963c1ff3fbc5476cc0c3",
@@ -55,7 +55,7 @@
   "commit": "b09be920b87839584ab5cef6353bd92c8c078ec3",
   "album_extension": {
     "repository": "doa2011/iotcloud-bry88bba15g-screenmcu",
-    "commit": "4c7856c1f607fbb1463bd3002c5f85a48096527d",
+    "commit": "c95142dca43c754de3534d20e0d4cb6a171a45c2",
     "files": [
       "protocol/media_wire.h",
       "protocol/scene.c",

@@ -234,13 +234,20 @@ static const char *screenConfigBackupRestore(DynamicJsonDocument &envelope, Stri
   screenBackupRestoreStage = "layout_buffer";
   std::unique_ptr<uint8_t[]> layout(new (std::nothrow) uint8_t[SCENE_BYTES]);
   if (!layout) return "busy";
-  screenBackupRestoreStage = "layout_decode";
+  screenBackupRestoreStage = "layout_base64";
   size_t layoutBytes = 0;
-  if (!screenUnbase64(backup["layout"], layout.get(), SCENE_BYTES,
-                      layoutBytes) ||
-      layoutBytes != SCENE_BYTES ||
-      !scene_decode(&next->scene, layout.get(), layoutBytes) ||
-      !scene_validate(&next->scene))
+  if (!screenUnbase64(backup["layout"], layout.get(), SCENE_BYTES, layoutBytes))
+    return "invalid_backup";
+  screenBackupRestoreStage = "layout_size";
+  if (layoutBytes != SCENE_BYTES)
+    return "invalid_backup";
+  screenBackupRestoreStage = "layout_schema";
+  if (memcmp(layout.get(), "SCN3", 4))
+    return "invalid_backup";
+  // next is already disposable: the atomic live decoder would allocate
+  // another whole scene while the upload, pool and rollback candidate live.
+  screenBackupRestoreStage = "layout_validation";
+  if (!scene_decode_candidate(&next->scene, layout.get(), layoutBytes))
     return "invalid_backup";
   layout.reset();
 
