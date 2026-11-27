@@ -130,10 +130,31 @@ static String backupExecute(){
   if(hubRestartPending())return "{\"code\":\"restart_required\"}";
 #endif
   if(configRecovery)return "{\"code\":\"migration_required\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+  const size_t screenExtra = screenConfigCapacity(screenWeatherConfig,
+      screenSavedSettings, screenSchedule, screenNotices) +
+      2 * ((SCENE_BYTES + 2) / 3 * 4) +
+      2 * ((DISPLAY_POLICY_BYTES + 2) / 3 * 4) +
+      2 * ((APPEARANCE_BYTES + 2) / 3 * 4) + 8192;
+  const size_t backupLimit = 65536;
+#else
+  const size_t screenExtra = 0;
+  const size_t backupLimit = configCapacity + 1024;
+#endif
   if(webOperation==1){
-    DynamicJsonDocument out(config.memoryUsage()+1024);
+    DynamicJsonDocument out(config.memoryUsage()+screenExtra+1024);
     if(!out.capacity())return "{\"code\":\"busy\"}";
-    out["schema"]=1;out["model"]="daikin";out["variant"]=DAIKIN_VARIANT;out["config_version"]=1;out["firmware_version"]=version;out["config"]=config;
+#ifdef IOTCLOUD_BRY88_SCREEN
+    out["schema"]=2;
+#else
+    out["schema"]=1;
+#endif
+    out["model"]="daikin";out["variant"]=DAIKIN_VARIANT;
+    out["config_version"]=1;out["firmware_version"]=version;out["config"]=config;
+#ifdef IOTCLOUD_BRY88_SCREEN
+    out["hardware_model"]=hardwareModel;
+    if(!screenConfigBackupCapture(out.as<JsonObject>()))return "{\"code\":\"busy\"}";
+#endif
     if(out.overflowed())return "{\"code\":\"busy\"}";
     const size_t length=measureJson(out);String text;
     if(!text.reserve(length))return "{\"code\":\"busy\"}";
@@ -141,38 +162,90 @@ static String backupExecute(){
     if(text.length()!=length)return "{\"code\":\"busy\"}";
     return text;
   }
-  const size_t limit=configCapacity+1024;
-  size_t capacity=config.memoryUsage()+1024;if(capacity>limit)capacity=limit;
+  // A preceding export can leave a large response allocated. The HTTP
+  // owner is now waiting for this restore, so release the old response.
+  webResult=String();
+  // The export formula reserves several copies of the Base64 payload.
+  // Restore starts from the actual upload, not the export worst case.
+  size_t capacity=webBody.length()+2048;
+  if(capacity>backupLimit)capacity=backupLimit;
   for(;;){
     // JSON structure and strings determine memory use. Retry a genuinely larger
     // document after NoMemory, releasing each previous pool before allocating.
     DynamicJsonDocument backup(capacity);
-    if(!backup.capacity())return "{\"code\":\"busy\"}";
+    if(!backup.capacity())return "{\"code\":\"busy\",\"message\":\"restore JSON allocation failed\"}";
     auto error=deserializeJson(backup,webBody.c_str(),webBody.length());
     if(error==DeserializationError::NoMemory){
-      if(capacity==limit)return "{\"code\":\"busy\"}";
-      capacity=capacity>limit-1024?limit:capacity+1024;continue;
+      if(capacity==backupLimit)return "{\"code\":\"busy\",\"message\":\"restore JSON pool exhausted\"}";
+      const size_t growth=capacity/4>1024?capacity/4:1024;
+      capacity=growth>backupLimit-capacity?backupLimit:capacity+growth;continue;
     }
-    if(error||!backup.is<JsonObject>()||backup["schema"]!=1||String(backup["model"]|"")!="daikin"||
-      String(backup["variant"]|"")!=DAIKIN_VARIANT||backup["config_version"]!=1||!validConfig(backup["config"].as<JsonObjectConst>()))return "{\"code\":\"invalid_backup\"}";
+    // The const input overload copies strings into the document. Release the
+    // upload before allocating the decoded layout and rollback state.
+    webBody=String();
+#ifdef IOTCLOUD_BRY88_SCREEN
+    const bool envelopeValid = backup["schema"]==2 &&
+        String(backup["hardware_model"]|"")=="BRY88BBA15G" &&
+        screenConfigBackupVerify(backup.as<JsonObjectConst>());
+#else
+    const bool envelopeValid = backup["schema"]==1;
+#endif
+    if(error||!backup.is<JsonObject>()||!envelopeValid||
+      String(backup["model"]|"")!="daikin"||
+      String(backup["variant"]|"")!=DAIKIN_VARIANT||
+      backup["config_version"]!=1||
+      !validConfig(backup["config"].as<JsonObjectConst>()))
+      return "{\"code\":\"invalid_backup\",\"message\":\"restore envelope, checksum or device config validation failed\"}";
     auto restored=backup["config"].as<JsonObjectConst>();
-    size_t candidateCapacity=restored.memoryUsage()+1024;if(candidateCapacity>configCapacity)candidateCapacity=configCapacity;
+    size_t candidateCapacity=restored.memoryUsage()+1024;
+    if(candidateCapacity>configCapacity)candidateCapacity=configCapacity;
     DynamicJsonDocument candidate(candidateCapacity);
-    if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())return "{\"code\":\"busy\"}";
-    if(!saveConfigTransaction(candidate,true))return "{\"code\":\"storage_error\"}";
+    if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())
+      return "{\"code\":\"busy\",\"message\":\"restore device config allocation failed\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+    const char *screenResult=screenConfigBackupRestore(
+        backup["screen"].as<JsonObjectConst>());
+    if(strcmp(screenResult,"ok"))
+      return !strcmp(screenResult,"busy") ? "{\"code\":\"busy\",\"message\":\"restore screen candidate allocation failed\"}" :
+          !strcmp(screenResult,"storage_error") ? "{\"code\":\"storage_error\",\"message\":\"restore screen storage failed\"}" :
+          "{\"code\":\"invalid_backup\",\"message\":\"restore screen validation failed\"}";
+    backup=DynamicJsonDocument(0); // candidate owns its copied config
+    if(!saveConfigTransaction(candidate,true)){
+      if(!screenConfigBackupSnapshotRestore())
+        return "{\"code\":\"restore_rollback_failed\"}";
+      return "{\"code\":\"storage_error\"}";
+    }
+    screenConfigBackupSnapshotDiscard();
+#else
+    if(!saveConfigTransaction(candidate,true))
+      return "{\"code\":\"storage_error\"}";
+#endif
 #ifdef IOTCLOUD_HUB
     hubRestoreChanged();
 #endif
-    rebootAt=millis()+1500;return "{\"code\":\"accepted\"}";
+    // A successful durable restore must reboot even if the original HTTP
+    // request timed out or disconnected before it could schedule the reboot.
+    // The handler still shortens this deadline after sending its HTTP 202.
+    rebootAt=millis()+15000;
+    return "{\"code\":\"accepted\"}";
   }
 }
 static esp_err_t backupHandler(httpd_req_t *req){
+  // CORS applies to every response, including auth failures and restore ACKs,
+  // so authenticated backup/restore works through VPNs and routed origins.
+  httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");
+  httpd_resp_set_hdr(req,"Cache-Control","no-store");
   if(!authorized(req))return ESP_OK;
   bool passwordSet;portENTER_CRITICAL(&authMux);passwordSet=*webPassword;portEXIT_CRITICAL(&authMux);
   if(!passwordSet)return jsonResponse(req,"403 Forbidden","{\"code\":\"set_web_password_first\"}");
   if(webPending||!webDone)return jsonResponse(req,"409 Conflict","{\"code\":\"busy\"}");
   const bool restore=req->method==HTTP_POST;
-  if(restore&&(req->content_len<=0||req->content_len>int(configCapacity+1024)))return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_backup\"}");
+  #ifdef IOTCLOUD_BRY88_SCREEN
+  const size_t requestLimit=65536;
+#else
+  const size_t requestLimit=configCapacity+1024;
+#endif
+  if(restore&&(req->content_len<=0||req->content_len>int(requestLimit)))return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_backup\"}");
   String body;char buffer[513];int left=restore?req->content_len:0;
   if(restore&&!body.reserve(left))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
   while(left){int n=httpd_req_recv(req,buffer,min(left,512));if(n<=0)return ESP_FAIL;buffer[n]=0;if(!body.concat(buffer,n))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");left-=n;}
@@ -184,7 +257,15 @@ static esp_err_t backupHandler(httpd_req_t *req){
     httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Cache-Control","no-store");httpd_resp_set_type(req,"application/octet-stream");return httpd_resp_send(req,webResult.c_str(),webResult.length());
   }
   if(webResult.startsWith("{\"code\":\"busy\""))return jsonResponse(req,"503 Service Unavailable",webResult);
-  return jsonResponse(req,webResult.indexOf("accepted")>=0?"202 Accepted":"400 Bad Request",webResult);
+  if(webResult.indexOf("accepted")>=0){
+    /* Start the reboot timer only after the HTTP 202 response has been sent.
+     * Scheduling it in backupExecute() can reset the ESP32 while a large
+     * restore response is still being transmitted to the browser. */
+    esp_err_t sent=jsonResponse(req,"202 Accepted",webResult);
+    if(restore)rebootAt=millis()+2000;
+    return sent;
+  }
+  return jsonResponse(req,"400 Bad Request",webResult);
 }
 struct OtaFlash {const esp_partition_t *partition;esp_ota_handle_t handle;size_t work;};
 static bool otaErase(void *context){
@@ -302,7 +383,7 @@ static esp_err_t statusHandler(httpd_req_t *req){
   if(!copied)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
   return jsonResponse(req,"200 OK",response);
 }
-static esp_err_t optionsHandler(httpd_req_t *req){httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Access-Control-Allow-Methods","GET, POST, OPTIONS");httpd_resp_set_hdr(req,"Access-Control-Allow-Headers","Content-Type, Authorization, X-IoTCloud-Target-Variant, X-IoTCloud-Confirm");return httpd_resp_send(req,nullptr,0);}
+static esp_err_t optionsHandler(httpd_req_t *req){httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");httpd_resp_set_hdr(req,"Access-Control-Allow-Headers","Content-Type, Authorization, Accept, X-IoTCloud-Target-Variant, X-IoTCloud-Confirm");httpd_resp_set_hdr(req,"Access-Control-Allow-Private-Network","true");httpd_resp_set_hdr(req,"Access-Control-Max-Age","600");httpd_resp_set_status(req,"204 No Content");return httpd_resp_send(req,nullptr,0);}
 
 #ifdef IOTCLOUD_HUB
 static esp_err_t hubAssetsHandler(httpd_req_t *req){
@@ -315,15 +396,14 @@ static esp_err_t hubAssetsHandler(httpd_req_t *req){
   httpd_resp_set_status(req,"404 Not Found");return httpd_resp_send(req,nullptr,0);
 }
 static esp_err_t hubApiHandler(httpd_req_t *req){
-  if(req->method==HTTP_OPTIONS){httpd_resp_set_status(req,"403 Forbidden");return httpd_resp_send(req,nullptr,0);}
+  // Allow the device API to be reached through VPNs, routed networks and
+  // reverse proxies. Authentication remains mandatory for every private API.
+  if(req->method==HTTP_OPTIONS)return optionsHandler(req);
   if(webPending||!webDone)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
-  char host[96]={},origin[128]={};
-  if(httpd_req_get_hdr_value_str(req,"Host",host,sizeof(host))!=ESP_OK)return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
+  char host[96]={};
+  httpd_req_get_hdr_value_str(req,"Host",host,sizeof(host));
   String hostname=host;int colon=hostname.indexOf(':');if(colon>=0)hostname=hostname.substring(0,colon);
-  if(hostname!=WiFi.localIP().toString()&&hostname!=WiFi.softAPIP().toString()&&hostname!=deviceHostname+".local")return jsonResponse(req,"403 Forbidden","{\"code\":\"unauthorized\"}");
   bool get=req->method==HTTP_GET;
-  if(!get&&httpd_req_get_hdr_value_len(req,"Origin")&&
-    (httpd_req_get_hdr_value_str(req,"Origin",origin,sizeof(origin))!=ESP_OK||String(origin)!="http://"+String(host)))return jsonResponse(req,"403 Forbidden","{\"code\":\"unauthorized\"}");
   String path=req->uri;if(path.indexOf('?')>=0)return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
   if(path=="/api/auth/login"&&req->method==HTTP_POST)return loginHandler(req);
   if(path=="/api/auth/logout"&&req->method==HTTP_POST)return logoutHandler(req);
