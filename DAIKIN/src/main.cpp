@@ -367,6 +367,9 @@ void loop(){
     if(webOperation==3){if(otaActive){hubHttpStatus=503;webResult="{\"code\":\"busy\"}";}else hubApiExecute();}else
 #endif
     if(webOperation==4){if(businessStatusReady)webResult=cachedHttpStatus();else webResult="{\"code\":\"busy\"}";}else webResult=otaActive?"{\"code\":\"busy\",\"message\":\"OTA active\"}":webOperation?backupExecute():execute(webBody);}
+    // The owner has finished using the upload, including authorization,
+    // allocation and OTA rejection paths. Never retain a failed backup body.
+    if(webOperation==1||webOperation==2)webBody=String();
     portENTER_CRITICAL(&webMux);webPending=false;
 #ifdef IOTCLOUD_HUB
     webDone=!hubHttpDeferred;
@@ -435,10 +438,10 @@ void loop(){
   // UART publications invalidate status near the end of this iteration.
   // Publish their replacement before tickless idle exposes a busy window.
   if(businessStatusInvalid)pollBusinessStatusCache(millis());
-  screenPowerPoll(millis(),otaActive||screenUploadBusy||screenOtaActive()||g3OnlineBusy);
+  screenPowerPoll(millis(),otaActive||screenUploadBusy||screenOtaActive()||g3OnlineBusy||screenPowerPhase.load()!=POWER_IDLE);
   // Active stop-and-wait traffic needs prompt credit/ACK service. Keep the
   // longer tickless idle interval when no media transfer owns the UART.
-  delay(screenMediaNeedsFastPoll()?1:10);
+  delay((screenPowerPhase.load()!=POWER_IDLE||screenMediaNeedsFastPoll())?1:10);
   #else
   delay(2);
   #endif

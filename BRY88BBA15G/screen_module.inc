@@ -2,8 +2,13 @@
 #include "protocol/module_control.h"
 #include <atomic>
 /* HTTP tasks request a lease; only the application owner writes the UART. */
-static std::atomic<bool> screenPowerWanted{false}, screenPowerReady{false},
-                         screenPowerFailed{false};
+enum ScreenPowerPhase { POWER_IDLE, POWER_PREPARING, POWER_REQUESTED, POWER_RELEASING };
+/* Publish a fully initialized request; only the UART owner releases IDLE. */
+static std::atomic<ScreenPowerPhase> screenPowerPhase{POWER_IDLE};
+static std::atomic<bool> screenPowerReady{false}, screenPowerFailed{false};
+/* Flash workers pause while the UART owner awaits a lease ACK. Never extend
+ * the lease based on an uncorrelated periodic low-pin report. */
+static std::atomic<bool> screenPowerAckPending{false};
 static bool screenPowerLeased;
 static bool screenPowerRetried;
 static uint32_t screenPowerSession, screenPowerRequest, screenPowerRenewAt,
@@ -29,9 +34,11 @@ static bool screenModuleWrite(bool high, uint32_t duration) {
   return true;
 }
 static void screenModulePowerPoll(uint32_t now) {
-  bool wanted = screenPowerWanted.load();
-  if (!wanted) {
+  auto phase = screenPowerPhase.load();
+  if (phase == POWER_IDLE || phase == POWER_PREPARING) return;
+  if (phase == POWER_RELEASING) {
     screenPowerReady = false;
+    screenPowerAckPending = false;
     if (screenPowerLeased) {
       /* A failed send is bounded by the MCU's 60 s lease. Never write into
        * a raw MCU OTA transfer or try to wake its recovery-only service. */
@@ -41,6 +48,8 @@ static void screenModulePowerPoll(uint32_t now) {
     }
     screenPowerRequest = 0;
     screenPowerRetried = false;
+    screenPowerFailed = false;
+    screenPowerPhase = POWER_IDLE;
     return;
   }
   /* A long-press reset starts a new MCU session. The old PD12 lease and
@@ -123,10 +132,12 @@ static void screenModulePowerPoll(uint32_t now) {
       screenPowerRequest = 0; screenPowerRenewAt = now + 15000;
       screenPowerExpiresAt = screenModule.at + screenModule.remaining;
       screenPowerRetried = false;
+      screenPowerAckPending = false;
     }
     return;
   }
   if (!screenPowerLeased || (int32_t)(now - screenPowerRenewAt) >= 0) {
+    screenPowerAckPending = true; // publish before writing to UART
     if (!screenModuleWrite(false, SCREEN_MODULE_MAX_MS)) {
       screenPowerReady = false; screenPowerFailed = true; return;
     }
@@ -135,26 +146,45 @@ static void screenModulePowerPoll(uint32_t now) {
   }
 }
 static void screenModulePowerEnd() {
-  screenPowerWanted = false;
-  screenPowerWaitDeadline = 0;
+  auto expected = POWER_REQUESTED;
+  screenPowerPhase.compare_exchange_strong(expected, POWER_RELEASING);
 }
 static bool screenModulePowerBegin() {
-  bool expected = false;
-  if (!screenPowerWanted.compare_exchange_strong(expected, true)) return false;
+  uint32_t releaseStart = millis();
+  while (screenPowerPhase.load() == POWER_RELEASING) {
+    if (uint32_t(millis() - releaseStart) >= 1000) return false;
+    delay(1);
+  }
+  auto expected = POWER_IDLE;
+  if (!screenPowerPhase.compare_exchange_strong(expected, POWER_PREPARING)) return false;
   screenPowerReady = false; screenPowerFailed = false;
-  screenPowerWaitDeadline = millis() + 12000;
+  screenPowerAckPending = false;
   uint32_t start = millis();
+  screenPowerWaitDeadline = start + 12000;
+  screenPowerPhase = POWER_REQUESTED;
   while (!screenPowerReady.load()) {
     if (screenPowerFailed.load() || uint32_t(millis() - start) >= 12000) {
       screenModulePowerEnd(); return false;
     }
     delay(1);
   }
-  screenPowerWaitDeadline = 0;
   return true;
 }
 static bool screenModulePowerHealthy() {
-  return screenPowerWanted.load() && screenPowerReady.load() && !screenPowerFailed.load();
+  return screenPowerPhase.load() == POWER_REQUESTED && screenPowerReady.load() && !screenPowerFailed.load();
+}
+/* Only the HTTP/online OTA worker calls this, never the UART owner. A
+ * renewal is sent while no new flash operation is started, giving the
+ * response and its retry a quiet receive window. A write already in flight
+ * when the gate closes remains bounded to a sequential sector operation. */
+static bool screenModulePowerBeforeFlash() {
+  const uint32_t start = millis();
+  while (screenPowerAckPending.load()) {
+    if (!screenModulePowerHealthy() || uint32_t(millis() - start) >= 8000)
+      return false;
+    delay(1);
+  }
+  return screenModulePowerHealthy();
 }
 static void screenModuleReceive(const uint8_t *p, size_t n) {
   if (n != SCREEN_MODULE_STATUS_BYTES || p[0] != SCREEN_MSG_MODULE_STATUS ||
@@ -204,7 +234,7 @@ static const char *screenModuleSet(JsonObjectConst p, JsonObject out) {
   uint32_t duration = p["duration_ms"] | (high ? 0u : 10000u);
   if (high ? duration != 0 : !duration || duration > SCREEN_MODULE_MAX_MS) return "invalid_params";
   if (!screenBridge.extended || !(screenBridge.capabilities & SCREEN_CAP_MODULE_CONTROL)) return "unsupported";
-  if (screenPowerWanted.load() || screenPowerLeased || screenImage.active || screenRecovering || !screenGuardAvailable() || screenGuard.mode) return "busy";
+  if (screenPowerPhase.load() != POWER_IDLE || screenPowerLeased || screenImage.active || screenRecovering || !screenGuardAvailable() || screenGuard.mode) return "busy";
   if (screenModule.session == screenBridge.session && screenModule.request == UINT32_MAX) return "not_ready";
   if (!screenModuleWrite(high, duration)) return "busy";
   out["request"] = screenModule.request; out["state"] = "pending";

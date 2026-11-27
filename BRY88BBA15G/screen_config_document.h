@@ -32,7 +32,8 @@ static size_t screenConfigCapacity(const JsonDocument &weather,
   }
   return capacity;
 }
-static bool screenConfigDocument(JsonDocument &doc, const char *layout,
+template<typename Object>
+static void screenConfigFields(Object &doc, const char *layout,
                                  const JsonDocument &weather,
                                  const JsonDocument &settings,
                                  const reminder_schedule &schedule,
@@ -76,5 +77,16 @@ static bool screenConfigDocument(JsonDocument &doc, const char *layout,
       o["text"] = r.text;
     }
   }
+}
+static bool screenConfigDocument(JsonDocument &doc, const char *layout,
+                                 const JsonDocument &weather,
+                                 const JsonDocument &settings,
+                                 const reminder_schedule &schedule,
+                                 const reminder_notice *notices,
+                                 const char *policy = nullptr, const char *appearance = nullptr,
+                                 bool startupAuto = true) {
+  screenConfigFields(doc, layout, weather, settings, schedule, notices,
+                     policy, appearance, startupAuto);
   return !doc.overflowed();
 }
+

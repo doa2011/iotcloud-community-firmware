@@ -24,6 +24,7 @@ static uint32_t screenFlashConfigured = 0, screenFlashPhysical = 0;
 #include "protocol/display_diag.h"
 #include "protocol/page_control.h"
 #include "scene_wire_cache.h"
+#include "screen_settings_restore.h"
 static screen_appearance screenAppearance;
 static uint32_t screenAppearanceAck,screenAppearanceSession,screenAppearanceSentAt;
 static unsigned screenAppearanceAttempts;
@@ -57,6 +58,8 @@ static screen_weather screenWeather = {};
 static constexpr size_t screenWeatherConfigBytes = 1536;
 static DynamicJsonDocument screenWeatherConfig(screenWeatherConfigBytes), screenSavedSettings(1024);
 static uint32_t screenSettingsSession = 0;
+static ScreenSettingsRestoreState screenSettingsRestoreState;
+static String screenSettingsRestoreToken;
 static uint32_t screenSceneAck = 0, screenSceneSession = 0,
                 screenSyncOffset = 0, screenSyncDeadline = 0,
                 screenSyncRetryAt = 0;
@@ -73,6 +76,7 @@ struct ScreenImage {
   bool valid = false, active = false, pending = false, bootstrap = false;
   uint32_t features = 0;
   uint32_t size = 0, offset = 0, chunk = 0, deadline = 0;
+  uint32_t installSession = 0; // session before activation
   uint8_t md5[16] = {}, sha[32] = {};
   const char *state = "empty";
 };
@@ -321,25 +325,95 @@ static const char *screenApplySettings(JsonObjectConst params,
   data["token"] = screenPendingToken;
   return "accepted";
 }
+static bool screenSettingsRestoreReadbackMatches() {
+  JsonVariantConst actual = screenSnapshot["setting"];
+  if (!actual.is<JsonObjectConst>())
+    return false;
+  return screenSettingsJsonMatches(
+      screenSavedSettings.as<JsonVariantConst>(), actual);
+}
 static void screenRestoreSettings() {
-  if (!screenBridge.extended || screenSettingsSession == screenBridge.session ||
-      screenImage.active)
+  if (!screenBridge.extended || screenImage.active)
     return;
-  if (screenSavedSettings.size()) {
-    if ((screenTail + 1) % 12 == screenHead)
-      return;
-    DynamicJsonDocument doc(1536);
-    String token = "iotcloud-restore-" + String(millis());
-    doc["client_token"] = token;
-    doc["data"] = screenSavedSettings;
-    if (!screenDelivery(screenRoot() + "/mqtt/service/set", doc, 1))
-      return;
-    screenPendingToken = token;
-    screenPendingAt = millis();
-    screenPendingCode = -1;
-    invalidateBusinessStatusCache();
+  const uint32_t session = screenBridge.session;
+  const uint32_t now = millis();
+  if (screenSettingsRestoreState.session != session) {
+    screenSettingsRestoreReset(screenSettingsRestoreState, session);
+    screenSettingsRestoreToken = "";
+    screenSettingsSession = 0;
   }
-  screenSettingsSession = screenBridge.session;
+  if (screenSettingsSession == session)
+    return;
+  if (!screenSavedSettings.size()) {
+    screenSettingsRestoreState.phase = SCREEN_SETTINGS_RESTORE_CONFIRMED;
+    screenSettingsSession = session;
+    return;
+  }
+
+  if (screenSettingsRestoreState.phase == SCREEN_SETTINGS_RESTORE_WAIT_ACK) {
+    if (screenPendingToken != screenSettingsRestoreToken) {
+      screenSettingsRestoreAck(screenSettingsRestoreState, session, now, -3);
+    } else if (screenPendingCode != -1) {
+      if (screenSettingsRestoreAck(screenSettingsRestoreState, session, now,
+                                   screenPendingCode))
+        screenRequestSnapshot();
+    } else if (!screenSettingsRestoreAckTimeout(
+                   screenSettingsRestoreState, session, now, -2)) {
+      return;
+    }
+  }
+
+  if (screenSettingsRestoreState.phase ==
+      SCREEN_SETTINGS_RESTORE_WAIT_READBACK) {
+    if (screenSnapshotAt != screenSettingsRestoreState.snapshot_at) {
+      screenSettingsRestoreReadback(screenSettingsRestoreState, session, now,
+                                    screenSettingsRestoreReadbackMatches());
+    } else if (screenSettingsRestoreDue(
+                   now, screenSettingsRestoreState.retry_at)) {
+      screenSettingsRestoreReadback(screenSettingsRestoreState, session, now,
+                                    false);
+    } else {
+      return;
+    }
+  }
+
+  if (screenSettingsRestoreState.phase == SCREEN_SETTINGS_RESTORE_CONFIRMED) {
+    screenSettingsSession = session;
+    invalidateBusinessStatusCache();
+    return;
+  }
+  if (!screenSettingsRestoreReady(screenSettingsRestoreState, session, now))
+    return;
+  if ((screenTail + 1) % 12 == screenHead)
+    return;
+  if (screenPendingToken.length() && screenPendingCode == -1 &&
+      uint32_t(now - screenPendingAt) < 10000u &&
+      screenPendingToken != screenSettingsRestoreToken)
+    return;
+
+  String token = "iotcloud-restore-" + String(session) + "-" +
+                 String(now) + "-" +
+                 String(screenSettingsRestoreState.attempts + 1);
+  DynamicJsonDocument doc(1536);
+  screenSettingsRestoreBegin(screenSettingsRestoreState, session, now,
+                             screenSnapshotAt);
+  if (!doc.capacity()) {
+    screenSettingsRestoreTransportFailure(screenSettingsRestoreState,
+                                           session, now, -5);
+    return;
+  }
+  doc["client_token"] = token;
+  doc["data"] = screenSavedSettings;
+  if (!screenDelivery(screenRoot() + "/mqtt/service/set", doc, 1)) {
+    screenSettingsRestoreTransportFailure(screenSettingsRestoreState,
+                                           session, now, -6);
+    return;
+  }
+  screenSettingsRestoreToken = token;
+  screenPendingToken = token;
+  screenPendingAt = now;
+  screenPendingCode = -1;
+  invalidateBusinessStatusCache();
 }
 static void screenLoad() {
   screenStartupAuto = true; // Records written before this option keep the new default.
@@ -626,6 +700,12 @@ static void screenServicesStatus(JsonObject s) {
   s["weather_available"] = screenWeather.valid && !screenWeather.expired;
   s["weather_provider"] = screenWeather.provider;
   screenBrightnessStatus(s.createNestedObject("brightness"));
+  JsonObject restore = s.createNestedObject("settings_restore");
+  restore["state"] = screenSettingsRestorePhaseName(
+      screenSettingsRestoreState.phase);
+  restore["session"] = screenSettingsRestoreState.session;
+  restore["attempts"] = screenSettingsRestoreState.attempts;
+  restore["last_code"] = screenSettingsRestoreState.last_code;
   screenResourceStatus(s.createNestedObject("resources"));
   screenAppearanceGet(s.createNestedObject("appearance"));
   screenModuleStatus(s.createNestedObject("module"));
@@ -677,6 +757,10 @@ static void screenServicesPoll(uint32_t now) {
   screenMediaPoll(now);
   screenLayoutUpload.expire(now);
   screenModulePowerPoll(now);
+  // Preserve UART RX and media link heartbeats, but defer unrelated scene,
+  // settings, weather, font and reminder work during ESP application OTA.
+  // These tasks can generate bursts of responses while the flash cache is off.
+  if (screenPowerPhase.load()!=POWER_IDLE) return;
   screenAppearancePoll();
   screenWallpaperPoll(now);screenFontPoll(now);
   if (!strcmp(screenGuard.state, "pending") &&
@@ -684,6 +768,8 @@ static void screenServicesPoll(uint32_t now) {
     screenGuard.state = "timeout";
     invalidateBusinessStatusCache();
   }
+  if (const char *error = screenInstallPoll(now))
+    screenOtaError = error;
   if (screenImage.active && (int32_t)(now - screenImage.deadline) >= 0) {
     screenImage.active = false;
     screenImage.pending = false;
@@ -769,6 +855,10 @@ static bool screenExtendedLine(const uint8_t *p, size_t n) {
     screenSceneAck = 0;
     screenSceneSession = 0;
     screenSettingsSession = 0;
+    screenSettingsRestoreReset(screenSettingsRestoreState, 0);
+    screenSettingsRestoreToken = "";
   }
   return false;
 }
+
+#include "screen_config_backup.inc"
