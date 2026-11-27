@@ -235,6 +235,9 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
       !scene_validate(&next->scene))
     return "invalid_backup";
 
+  // Release decoded wire storage before allocating rollback state.
+  layout.reset();
+
   uint8_t policyBytes[DISPLAY_POLICY_BYTES], appearanceBytes[APPEARANCE_BYTES];
   size_t policyLength = 0, appearanceLength = 0;
   if (!screenUnbase64(backup["policy"], policyBytes, sizeof(policyBytes),
@@ -333,6 +336,8 @@ static const char *screenConfigBackupRestore(JsonObjectConst backup) {
   screenStartupAuto = backup["startup_auto_resume"].as<bool>();
   screenWeatherConfig.set(nextWeather);
   screenSavedSettings.set(nextSettings);
+  // Live state owns the copied candidate before persistence.
+  next.reset();
   if (screenWeatherConfig.overflowed() || screenSavedSettings.overflowed() ||
       !screenSave()) {
     screenConfigBackupSnapshotApply(false);
