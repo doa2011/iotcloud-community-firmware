@@ -770,6 +770,10 @@ static void screenServicesPoll(uint32_t now) {
   }
   if (const char *error = screenInstallPoll(now))
     screenOtaError = error;
+  /* The MCU owns the UART while the committed image is being installed.
+   * Keep parsing Guard heartbeats, but do not emit ordinary business traffic. */
+  if (screenInstallPending())
+    return;
   if (screenImage.active && (int32_t)(now - screenImage.deadline) >= 0) {
     screenImage.active = false;
     screenImage.pending = false;
