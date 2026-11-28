@@ -446,7 +446,7 @@ void loop(){
   // UART publications invalidate status near the end of this iteration.
   // Publish their replacement before tickless idle exposes a busy window.
   if(businessStatusInvalid)pollBusinessStatusCache(millis());
-  screenPowerPoll(millis(),otaActive||screenUploadBusy||screenOtaActive()||g3OnlineBusy||screenPowerPhase.load()!=POWER_IDLE||screenJpegBusy.load()||screenMediaOtaPreparing.load());
+  screenPowerPoll(millis(),otaActive||screenUploadBusy||screenOtaPowerLeaseActive()||g3OnlineBusy||screenPowerPhase.load()!=POWER_IDLE||screenJpegBusy.load()||screenMediaOtaPreparing.load());
   // Active stop-and-wait traffic needs prompt credit/ACK service. Keep the
   // longer tickless idle interval when no media transfer owns the UART.
   delay((screenPowerPhase.load()!=POWER_IDLE||screenMediaNeedsFastPoll())?1:10);
