@@ -211,6 +211,7 @@ static void testLinkReset() {
   assert(!screenInstallPoll(testMillis));
   assert(!strcmp(screenImage.state, "install_failed"));
   assert(!screenOtaPowerLeaseActive());
+  screenOtaError = "";
   toMcu.clear();
   assert(screenGuardImageAnnounce("1 10000000000000000000000000000000"));
   assert(invalidations == ++invalidated);
