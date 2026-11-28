@@ -6,7 +6,7 @@ static uint8_t screenArtifactHeader[BRY_IMAGE_HEADER_BYTES];
 static portMUX_TYPE screenImageMux = portMUX_INITIALIZER_UNLOCKED;
 static bool screenOtaActive() { return screenImage.active; }
 static bool screenOtaCommandAllowed(const String &cmd) {
-  return !screenOtaActive() || cmd == "bin_summary" || cmd == "start_ota" ||
+  return !screenOtaPowerLeaseActive() || cmd == "bin_summary" || cmd == "start_ota" ||
          cmd == "download_bin" || cmd == ">" || cmd == "end_ota" ||
          cmd == "cancel_ota" || cmd == "screen_ota_error" ||
          cmd == "screen_image" || cmd == "screen_recovery";
