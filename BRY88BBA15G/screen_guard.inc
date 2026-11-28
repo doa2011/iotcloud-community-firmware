@@ -27,6 +27,10 @@ static bool screenInstallPending() {
   return !strcmp(screenImage.state, "installing") ||
          !strcmp(screenImage.state, "factory_installing");
 }
+/* Hold the ESP32 APB/UART power lease until the new MCU session is verified. */
+static bool screenOtaPowerLeaseActive() {
+  return screenImage.active || screenInstallPending();
+}
 static bool screenInstallConfirm() {
   if (!screenInstallPending() || !screenGuardAvailable() || screenGuard.mode ||
       screenGuard.session == screenImage.installSession ||
@@ -39,6 +43,11 @@ static bool screenInstallConfirm() {
 static const char *screenInstallPoll(uint32_t now) {
   if (!screenInstallPending()) return nullptr;
   if (screenInstallConfirm()) {
+    invalidateBusinessStatusCache();
+    return nullptr;
+  }
+  if (screenOtaErrorText()[0]) {
+    screenImage.state = "install_failed";
     invalidateBusinessStatusCache();
     return nullptr;
   }
@@ -123,7 +132,7 @@ static bool screenGuardLine(const uint8_t *p, size_t n) {
     if (((size == SCREEN_GUARD_DIAGNOSTIC_V3_BYTES && reply[1] == 3) ||
          (size == SCREEN_GUARD_DIAGNOSTIC_V4_BYTES && reply[1] == 4)) &&
         scene_u32(reply + 2) <= 6 && scene_u32(reply + 6) >= 1 &&
-        scene_u32(reply + 6) <= 17) {
+        scene_u32(reply + 6) <= 19) {
       for (unsigned i = 0; i < 24; i++)
         screenGuard.diagnostic[i] = i < (size - 2) / 4 ?
             scene_u32(reply + 2 + i * 4) : 0;
