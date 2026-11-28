@@ -719,6 +719,8 @@ static void screenServicesStatus(JsonObject s) {
   JsonObject ota = s.createNestedObject("ota");
   ota["state"] = screenImage.state;
   ota["error"] = screenOtaErrorText();
+  ota["prepare_phase"] = screenOtaPrepare.phase == 1 ? "maintenance_reset" :
+                         screenOtaPrepare.phase == 2 ? "maintenance_nor" : "none";
   ota["sent"] = screenImage.offset;
   ota["size"] = screenImage.size;
   ota["sha256"] = screenHex(screenImage.sha, 32);
@@ -755,6 +757,10 @@ static void screenServicesInit() {
 // clang-format on
 static void screenServicesPoll(uint32_t now) {
   screenMediaPoll(now);
+  if (screenOtaPrepare.phase) {
+    screenOtaPreparePoll(millis());
+    return;
+  }
   screenLayoutUpload.expire(now);
   screenModulePowerPoll(now);
   // Preserve UART RX and media link heartbeats, but defer unrelated scene,
@@ -772,8 +778,12 @@ static void screenServicesPoll(uint32_t now) {
     screenOtaError = error;
   /* The MCU owns the UART while the committed image is being installed.
    * Keep parsing Guard heartbeats, but do not emit ordinary business traffic. */
-  if (screenInstallPending())
+  if (screenInstallPending()) {
+    // Only a new boot's recovery window may receive RESUME during installation.
+    if (screenGuard.session != screenImage.installSession && screenGuard.mode == 1)
+      screenStartupPoll(now, false);
     return;
+  }
   if (screenImage.active && (int32_t)(now - screenImage.deadline) >= 0) {
     screenImage.active = false;
     screenImage.pending = false;

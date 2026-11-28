@@ -30,7 +30,7 @@ static struct {
   const char *state = "unavailable", *requestState = "idle";
 } screenMedia;
 static bool screenMediaOtaBlocked() {
-  return screenMediaOtaPreparing.load() || screenImage.active || screenUploadBusy ||
+  return screenMediaOtaPreparing.load() || screenOtaPowerLeaseActive() || screenUploadBusy ||
          screenInstallPending() || !strcmp(screenImage.state,"staged_verified") ||
          screenPowerPhase.load()!=POWER_IDLE || rebootAt;
 }
@@ -902,6 +902,15 @@ static void screenMediaPoll(uint32_t now) {
   if (screenOtaActive()) {
     // Heartbeats are intentionally suspended while the raw owner is active.
     screenMedia.seen = screenMedia.ping = now;
+    return;
+  }
+  if (screenOtaPrepare.phase) {
+    // A reset returns the MCU to boot baud. Keep Guard RX live, but suppress
+    // media negotiations and pings during preparation.
+    if (screenOtaPrepare.phase == 1 && screenMedia.rate != 115200 &&
+        ((screenGuard.operation == GUARD_RESET && !strcmp(screenGuard.state, "complete")) ||
+         uint32_t(now - screenMedia.seen) > 10000))
+      screenMediaFallback();
     return;
   }
   if (!screenMedia.session)

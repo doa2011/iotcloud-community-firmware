@@ -18,6 +18,11 @@ struct ScreenGuard {
   const char *state = "unavailable";
 };
 static ScreenGuard screenGuard;
+/* Preparation is separate from the raw UART owner: Guard must remain usable. */
+static struct {
+  unsigned phase = 0; // 1: wait for reset session, 2: wait for NOR ACK
+  uint32_t session = 0, request = 0, deadline = 0;
+} screenOtaPrepare;
 static bool screenGuardAvailable() {
   return screenGuard.session && uint32_t(millis() - screenGuard.seen) < 15000;
 }
@@ -29,7 +34,7 @@ static bool screenInstallPending() {
 }
 /* Hold the ESP32 APB/UART power lease until the new MCU session is verified. */
 static bool screenOtaPowerLeaseActive() {
-  return screenImage.active || screenInstallPending();
+  return screenOtaPrepare.phase || screenImage.active || screenInstallPending();
 }
 static bool screenInstallConfirm() {
   if (!screenInstallPending() || !screenGuardAvailable() || screenGuard.mode ||

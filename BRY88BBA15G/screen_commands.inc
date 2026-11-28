@@ -567,6 +567,11 @@ static __attribute__((noinline)) const char *screenLegacyServicesCommand(
   if (action == "screen.update.cancel") {
     if (params.size())
       return "invalid_params";
+    if (screenInstallPending()) return "busy"; // Never cancel after A1 may be committed.
+    if (screenOtaPrepare.phase) {
+      screenOtaPrepareFail("maintenance_cancelled");
+      return "ok";
+    }
     screenImage.active = false;
     screenImage.pending = false;
     screenImage.state = "cancelled";

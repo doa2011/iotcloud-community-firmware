@@ -298,6 +298,37 @@ static void testUpdateStart() {
   params["mode"] = "factory-bootstrap";
   params["sha256"] = screenHex(screenImage.sha, 32);
   assert(!strcmp(screenUpdateStart(params), "invalid_firmware"));
+  // Normal-mode upgrade must reset and explicitly select Quad before raw stage.
+  params.remove("sha256");
+  params["mode"] = "stage";
+  screenGuard = {};
+  assert(screenGuardAnnounce("3 12345678 0 0 0 00000000 00000000 00000000 00000000"));
+  toMcu.clear();
+  assert(!strcmp(screenUpdateStart(params), "accepted"));
+  assert(screenOtaPrepare.phase == 1 && !screenImage.active && screenOtaPowerLeaseActive());
+  assert(toMcu.find("+screen_recover:1") == std::string::npos);
+  toMcu.clear();
+  screenOtaPreparePoll(testMillis);
+  assert(toMcu.empty() && screenOtaPrepare.phase == 1);
+  assert(screenGuardAnnounce("3 98765432 0 3 0 00000000 00000000 00000000 00000000"));
+  screenOtaPreparePoll(testMillis);
+  assert(screenOtaPrepare.phase == 2 && screenGuard.operation == GUARD_NOR_MODE);
+  assert(!screenImage.active && toMcu.find("+screen_recover:1") == std::string::npos);
+  toMcu.clear();
+  screenGuard.state = "complete"; screenGuard.result = GUARD_OK;
+  screenOtaPreparePoll(testMillis);
+  assert(!screenOtaPrepare.phase && screenImage.active && toMcu == "+screen_recover:1\r\n");
+  screenImage.active = false; toMcu.clear();
+  // A new ordinary session must not silently fall back to live-mode staging.
+  screenGuard = {};
+  assert(screenGuardAnnounce("3 12345678 0 0 0 00000000 00000000 00000000 00000000"));
+  toMcu.clear();
+  assert(!strcmp(screenUpdateStart(params), "accepted"));
+  assert(screenGuardAnnounce("3 98765432 0 0 0 00000000 00000000 00000000 00000000"));
+  screenOtaPreparePoll(testMillis);
+  assert(!screenOtaPrepare.phase && !screenImage.active &&
+         !strcmp(screenOtaErrorText(), "maintenance_not_held"));
+  screenOtaError = ""; toMcu.clear();
   screenGuard = {};
   screenRecovering = false;
 }

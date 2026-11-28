@@ -16,7 +16,7 @@ static esp_err_t screenUploadHandler(httpd_req_t *req) {
     return jsonResponse(req, "503 Service Unavailable", "{\"code\":\"busy\"}");
   bool busy;
   portENTER_CRITICAL(&screenImageMux);
-  busy = g3OnlineBusy || otaActive || screenImage.active || screenUploadBusy || screenWallpaper.active || screenWallpaper.pending;
+  busy = g3OnlineBusy || otaActive || screenOtaPowerLeaseActive() || !strcmp(screenImage.state, "staged_verified") || screenUploadBusy || screenWallpaper.active || screenWallpaper.pending;
   if (!busy)
     screenUploadBusy = true;
   portEXIT_CRITICAL(&screenImageMux);
