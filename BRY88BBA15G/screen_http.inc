@@ -8,6 +8,9 @@ static esp_err_t screenUploadHandler(httpd_req_t *req) {
       req->content_len != BRY_IMAGE_LIMIT)
     return jsonResponse(req, "400 Bad Request",
                         "{\"code\":\"invalid_firmware\"}");
+  ScreenMediaOtaScope mediaScope;
+  if(!mediaScope.begin(req))
+    return jsonResponse(req,"503 Service Unavailable","{\"code\":\"media_handoff_failed\"}");
   if (!screenStoreAvailable || !screenStoreMutex ||
       xSemaphoreTake(screenStoreMutex, 0) != pdTRUE)
     return jsonResponse(req, "503 Service Unavailable", "{\"code\":\"busy\"}");
@@ -130,7 +133,15 @@ static struct {
   size_t length=0;
   uint32_t sequence=0,session=0,deadline=0;
   const char *result="idle";
+  bool album=false;
 } screenJpeg;
+// Retain only a small transfer descriptor between HTTP batches.
+static struct {
+  ScreenJpegHeader header;
+  uint32_t offset=0,session=0,epoch=0;
+  bool active=false;
+} screenAlbumBatch;
+
 static const uint8_t *screenJpegSlot(uint32_t id) {
   for(unsigned i=0;i<MEDIA_IMAGE_SLOTS;++i) {
     const uint8_t *p=screenMedia.snapshot+MEDIA_STATUS_IMAGES+17*i;
@@ -146,8 +157,7 @@ static void screenJpegOwnerPoll() {
   if(!screenJpegBusy.load())return screenJpegFinish("aborted");
   if(!webAuthRequired||!localAuthContextValid(&webAuthContext))
     return screenJpegFinish("unauthorized");
-  if(otaActive||g3OnlineBusy||rebootAt||screenOtaActive()||
-     screenInstallPending()||!screenMediaAvailable())
+  if(otaActive||screenMediaOtaBlocked()||!screenMediaAvailable())
     return screenJpegFinish("not_ready");
   const uint8_t op=screenJpeg.packet[0];
   const auto &h=screenJpeg.header;
@@ -155,6 +165,7 @@ static void screenJpegOwnerPoll() {
     if(screenMedia.pending)return screenJpegFinish("busy");
     if(op==MEDIA_BEGIN) {
       if(screenJpegSlot(h.id))return screenJpegFinish("duplicate_id");
+      if(screenJpeg.album&&!screenMediaAlbumOwn(h.id))return screenJpegFinish("album_slots_full");
       screenJpeg.session=screenMedia.session;
     } else if(screenJpeg.session!=screenMedia.session) {
       return screenJpegFinish("session_changed");
@@ -208,20 +219,52 @@ static esp_err_t screenJpegHandler(httpd_req_t *req) {
     return jsonResponse(req,"415 Unsupported Media Type","{\"code\":\"invalid_params\"}");
   if(req->content_len<=16||req->content_len>16u+MEDIA_JPEG_MAX)
     return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
-  if(webPending||!webDone||otaActive||screenJpegBusy.exchange(true))
+  if(webPending||!webDone||otaActive||screenMediaOtaPreparing.load()||screenJpegBusy.exchange(true))
     return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
   struct Release { ~Release(){screenJpegBusy.store(false);} } release;
-  uint8_t header[16];
-  if(!receiveExact(req,header,sizeof(header)))return ESP_FAIL;
-  if(!screenJpeg.header.parse(header,req->content_len))
-    return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
+  const bool batch=!strcmp(req->uri,"/api/v1/screen/media/jpeg/batch");
+  uint8_t header[24];
+  size_t headerSize=batch?24:16;
+  if(!receiveExact(req,header,headerSize))return ESP_FAIL;
+  uint32_t offset=0,limit=0;
+  ScreenAlbumBatch part;
+  screenJpeg.album=batch;
+  if(batch) {
+    if(!part.parse(header,req->content_len))
+      return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
+    // The owner also checks generation and session before the first command.
+    if(part.epoch!=screenMedia.albumEpoch)
+      return jsonResponse(req,"409 Conflict","{\"code\":\"album_preempted\"}");
+    screenJpeg.header=part.image;offset=part.offset;
+    limit=offset+req->content_len-headerSize;
+    if(offset) {
+      const auto &saved=screenAlbumBatch.header;
+      if(!screenAlbumBatch.active||screenAlbumBatch.epoch!=part.epoch||
+         screenAlbumBatch.offset!=offset||saved.id!=part.image.id||
+         saved.total!=part.image.total||saved.crc!=part.image.crc||
+         saved.width!=part.image.width||saved.height!=part.image.height)
+        return jsonResponse(req,"409 Conflict","{\"code\":\"album_preempted\"}");
+      screenJpeg.session=screenAlbumBatch.session;
+    } else if(screenAlbumBatch.active) {
+      // An abandoned upload must be explicitly cancelled or preempted.
+      return jsonResponse(req,"409 Conflict","{\"code\":\"album_upload_pending\"}");
+    }
+  } else {
+    if(!screenJpeg.header.parse(header,req->content_len))
+      return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
+    limit=screenJpeg.header.total;
+  }
   if(!captureWebAuthorization(req))return ESP_OK;
-  uint32_t started=millis(),offset=0;
+  uint32_t started=millis();
   auto &h=screenJpeg.header;
-  h.begin(screenJpeg.packet);
-  const char *result=screenJpegExchange(17);
-  bool began=!strcmp(result,"ok");
-  while(!strcmp(result,"ok")&&offset<h.total) {
+  const char *result="ok";
+  bool began=offset!=0;
+  if(!offset) {
+    h.begin(screenJpeg.packet);
+    result=screenJpegExchange(17);
+    began=!strcmp(result,"ok");
+  }
+  while(!strcmp(result,"ok")&&offset<limit) {
     if(uint32_t(millis()-started)>=110000){result="upload_timeout";break;}
     size_t n=h.chunkSize(offset);
     h.chunk(screenJpeg.packet,offset);
@@ -229,7 +272,7 @@ static esp_err_t screenJpegHandler(httpd_req_t *req) {
     result=screenJpegExchange(n+9);
     if(!strcmp(result,"ok"))offset+=n;
   }
-  if(!strcmp(result,"ok")) {
+  if(!strcmp(result,"ok")&&offset==h.total) {
     h.terminal(screenJpeg.packet,false);
     result=screenJpegExchange(5);
   }
@@ -242,16 +285,87 @@ static esp_err_t screenJpegHandler(httpd_req_t *req) {
     }
     const String body=String("{\"code\":\"upload_failed\",\"message\":\"")+result+"\"}";
     // An incomplete body must not be reused as another HTTP request.
-    if(offset<h.total) {
+    if(batch)screenAlbumBatch.active=false;
+    if(offset<limit) {
       jsonResponse(req,"503 Service Unavailable",body);
       return ESP_FAIL;
     }
     return jsonResponse(req,"503 Service Unavailable",body);
   }
+  if(batch) {
+    screenAlbumBatch.header=h;screenAlbumBatch.offset=offset;
+    screenAlbumBatch.session=screenJpeg.session;screenAlbumBatch.epoch=part.epoch;
+    screenAlbumBatch.active=offset<h.total;
+  }
   StaticJsonDocument<256> reply;
   reply["code"]="ok";JsonObject data=reply.createNestedObject("data");
   data["id"]=h.id;data["total"]=h.total;data["offset"]=offset;
-  data["crc32"]=h.crc;data["state"]="ready";data["elapsed_ms"]=millis()-started;
+  data["crc32"]=h.crc;data["state"]=offset==h.total?"ready":"receiving";data["elapsed_ms"]=millis()-started;
+  if(batch)data["album_epoch"]=part.epoch;
   String wire;serializeWireMP(reply,wire);
   return jsonResponse(req,"200 OK",wire);
+}
+
+// HTTP task waits; only loop/owner consumes media ACKs. The gate is held
+// through the actual OTA entry point; no new media or baud change during it.
+static uint32_t screenMediaOtaSeq=0,screenMediaOtaSession=0;
+static uint32_t screenMediaOtaDeadline=0;
+static void screenMediaOtaFinish(const char *result) {
+  screenMediaOtaResult=result;screenMediaOtaSeq=0;
+  portENTER_CRITICAL(&webMux);webPending=false;webDone=true;portEXIT_CRITICAL(&webMux);
+}
+static void screenMediaOtaPreparePoll() {
+  if(!screenMediaOtaPreparing.load()||!webAuthRequired||
+     !localAuthContextValid(&webAuthContext))return screenMediaOtaFinish("unauthorized");
+  if((int32_t)(millis()-screenMediaOtaDeadline)>=0)return screenMediaOtaFinish("timeout");
+  if(screenMedia.pending||screenMedia.phase)return;
+  if(screenMediaOtaSession!=screenMedia.session)return screenMediaOtaFinish("session_changed");
+  if(screenMediaOtaSeq) {
+    if(screenMedia.request!=screenMediaOtaSeq||strcmp(screenMedia.requestState,"complete")||
+       screenMedia.result!=MEDIA_OK)return screenMediaOtaFinish("cleanup_unconfirmed");
+    screenMediaOtaSeq=0;
+  }
+  // An uncertain SET cannot be treated as a confirmed empty album.
+  if(screenMedia.lastOp==MEDIA_ALBUM_SET&&!strcmp(screenMedia.requestState,"uncertain"))
+    return screenMediaOtaFinish("album_state_uncertain");
+  uint8_t p[5]={};
+  if(screenMedia.albumId) {
+    p[0]=MEDIA_ALBUM_CLEAR;media_put32(p+1,screenMedia.albumId);
+  } else {
+    for(auto &id:screenMedia.albumOwned)if(id) {
+      if(!screenJpegSlot(id)){id=0;continue;}
+      p[0]=MEDIA_CANCEL;media_put32(p+1,id);break;
+    }
+  }
+  if(p[0]) {
+    StaticJsonDocument<128> receipt;
+    const char *result=screenMediaSubmit(p,sizeof(p),receipt.to<JsonObject>(),true);
+    if(strcmp(result,"accepted"))return screenMediaOtaFinish(result);
+    screenMediaOtaSeq=screenMedia.request;
+    return;
+  }
+  screenAlbumBatch.active=false;
+  screenRelayStop();
+  // Don't change baud on one side alone. Existing raw OTA uses the current
+  // confirmed rate; Guard restart handles the coordinated boot-rate return.
+  if(uart_wait_tx_done(UART_NUM_1,pdMS_TO_TICKS(200))!=ESP_OK)
+    return screenMediaOtaFinish("uart_busy");
+  screenMediaOtaFinish("ok");
+}
+static bool screenMediaOtaBegin(httpd_req_t *req) {
+  if(webPending||!webDone||otaActive||screenImage.active||screenJpegBusy.load()||
+     screenMediaOtaPreparing.exchange(true))return false;
+  if(!captureWebAuthorization(req)){screenMediaOtaPreparing.store(false);return false;}
+  screenMediaOtaSeq=0;screenMediaOtaSession=screenMedia.session;
+  screenMediaOtaDeadline=millis()+18000;
+  // Generation invalidates even a client sleeping between images.
+  if(!++screenMedia.albumEpoch)++screenMedia.albumEpoch;
+  webOperation=6;webDone=false;
+  portENTER_CRITICAL(&webMux);webPending=true;portEXIT_CRITICAL(&webMux);
+  const uint32_t start=millis();
+  while(!webDone&&uint32_t(millis()-start)<20000)delay(1);
+  if(!webDone||strcmp(screenMediaOtaResult,"ok")) {
+    screenMediaOtaPreparing.store(false);return false;
+  }
+  return true;
 }

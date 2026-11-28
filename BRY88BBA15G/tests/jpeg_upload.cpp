@@ -15,5 +15,11 @@ int main(){
  assert(x.matches(slot,47732,2));assert(!x.matches(slot,47731,2));assert(!x.matches(slot,47732,1));
  slot[12]^=1;assert(!x.matches(slot,47732,2));
  x.terminal(p,false);assert(p[0]==MEDIA_COMMIT);x.terminal(p,true);assert(p[0]==MEDIA_CANCEL);
+ uint8_t batch[24]={};memcpy(batch,h,16);media_put32(batch+20,123);
+ ScreenAlbumBatch y;assert(y.parse(batch,24+4096)&&y.offset==0&&y.epoch==123);
+ media_put32(batch+16,45056);assert(y.parse(batch,24+2676));
+ assert(!y.parse(batch,24+2675));assert(!y.parse(batch,24+4097));
+ media_put32(batch+16,1);assert(!y.parse(batch,24+512));
+ media_put32(batch+16,0);media_put32(batch+20,0);assert(!y.parse(batch,24+512));
  h[12]=255;h[13]=255;assert(!x.parse(h,47732+16));
 }

@@ -36,3 +36,20 @@ struct ScreenJpegHeader {
            media_u32(slot+8)==offset && media_u32(slot+12)==crc && slot[16]==state;
   }
 };
+
+// A bounded album HTTP batch yields the single httpd task between blocks.
+// Offset and generation are explicit, so a stopped session cannot resume.
+struct ScreenAlbumBatch {
+  ScreenJpegHeader image;
+  uint32_t offset=0,epoch=0;
+  static constexpr size_t maxBytes=4096, headerBytes=24;
+  bool parse(const uint8_t *p,size_t body) {
+    if(!p||body<=headerBytes||body>headerBytes+maxBytes)return false;
+    uint32_t total=media_u32(p+4);
+    if(!image.parse(p,size_t(total)+16))return false;
+    offset=media_u32(p+16);epoch=media_u32(p+20);
+    const size_t n=body-headerBytes;
+    return epoch&&offset<total&&offset%MEDIA_CHUNK==0&&n<=total-offset&&
+           (offset+n==total||n%MEDIA_CHUNK==0);
+  }
+};

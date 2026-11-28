@@ -110,8 +110,10 @@ int main(){
  reset();image();g3Online.available=true;
  { DynamicJsonDocument empty(64);screenJpegBusy.store(true);
    command("ota.install",empty.to<JsonObject>(),"busy");
-   command("ota.check",params.as<JsonObjectConst>(),"busy");
    assert(!g3OnlineBusy&&!otaActive&&!beginPower&&!activate);
+   command("ota.check",params.as<JsonObjectConst>(),"accepted");
+   assert(g3OnlineBusy&&!otaActive&&!beginPower&&!activate);
+   g3OnlinePoll();
    screenJpegBusy.store(false);
  }
  reset();largest=1000;command("ota.check",params.as<JsonObjectConst>(),"busy");assert(!g3OnlineBusy);

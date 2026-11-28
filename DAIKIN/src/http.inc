@@ -59,6 +59,16 @@ static String webBody,webResult;
 static unsigned webOperation=0;
 static ph_auth_context webAuthContext;
 static bool webAuthRequired=false;
+#ifdef IOTCLOUD_BRY88_SCREEN
+static const char *screenMediaOtaResult="idle";
+static void screenMediaOtaPreparePoll();
+static bool screenMediaOtaBegin(httpd_req_t *);
+struct ScreenMediaOtaScope {
+  bool held=false;
+  bool begin(httpd_req_t *req){held=screenMediaOtaBegin(req);return held;}
+  ~ScreenMediaOtaScope(){if(held)screenMediaOtaPreparing.store(false);}
+};
+#endif
 static bool captureWebAuthorization(httpd_req_t *req){char header[80]={};if(configRecovery||!localAuthReady||!(requestAuthorization(req,header),ph_auth_http_check(&localAuth,header,&webAuthContext))){jsonResponse(req,"401 Unauthorized","{\"code\":\"unauthorized\"}");return false;}webAuthRequired=true;return true;}
 #ifdef IOTCLOUD_HUB
 static iotcloud::HubService::Request hubHttpRequest("","");
@@ -115,6 +125,19 @@ static esp_err_t commandHandler(httpd_req_t *req){
   if(!authorized(req))return ESP_OK; // Recheck after receiving the body.
   if(!otaActive&&publicReadCommand(body,response))return jsonResponse(req,response.startsWith("{")?"503 Service Unavailable":"200 OK",response);
   if(webPending||!webDone)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\",\"message\":\"Command still pending\"}");
+#ifdef IOTCLOUD_BRY88_SCREEN
+  ScreenMediaOtaScope mediaScope;
+  // Only write/activation requests need the handoff. The normal dispatcher
+  // still performs complete parameter, image and authorization validation.
+  ph_value root,action,params;
+  if(phv_parse(PH_WIRE_MSGPACK,body.c_str(),body.length(),&root)&&
+     phv_keys(&root,"|request_id||action||params|")&&phv_get(&root,"action",&action)&&
+     phv_get(&root,"params",&params)&&params.kind==PHV_MAP&&
+     (phv_equal_text(&action,"ota.install")||phv_equal_text(&action,"screen.update.start")||
+      phv_equal_text(&action,"screen.update.install"))) {
+    if(!mediaScope.begin(req))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"media_handoff_failed\"}");
+  }
+#endif
   if(!captureWebAuthorization(req))return ESP_OK;
   webOperation=0;webBody=body;webDone=false;
   portENTER_CRITICAL(&webMux);webPending=true;portEXIT_CRITICAL(&webMux);
@@ -348,7 +371,12 @@ static esp_err_t uploadFirmware(httpd_req_t *req,bool signedImage,const daikin::
   static_assert(sizeof(esp_app_desc_t)==256,"Unexpected ESP app descriptor layout");
   if(!partition||req->content_len<(int)prefix+envelope||req->content_len-envelope>(int)partition->size)return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_image\",\"message\":\"Invalid image size\"}");
 #ifdef IOTCLOUD_BRY88_SCREEN
-  if(g3OnlineBusy||otaActive||screenUploadBusy||screenImage.active||!screenModulePowerBegin())return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
+  ScreenMediaOtaScope mediaScope;
+  if(g3OnlineBusy||otaActive||screenUploadBusy||screenImage.active)
+    return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
+  if(!mediaScope.begin(req))
+    return jsonResponse(req,"503 Service Unavailable","{\"code\":\"media_handoff_failed\"}");
+  if(!screenModulePowerBegin())return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
 #endif
   otaActive=true;uint8_t buffer[1024];int left=req->content_len-envelope;
   static_assert(sizeof(buffer)>=OTA_ENVELOPE_SIZE+daikin::firmwarePrefixSize,"OTA prefix buffer too small");
