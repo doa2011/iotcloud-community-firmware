@@ -79,3 +79,21 @@ int main(){
     obj=temp/(name+'.o');subprocess.run(['cc','-fsanitize=address,undefined','-fno-pie','-c',str(ROOT.parent/'common'/f'{name}.c'),'-o',str(obj)],check=True);objects.append(str(obj))
    subprocess.run(['c++','-std=c++11','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-fno-pie','-no-pie','-I'+str(temp),'-I'+str(ROOT.parent/'common'),'-I'+str(ROOT/'include'),'-I'+str(codec_source()),str(temp/'test.cpp'),*objects,'-o',str(temp/'test')],check=True)
    subprocess.run([str(temp/'test')],check=True)
+
+
+ def test_routed_network_api_has_no_host_or_origin_allowlist(self):
+  source=(ROOT/'src/http.inc').read_text()
+  handler=source.split('static esp_err_t hubApiHandler',1)[1].split('static void registerHubHttp',1)[0]
+  backup=source.split('static esp_err_t backupHandler',1)[1].split('struct OtaFlash',1)[0]
+  self.assertIn('if(req->method==HTTP_OPTIONS)return optionsHandler(req);',handler)
+  self.assertNotIn('hostname!=WiFi.localIP()',handler)
+  self.assertNotIn('WiFi.softAPIP()',handler)
+  self.assertNotIn('String(origin)',handler)
+  self.assertIn('Access-Control-Allow-Origin","*"',source)
+  self.assertIn('Access-Control-Allow-Private-Network',source)
+  self.assertIn('if(!authorized(req))return ESP_OK;',backup)
+  self.assertNotIn('WiFi.localIP()',backup)
+  self.assertNotIn('WiFi.softAPIP()',backup)
+  self.assertIn('httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");',backup)
+  self.assertLess(backup.index('Access-Control-Allow-Origin'),backup.index('if(!authorized(req))'))
+  self.assertIn('const size_t requestLimit=65536;',backup)

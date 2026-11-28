@@ -7,12 +7,12 @@ static const char *screenUpdateStart(JsonObjectConst params) {
       !screenFields(params, "|mode||sha256|") ||
       params.size() != (bootstrap ? 2u : 1u))
     return "invalid_params";
-  if (screenUploadBusy || screenWallpaper.active || screenWallpaper.pending || screenFontBusy())
+  if (screenJpegBusy.load() || screenUploadBusy || screenWallpaper.active || screenWallpaper.pending || screenFontBusy())
     return "busy";
   screenImportArtifact();
   if (!screenImage.valid)
     return "not_ready";
-  if (screenImage.active)
+  if (screenImage.active || screenInstallPending())
     return "busy";
   if (bootstrap) {
     if (screenGuardAvailable() ||
@@ -38,6 +38,7 @@ static const char *screenUpdateStart(JsonObjectConst params) {
   xSemaphoreGive(screenStoreMutex);
   screenImage.pending = false;
   screenImage.bootstrap = bootstrap;
+  screenImage.installSession = screenGuard.session;
   screenImage.offset = 0;
   screenOtaError = "";
   screenImage.deadline = millis() + 60000;

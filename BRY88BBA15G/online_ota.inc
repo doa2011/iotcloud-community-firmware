@@ -57,11 +57,12 @@ static void g3OnlineWorker(void *opaque){
     if(ok){signed_ota_io io={otaErase,otaWrite,otaRead,&flash};ok=signed_ota_begin(&verifier,length,partition->size,otaModel,1,io)&&signed_ota_write(&verifier,buffer,initial);}
     int64_t left=length-initial;const uint32_t started=millis();
     while(ok&&left>0){size_t n=min((int64_t)sizeof(buffer),left);
-      ok=uint32_t(millis()-started)<300000&&screenModulePowerHealthy()&&g3HttpRead(client,buffer,n)&&signed_ota_write(&verifier,buffer,n);left-=n;}
+      ok=uint32_t(millis()-started)<300000&&screenModulePowerBeforeFlash()&&g3HttpRead(client,buffer,n)&&signed_ota_write(&verifier,buffer,n);left-=n;}
     if(ok)ok=signed_ota_finish(&verifier)&&otaRead(&flash,0,buffer,prefix)&&daikin::matchingFirmwarePrefix(buffer,prefix,daikin_target,esp_ota_get_app_description()->project_name);
+    if(ok)ok=screenModulePowerBeforeFlash();
     if(ok){ok=esp_ota_end(flash.handle)==ESP_OK;flash.handle=0;}
     if(flash.handle)esp_ota_abort(flash.handle);
-    if(ok)ok=esp_ota_set_boot_partition(partition)==ESP_OK;
+    if(ok)ok=screenModulePowerBeforeFlash()&&esp_ota_set_boot_partition(partition)==ESP_OK;
     result.success=ok;strlcpy(result.state,ok?"rebooting":"error",sizeof(result.state));
   }
   delete client;
@@ -82,7 +83,7 @@ static const char *g3OnlineCommand(const String &action,JsonObjectConst params,J
   }
   const bool install=action=="ota.install";
   if(!install&&action!="ota.check")return "unsupported";
-  if(g3OnlineBusy||otaActive||screenUploadBusy||screenImage.active||screenFontBusy()||screenWallpaper.active||screenWallpaper.pending||screenWeatherBusy||rebootAt)return "busy";
+  if((install&&screenJpegBusy.load())||g3OnlineBusy||otaActive||screenUploadBusy||screenImage.active||screenFontBusy()||screenWallpaper.active||screenWallpaper.pending||screenWeatherBusy||rebootAt)return "busy";
   if(WiFi.status()!=WL_CONNECTED)return "offline";
   if(install&&(!g3Online.available||params.size()))return "not_ready";
   if(!install){const char *source=params["source"]|"";if(params.size()!=1||(strcmp(source,"github")&&strcmp(source,"cn")&&strcmp(source,"global")))return "invalid_params";strlcpy(g3Online.source,source,sizeof(g3Online.source));g3Online.available=false;}

@@ -93,10 +93,16 @@ jobs:
       - name: Prepare exact frontend archive
         env:
           # Main/tag builds and fork PRs always require the published release.
+          # Trusted feature/hotfix pushes may rebuild the exact locked commit
+          # when its immutable release has not yet been published. Main, dev,
+          # tags and fork PRs still require the published release.
           ALLOW_CANDIDATE_SOURCE: >-
             ${{ github.ref_type != 'tag' &&
                 ((github.event_name == 'pull_request' &&
                   github.event.pull_request.head.repo.full_name == github.repository) ||
+                 (github.event_name == 'push' &&
+                  (startsWith(github.ref, 'refs/heads/feature/') ||
+                   startsWith(github.ref, 'refs/heads/hotfix/'))) ||
                  (github.event_name == 'workflow_dispatch' && github.ref_name != 'main')) }}
         run: |
           args=()
@@ -435,15 +441,15 @@ jobs:
       - name: Identify screen source for G3 integration tests
         if: matrix.variant == 'g3'
         id: screen-source
-        env:
-          SCREEN_MCU_REF: b09be920b87839584ab5cef6353bd92c8c078ec3
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import json, os
+          import json
           from pathlib import Path
-          lock = json.loads(Path('screen-release.lock.json').read_text())
+          lock = json.loads(Path('screen-source.lock.json').read_text())
+          if lock.get('schema') != 1 or len(lock.get('commit', '')) != 40:
+              raise SystemExit('Invalid paired screen MCU source lock')
           print(f"repository={lock['repository']}")
-          print(f"commit={os.environ.get('SCREEN_MCU_REF') or lock['commit']}")
+          print(f"commit={lock['commit']}")
           PY
       - uses: actions/checkout@v4
         if: matrix.variant == 'g3'

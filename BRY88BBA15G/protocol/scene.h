@@ -57,7 +57,7 @@ typedef struct {
   char text[193];
   uint8_t value_mode, hide_title;
   uint16_t points; /* 0 selects 32 points; local charts allow 32/64/128/256. */
-  uint8_t image_source, image_fit; /* SCN3 reserved bytes 86/87, stream 0. */
+  uint8_t image_source, image_fit; /* SCN3 bytes 86/87; stream 0; fit 0 contain, 1 cover, 2 fullscreen. */
 } scene_item;
 typedef struct {
   uint32_t revision;
@@ -88,6 +88,8 @@ bool scene_requires_multi_units(const scene_item *);
 bool scene_requires_compact(const scene_item *);
 size_t scene_wire_size(const screen_scene *);
 bool scene_encode(const screen_scene *, uint8_t out[SCENE_BYTES]);
+/* Only for disposable candidates: contents may change on failure. */
+bool scene_decode_candidate(screen_scene *, const uint8_t *, size_t);
 bool scene_decode(screen_scene *, const uint8_t *, size_t);
 /* Strict contiguous chunks, bounded total, atomic replacement on commit. */
 bool scene_receive(scene_transaction *, screen_scene *, const uint8_t *,

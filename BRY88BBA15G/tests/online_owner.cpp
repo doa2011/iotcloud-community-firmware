@@ -2,6 +2,7 @@
  * verifier outcomes. Signature cryptography is covered by test_ota_identity.py. */
 #include <ArduinoJson.h>
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <cstring>
 #include <new>
@@ -20,13 +21,16 @@ static size_t testStrlcpy(char *out,const char *in,size_t n){size_t len=strlen(i
 static uint32_t now=100;static uint32_t millis(){return now;}static void delay(unsigned n){now+=n;}
 static char version[32]="1.0.0-rc.5";
 static bool g3OnlineBusy,otaActive,screenUploadBusy,screenWeatherBusy;
+static std::atomic<bool> screenJpegBusy{false};
 static struct {bool active;}screenImage;
 static struct {bool active,pending;}screenWallpaper;
 static bool screenFontBusy(){return false;}
 static uint32_t rebootAt;
 static int beginPower,endPower,activate,abortCount,endCount,verifyCount;
 static bool powerHealthy=true,powerReady=true,signatureValid=true,taskAccepted=true,inWorker=false;
+static int flashGateCalls, failGateAt;
 static bool screenModulePowerHealthy(){return powerHealthy;}
+static bool screenModulePowerBeforeFlash(){assert(inWorker);return screenModulePowerHealthy() && ++flashGateCalls!=failGateAt;}
 static bool screenModulePowerBegin(){assert(inWorker);beginPower++;return powerReady;}
 static void screenModulePowerEnd(){endPower++;}
 static struct {bool signedImage;void putBool(const char*,bool value){signedImage=value;}}prefs;
@@ -78,7 +82,7 @@ bool signed_ota_finish(signed_ota*v){verifyCount++;return signatureValid&&v->rec
 #include "../online_ota.inc"
 static void command(const char*name,JsonObjectConst params,const char*expected){DynamicJsonDocument result(4096);assert(!strcmp(g3OnlineCommand(String(name),params,result.to<JsonObject>()),expected));}
 static void runTask(){inWorker=true;g3OnlineWorker(pendingTask);inWorker=false;g3OnlinePoll();assert(!g3OnlineBusy&&!g3Online.busy);}
-static void reset(){response.clear();flash.clear();requested.clear();cutoff=SIZE_MAX;httpLength=-2;httpStatus=200;activate=abortCount=endCount=verifyCount=beginPower=endPower=0;powerHealthy=powerReady=signatureValid=taskAccepted=true;inWorker=false;largest=48000;rebootAt=0;otaActive=g3OnlineBusy=false;g3Online={"idle","","github","","",0,false,false,false,false};}
+static void reset(){response.clear();flash.clear();requested.clear();cutoff=SIZE_MAX;httpLength=-2;httpStatus=200;activate=abortCount=endCount=verifyCount=beginPower=endPower=flashGateCalls=failGateAt=0;powerHealthy=powerReady=signatureValid=taskAccepted=true;inWorker=false;largest=48000;rebootAt=0;otaActive=g3OnlineBusy=false;g3Online={"idle","","github","","",0,false,false,false,false};}
 static void image(){response.resize(OTA_ENVELOPE_SIZE+4096);auto p=response.data()+OTA_ENVELOPE_SIZE;p[0]=0xe9;const uint8_t magic[]={0x32,0x54,0xcd,0xab};memcpy(p+32,magic,4);memcpy(p+80,app.project_name,32);memcpy(p+288,&daikin_target,64);}
 static void install(){g3Online.available=true;g3Online.size=response.size();strlcpy(g3Online.url,"https://example.test/release.signed",sizeof(g3Online.url));DynamicJsonDocument empty(64);command("ota.install",empty.to<JsonObject>(),"accepted");runTask();}
 int main(){
@@ -100,6 +104,17 @@ int main(){
   else{assert(!activate&&endPower==1&&!g3Online.available&&!strcmp(g3Online.state,"error"));}
   if(fault==1||fault==4||fault==6)assert(flash.empty());
   if(fault==6)assert(requested.empty());
+ }
+ // Reject each finalization gate independently; never activate an unprotected image.
+ for(int gate=1;gate<=3;gate++){reset();image();failGateAt=gate;install();assert(!activate&&endPower==1&&!strcmp(g3Online.state,"error"));}
+ reset();image();g3Online.available=true;
+ { DynamicJsonDocument empty(64);screenJpegBusy.store(true);
+   command("ota.install",empty.to<JsonObject>(),"busy");
+   assert(!g3OnlineBusy&&!otaActive&&!beginPower&&!activate);
+   command("ota.check",params.as<JsonObjectConst>(),"accepted");
+   assert(g3OnlineBusy&&!otaActive&&!beginPower&&!activate);
+   g3OnlinePoll();
+   screenJpegBusy.store(false);
  }
  reset();largest=1000;command("ota.check",params.as<JsonObjectConst>(),"busy");assert(!g3OnlineBusy);
  reset();taskAccepted=false;image();g3Online.available=true;DynamicJsonDocument empty(64);command("ota.install",empty.to<JsonObject>(),"busy");assert(!otaActive&&!g3OnlineBusy&&!beginPower&&!endPower);

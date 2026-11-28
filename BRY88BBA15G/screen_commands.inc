@@ -553,8 +553,12 @@ static __attribute__((noinline)) const char *screenLegacyServicesCommand(
         strcmp(screenImage.state, "staged_verified"))
       return "not_ready";
     const char *result = screenGuardRequest(GUARD_INSTALL, 0, 0, data);
-    if (!strcmp(result, "accepted"))
+    if (!strcmp(result, "accepted")) {
+      screenImage.installSession = screenGuard.session;
+      screenImage.deadline = millis() + 240000;
       screenImage.state = "installing";
+      invalidateBusinessStatusCache();
+    }
     return result;
   }
   if (action == "screen.update.cancel") {
@@ -575,7 +579,7 @@ static const char *screenServicesCommand(const String &action,
                                         JsonObjectConst params,
                                         JsonObject data) {
   if (action.startsWith("screen.link.") || action.startsWith("screen.media.") ||
-      action.startsWith("screen.push.") || action.startsWith("screen.stream."))
+      action.startsWith("screen.push.") || action.startsWith("screen.stream.") || action.startsWith("screen.album."))
     return screenMediaCommand(action, params, data);
   return screenLegacyServicesCommand(action, params, data);
 }

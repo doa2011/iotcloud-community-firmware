@@ -59,6 +59,16 @@ static String webBody,webResult;
 static unsigned webOperation=0;
 static ph_auth_context webAuthContext;
 static bool webAuthRequired=false;
+#ifdef IOTCLOUD_BRY88_SCREEN
+static const char *screenMediaOtaResult="idle";
+static void screenMediaOtaPreparePoll();
+static bool screenMediaOtaBegin(httpd_req_t *);
+struct ScreenMediaOtaScope {
+  bool held=false;
+  bool begin(httpd_req_t *req){held=screenMediaOtaBegin(req);return held;}
+  ~ScreenMediaOtaScope(){if(held)screenMediaOtaPreparing.store(false);}
+};
+#endif
 static bool captureWebAuthorization(httpd_req_t *req){char header[80]={};if(configRecovery||!localAuthReady||!(requestAuthorization(req,header),ph_auth_http_check(&localAuth,header,&webAuthContext))){jsonResponse(req,"401 Unauthorized","{\"code\":\"unauthorized\"}");return false;}webAuthRequired=true;return true;}
 #ifdef IOTCLOUD_HUB
 static iotcloud::HubService::Request hubHttpRequest("","");
@@ -115,6 +125,19 @@ static esp_err_t commandHandler(httpd_req_t *req){
   if(!authorized(req))return ESP_OK; // Recheck after receiving the body.
   if(!otaActive&&publicReadCommand(body,response))return jsonResponse(req,response.startsWith("{")?"503 Service Unavailable":"200 OK",response);
   if(webPending||!webDone)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\",\"message\":\"Command still pending\"}");
+#ifdef IOTCLOUD_BRY88_SCREEN
+  ScreenMediaOtaScope mediaScope;
+  // Only write/activation requests need the handoff. The normal dispatcher
+  // still performs complete parameter, image and authorization validation.
+  ph_value root,action,params;
+  if(phv_parse(PH_WIRE_MSGPACK,body.c_str(),body.length(),&root)&&
+     phv_keys(&root,"|request_id||action||params|")&&phv_get(&root,"action",&action)&&
+     phv_get(&root,"params",&params)&&params.kind==PHV_MAP&&
+     (phv_equal_text(&action,"ota.install")||phv_equal_text(&action,"screen.update.start")||
+      phv_equal_text(&action,"screen.update.install"))) {
+    if(!mediaScope.begin(req))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"media_handoff_failed\"}");
+  }
+#endif
   if(!captureWebAuthorization(req))return ESP_OK;
   webOperation=0;webBody=body;webDone=false;
   portENTER_CRITICAL(&webMux);webPending=true;portEXIT_CRITICAL(&webMux);
@@ -130,67 +153,188 @@ static String backupExecute(){
   if(hubRestartPending())return "{\"code\":\"restart_required\"}";
 #endif
   if(configRecovery)return "{\"code\":\"migration_required\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+  const size_t screenExtra = screenConfigCapacity(screenWeatherConfig,
+      screenSavedSettings, screenSchedule, screenNotices) +
+      ((SCENE_BYTES + 2) / 3 * 4) +
+      ((DISPLAY_POLICY_BYTES + 2) / 3 * 4) +
+      ((APPEARANCE_BYTES + 2) / 3 * 4) + 3 + 1024;
+  const size_t backupLimit = 65536;
+#else
+  const size_t screenExtra = 0;
+  const size_t backupLimit = configCapacity + 1024;
+#endif
   if(webOperation==1){
-    DynamicJsonDocument out(config.memoryUsage()+1024);
-    if(!out.capacity())return "{\"code\":\"busy\"}";
-    out["schema"]=1;out["model"]="daikin";out["variant"]=DAIKIN_VARIANT;out["config_version"]=1;out["firmware_version"]=version;out["config"]=config;
-    if(out.overflowed())return "{\"code\":\"busy\"}";
+    // The HTTP owner has queued this export; the prior response is no longer
+    // in use. Release it before reserving the new envelope and output.
+    webResult=String();
+    DynamicJsonDocument out(config.memoryUsage()+screenExtra+1024);
+    if(!out.capacity())return "{\"code\":\"busy\",\"message\":\"backup envelope allocation failed\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+    out["schema"]=2;
+#else
+    out["schema"]=1;
+#endif
+    out["model"]="daikin";out["variant"]=DAIKIN_VARIANT;
+    out["config_version"]=1;out["firmware_version"]=version;out["config"]=config;
+#ifdef IOTCLOUD_BRY88_SCREEN
+    out["hardware_model"]=hardwareModel;
+    if(!screenConfigBackupCapture(out.as<JsonObject>()))return "{\"code\":\"busy\",\"message\":\"backup screen capture failed\"}";
+#endif
+    if(out.overflowed())return "{\"code\":\"busy\",\"message\":\"backup JSON pool exhausted\"}";
     const size_t length=measureJson(out);String text;
-    if(!text.reserve(length))return "{\"code\":\"busy\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+    if(length>backupLimit)return "{\"code\":\"invalid_backup\",\"message\":\"backup exceeds restore limit\"}";
+#endif
+    if(!text.reserve(length))return "{\"code\":\"busy\",\"message\":\"backup output allocation failed\"}";
     serializeJson(out,text);
-    if(text.length()!=length)return "{\"code\":\"busy\"}";
+    if(text.length()!=length)return "{\"code\":\"busy\",\"message\":\"backup serialization incomplete\"}";
     return text;
   }
-  const size_t limit=configCapacity+1024;
-  size_t capacity=config.memoryUsage()+1024;if(capacity>limit)capacity=limit;
+  // A preceding export can leave a large response allocated. The HTTP
+  // owner is now waiting for this restore, so release the old response.
+  webResult=String();
+  // The export formula reserves several copies of the Base64 payload.
+  // Restore starts from the actual upload, not the export worst case.
+#ifdef IOTCLOUD_BRY88_SCREEN
+  // The 12+ KiB Base64 scene remains in the mutable HTTP upload. Only
+  // structural slots need a JSON pool; count them before parsing because
+  // a failed zero-copy parse mutates the input and cannot be retried.
+  const size_t capacity=backupJsonPoolCapacity(webBody.c_str(),webBody.length(),backupLimit);
+  if(!capacity)return "{\"code\":\"invalid_backup\",\"message\":\"restore JSON structure limit or unterminated string\"}";
+#else
+  size_t capacity=webBody.length()+2048;
+  if(capacity>backupLimit)capacity=backupLimit;
+#endif
   for(;;){
     // JSON structure and strings determine memory use. Retry a genuinely larger
     // document after NoMemory, releasing each previous pool before allocating.
     DynamicJsonDocument backup(capacity);
-    if(!backup.capacity())return "{\"code\":\"busy\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+    if(!backup.capacity()){
+      char detail[192];
+      snprintf(detail,sizeof(detail),"{\"code\":\"busy\",\"message\":\"restore JSON allocation failed: requested=%u largest_internal=%u free_internal=%u\"}",
+        unsigned(capacity),unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT)),
+        unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT)));
+      return String(detail);
+    }
+    auto error=deserializeJson(backup,&webBody[0],webBody.length());
+    if(error==DeserializationError::NoMemory)
+      return "{\"code\":\"busy\",\"message\":\"restore JSON structural pool exhausted\"}";
+    // Keep the mutable upload alive until screen and device candidates have
+    // copied every field. Never retry against mutated JSON input.
+#else
+    if(!backup.capacity())return "{\"code\":\"busy\",\"message\":\"restore JSON allocation failed\"}";
     auto error=deserializeJson(backup,webBody.c_str(),webBody.length());
     if(error==DeserializationError::NoMemory){
-      if(capacity==limit)return "{\"code\":\"busy\"}";
-      capacity=capacity>limit-1024?limit:capacity+1024;continue;
+      if(capacity==backupLimit)return "{\"code\":\"busy\",\"message\":\"restore JSON pool exhausted\"}";
+      const size_t growth=capacity/4>1024?capacity/4:1024;
+      capacity=growth>backupLimit-capacity?backupLimit:capacity+growth;continue;
     }
-    if(error||!backup.is<JsonObject>()||backup["schema"]!=1||String(backup["model"]|"")!="daikin"||
-      String(backup["variant"]|"")!=DAIKIN_VARIANT||backup["config_version"]!=1||!validConfig(backup["config"].as<JsonObjectConst>()))return "{\"code\":\"invalid_backup\"}";
+    // The const input overload copies strings into the document. Release the
+    // upload before allocating the decoded layout and rollback state.
+    webBody=String();
+#endif
+#ifdef IOTCLOUD_BRY88_SCREEN
+    const bool envelopeValid = backup["schema"]==2 &&
+        String(backup["hardware_model"]|"")=="BRY88BBA15G" &&
+        screenConfigBackupVerify(backup.as<JsonObjectConst>());
+#else
+    const bool envelopeValid = backup["schema"]==1;
+#endif
+    if(error||!backup.is<JsonObject>()||!envelopeValid||
+      String(backup["model"]|"")!="daikin"||
+      String(backup["variant"]|"")!=DAIKIN_VARIANT||
+      backup["config_version"]!=1||
+      !validConfig(backup["config"].as<JsonObjectConst>()))
+      return "{\"code\":\"invalid_backup\",\"message\":\"restore envelope, checksum or device config validation failed\"}";
     auto restored=backup["config"].as<JsonObjectConst>();
-    size_t candidateCapacity=restored.memoryUsage()+1024;if(candidateCapacity>configCapacity)candidateCapacity=configCapacity;
+#ifdef IOTCLOUD_BRY88_SCREEN
+    size_t candidateCapacity=restored.memoryUsage()+measureMsgPack(restored)+128;
+#else
+    size_t candidateCapacity=restored.memoryUsage()+1024;
+#endif
+    if(candidateCapacity>configCapacity)candidateCapacity=configCapacity;
     DynamicJsonDocument candidate(candidateCapacity);
-    if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())return "{\"code\":\"busy\"}";
-    if(!saveConfigTransaction(candidate,true))return "{\"code\":\"storage_error\"}";
+#ifdef IOTCLOUD_BRY88_SCREEN
+    if(!backupJsonCopyOwned(candidate,restored))
+      return "{\"code\":\"busy\",\"message\":\"restore device config allocation failed\"}";
+    const char *screenResult=screenConfigBackupRestore(backup,webBody);
+    if(strcmp(screenResult,"ok"))
+      return String("{\"code\":\"")+screenResult+"\",\"message\":\"restore stage: "+screenBackupRestoreStage+"\"}";
+    // The screen restore has already released the input envelope.
+    if(!saveConfigTransaction(candidate,true)){
+      if(!screenConfigBackupSnapshotRestore())
+        return "{\"code\":\"restore_rollback_failed\"}";
+      return "{\"code\":\"storage_error\"}";
+    }
+    screenConfigBackupSnapshotDiscard();
+#else
+    if(!candidate.capacity()||!candidate.set(restored)||candidate.overflowed())
+      return "{\"code\":\"busy\",\"message\":\"restore device config allocation failed\"}";
+    if(!saveConfigTransaction(candidate,true))
+      return "{\"code\":\"storage_error\"}";
+#endif
 #ifdef IOTCLOUD_HUB
     hubRestoreChanged();
 #endif
-    rebootAt=millis()+1500;return "{\"code\":\"accepted\"}";
+    // A successful durable restore must reboot even if the original HTTP
+    // request timed out or disconnected before it could schedule the reboot.
+    // The handler still shortens this deadline after sending its HTTP 202.
+    rebootAt=millis()+15000;
+    return "{\"code\":\"accepted\"}";
   }
 }
 static esp_err_t backupHandler(httpd_req_t *req){
+  // CORS applies to every response, including auth failures and restore ACKs,
+  // so authenticated backup/restore works through VPNs and routed origins.
+  httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");
+  httpd_resp_set_hdr(req,"Cache-Control","no-store");
   if(!authorized(req))return ESP_OK;
   bool passwordSet;portENTER_CRITICAL(&authMux);passwordSet=*webPassword;portEXIT_CRITICAL(&authMux);
   if(!passwordSet)return jsonResponse(req,"403 Forbidden","{\"code\":\"set_web_password_first\"}");
   if(webPending||!webDone)return jsonResponse(req,"409 Conflict","{\"code\":\"busy\"}");
   const bool restore=req->method==HTTP_POST;
-  if(restore&&(req->content_len<=0||req->content_len>int(configCapacity+1024)))return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_backup\"}");
+  #ifdef IOTCLOUD_BRY88_SCREEN
+  const size_t requestLimit=65536;
+#else
+  const size_t requestLimit=configCapacity+1024;
+#endif
+  if(restore&&(req->content_len<=0||req->content_len>int(requestLimit)))return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_backup\"}");
+  // Completed response is no longer borrowed by the HTTP server. Free a
+  // prior large export before reserving a restore upload.
+  webResult=String();
   String body;char buffer[513];int left=restore?req->content_len:0;
-  if(restore&&!body.reserve(left))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
+  if(restore&&!body.reserve(left))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\",\"message\":\"restore upload allocation failed\"}");
   while(left){int n=httpd_req_recv(req,buffer,min(left,512));if(n<=0)return ESP_FAIL;buffer[n]=0;if(!body.concat(buffer,n))return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");left-=n;}
   if(!captureWebAuthorization(req))return ESP_OK;
   webBody=std::move(body);webOperation=restore?2:1;webDone=false;
   portENTER_CRITICAL(&webMux);webPending=true;portEXIT_CRITICAL(&webMux);
   uint32_t started=millis();while(!webDone){if(uint32_t(millis()-started)>=10000)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"timeout\"}");delay(1);}
   if(!restore&&webResult.startsWith("{\"schema\":")){
-    httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Cache-Control","no-store");httpd_resp_set_type(req,"application/octet-stream");return httpd_resp_send(req,webResult.c_str(),webResult.length());
+    httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Cache-Control","no-store");httpd_resp_set_type(req,"application/octet-stream");
+    const esp_err_t sent=httpd_resp_send(req,webResult.c_str(),webResult.length());
+    webResult=String();return sent;
   }
   if(webResult.startsWith("{\"code\":\"busy\""))return jsonResponse(req,"503 Service Unavailable",webResult);
-  return jsonResponse(req,webResult.indexOf("accepted")>=0?"202 Accepted":"400 Bad Request",webResult);
+  if(webResult.indexOf("accepted")>=0){
+    /* Start the reboot timer only after the HTTP 202 response has been sent.
+     * Scheduling it in backupExecute() can reset the ESP32 while a large
+     * restore response is still being transmitted to the browser. */
+    esp_err_t sent=jsonResponse(req,"202 Accepted",webResult);
+    if(restore)rebootAt=millis()+2000;
+    return sent;
+  }
+  return jsonResponse(req,"400 Bad Request",webResult);
 }
 struct OtaFlash {const esp_partition_t *partition;esp_ota_handle_t handle;size_t work;};
 static bool otaErase(void *context){
   auto *f=(OtaFlash*)context;
   // Writes are continuous and bounded to 1024 bytes. Let IDF erase only newly
   // reached sectors instead of blocking the HTTP task on a whole-image erase.
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(!screenModulePowerBeforeFlash())return false;
+#endif
   return esp_ota_begin(f->partition,OTA_WITH_SEQUENTIAL_WRITES,&f->handle)==ESP_OK;
 }
 static void otaYield(OtaFlash *f,size_t n){
@@ -204,11 +348,17 @@ static void otaYield(OtaFlash *f,size_t n){
 }
 static bool otaWrite(void *context,uint32_t offset,const uint8_t *data,size_t n){
   (void)offset;auto *f=(OtaFlash*)context;
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(!screenModulePowerBeforeFlash())return false;
+#endif
   if(esp_ota_write(f->handle,data,n)!=ESP_OK)return false;
   otaYield(f,n);return true;
 }
 static bool otaRead(void *context,uint32_t offset,uint8_t *data,size_t n){
   auto *f=(OtaFlash*)context;
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(!screenModulePowerBeforeFlash())return false;
+#endif
   if(esp_partition_read(f->partition,offset,data,n)!=ESP_OK)return false;
   otaYield(f,n);return true;
 }
@@ -221,7 +371,12 @@ static esp_err_t uploadFirmware(httpd_req_t *req,bool signedImage,const daikin::
   static_assert(sizeof(esp_app_desc_t)==256,"Unexpected ESP app descriptor layout");
   if(!partition||req->content_len<(int)prefix+envelope||req->content_len-envelope>(int)partition->size)return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_image\",\"message\":\"Invalid image size\"}");
 #ifdef IOTCLOUD_BRY88_SCREEN
-  if(g3OnlineBusy||otaActive||screenUploadBusy||screenImage.active||!screenModulePowerBegin())return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
+  ScreenMediaOtaScope mediaScope;
+  if(g3OnlineBusy||otaActive||screenUploadBusy||screenImage.active)
+    return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
+  if(!mediaScope.begin(req))
+    return jsonResponse(req,"503 Service Unavailable","{\"code\":\"media_handoff_failed\"}");
+  if(!screenModulePowerBegin())return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
 #endif
   otaActive=true;uint8_t buffer[1024];int left=req->content_len-envelope;
   static_assert(sizeof(buffer)>=OTA_ENVELOPE_SIZE+daikin::firmwarePrefixSize,"OTA prefix buffer too small");
@@ -243,14 +398,21 @@ static esp_err_t uploadFirmware(httpd_req_t *req,bool signedImage,const daikin::
   if(ok){ok=signedImage?signed_ota_write(&verifier,buffer+envelope,prefix):otaWrite(&flash,0,buffer,prefix);left-=prefix;}
   while(ok&&left>0){
 #ifdef IOTCLOUD_BRY88_SCREEN
-    if(!screenModulePowerHealthy()){modulePowerLost=true;ok=false;break;}
+    if(!screenModulePowerBeforeFlash()){modulePowerLost=true;ok=false;break;}
 #endif
     int n=httpd_req_recv(req,(char*)buffer,min(left,512));if(n<=0){ok=false;break;}ok=signedImage?signed_ota_write(&verifier,buffer,n):otaWrite(&flash,0,buffer,n);left-=n;}
   if(ok&&signedImage)ok=signed_ota_finish(&verifier);
   // Verify the actual staged identity again after signature/digest validation.
   if(ok)ok=otaRead(&flash,0,buffer,prefix)&&daikin::matchingFirmwarePrefix(buffer,prefix,expected,self->project_name);
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(ok&&!screenModulePowerBeforeFlash()){modulePowerLost=true;ok=false;}
+#endif
   if(ok){ok=esp_ota_end(flash.handle)==ESP_OK;flash.handle=0;}
   if(flash.handle)esp_ota_abort(flash.handle);
+#ifdef IOTCLOUD_BRY88_SCREEN
+  if(ok&&!screenModulePowerBeforeFlash()){modulePowerLost=true;ok=false;}
+  if(!ok&&!screenModulePowerHealthy())modulePowerLost=true;
+#endif
   if(ok)ok=esp_ota_set_boot_partition(partition)==ESP_OK;
   otaActive=false;
 #ifdef IOTCLOUD_BRY88_SCREEN
@@ -302,7 +464,7 @@ static esp_err_t statusHandler(httpd_req_t *req){
   if(!copied)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
   return jsonResponse(req,"200 OK",response);
 }
-static esp_err_t optionsHandler(httpd_req_t *req){httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Access-Control-Allow-Methods","GET, POST, OPTIONS");httpd_resp_set_hdr(req,"Access-Control-Allow-Headers","Content-Type, Authorization, X-IoTCloud-Target-Variant, X-IoTCloud-Confirm");return httpd_resp_send(req,nullptr,0);}
+static esp_err_t optionsHandler(httpd_req_t *req){httpd_resp_set_hdr(req,"Access-Control-Allow-Origin","*");httpd_resp_set_hdr(req,"Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");httpd_resp_set_hdr(req,"Access-Control-Allow-Headers","Content-Type, Authorization, Accept, X-IoTCloud-Target-Variant, X-IoTCloud-Confirm");httpd_resp_set_hdr(req,"Access-Control-Allow-Private-Network","true");httpd_resp_set_hdr(req,"Access-Control-Max-Age","600");httpd_resp_set_status(req,"204 No Content");return httpd_resp_send(req,nullptr,0);}
 
 #ifdef IOTCLOUD_HUB
 static esp_err_t hubAssetsHandler(httpd_req_t *req){
@@ -315,15 +477,14 @@ static esp_err_t hubAssetsHandler(httpd_req_t *req){
   httpd_resp_set_status(req,"404 Not Found");return httpd_resp_send(req,nullptr,0);
 }
 static esp_err_t hubApiHandler(httpd_req_t *req){
-  if(req->method==HTTP_OPTIONS){httpd_resp_set_status(req,"403 Forbidden");return httpd_resp_send(req,nullptr,0);}
+  // Allow the device API to be reached through VPNs, routed networks and
+  // reverse proxies. Authentication remains mandatory for every private API.
+  if(req->method==HTTP_OPTIONS)return optionsHandler(req);
   if(webPending||!webDone)return jsonResponse(req,"503 Service Unavailable","{\"code\":\"busy\"}");
-  char host[96]={},origin[128]={};
-  if(httpd_req_get_hdr_value_str(req,"Host",host,sizeof(host))!=ESP_OK)return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
+  char host[96]={};
+  httpd_req_get_hdr_value_str(req,"Host",host,sizeof(host));
   String hostname=host;int colon=hostname.indexOf(':');if(colon>=0)hostname=hostname.substring(0,colon);
-  if(hostname!=WiFi.localIP().toString()&&hostname!=WiFi.softAPIP().toString()&&hostname!=deviceHostname+".local")return jsonResponse(req,"403 Forbidden","{\"code\":\"unauthorized\"}");
   bool get=req->method==HTTP_GET;
-  if(!get&&httpd_req_get_hdr_value_len(req,"Origin")&&
-    (httpd_req_get_hdr_value_str(req,"Origin",origin,sizeof(origin))!=ESP_OK||String(origin)!="http://"+String(host)))return jsonResponse(req,"403 Forbidden","{\"code\":\"unauthorized\"}");
   String path=req->uri;if(path.indexOf('?')>=0)return jsonResponse(req,"400 Bad Request","{\"code\":\"invalid_params\"}");
   if(path=="/api/auth/login"&&req->method==HTTP_POST)return loginHandler(req);
   if(path=="/api/auth/logout"&&req->method==HTTP_POST)return logoutHandler(req);

@@ -1,0 +1,2 @@
+# G3 相册提速第一轮（2026-11-28）
+基于实机 cf51db/cbed45 与恢复修复 92b9d80。新增 authenticated POST /api/v1/screen/media/jpeg，16B little-endian <IIIHH> (id,total,crc32,width,height) + raw JPEG。Content-Type application/octet-stream，最大 131072+16。每次传输仅一个固定521B邮箱；HTTP worker读取块，应用 owner 发原有 MEDIA_BEGIN/WRITE/COMMIT 并核对同 session/sequence/id/op、ACK及镜像槽的 offset/CRC/state。每块最多512B，保持 MCU 原协议；提交后仍由 HA 调用 album.set。未确认的提交不能重试旧协议，失败仅尝试取消确认属于本次的 staging ID。不写 Flash，不分配整张 JPEG 缓存。串口波特率默认不变，现有协商待独立实测。HTTP server 为单任务，上传期间其余 HTTP 请求可能等待；实机需测最大耗时、断流回收、并发、OTA 互斥、堆和串口计数。先不合并主线。 

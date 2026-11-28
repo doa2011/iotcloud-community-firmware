@@ -25,9 +25,23 @@ static struct {
           streamConfig[519] = {};
   size_t commandSize = 0;
   uint32_t configuredSession = 0, lastId = 0, restartRequest = 0;
+  uint32_t albumId=0, albumEpoch=0, albumOwned[MEDIA_IMAGE_SLOTS]={};
   unsigned result = MEDIA_OFFLINE, lastOp = 0;
   const char *state = "unavailable", *requestState = "idle";
 } screenMedia;
+static bool screenMediaOtaBlocked() {
+  return screenMediaOtaPreparing.load() || screenImage.active || screenUploadBusy ||
+         screenInstallPending() || !strcmp(screenImage.state,"staged_verified") ||
+         screenPowerPhase.load()!=POWER_IDLE || rebootAt;
+}
+static bool screenMediaAlbumOwn(uint32_t id) {
+  for(auto v:screenMedia.albumOwned)if(v==id)return true;
+  for(auto &v:screenMedia.albumOwned)if(!v){v=id;return true;}
+  return false;
+}
+static void screenMediaAlbumForget(uint32_t id) {
+  for(auto &v:screenMedia.albumOwned)if(v==id)v=0;
+}
 static bool screenMediaQuiesce() {
   screenRelayStop();
   if (uart_wait_tx_done(UART_NUM_1, pdMS_TO_TICKS(200)) != ESP_OK) return false;
@@ -199,6 +213,9 @@ static void screenMediaPacket(void *, unsigned channel, uint32_t session,
         p[0] == screenMedia.command[0]) {
       screenMedia.pending = false;
       screenMedia.result = p[1];
+      if(!p[1] && p[0]==MEDIA_ALBUM_SET)screenMedia.albumId=screenMedia.lastId;
+      if(!p[1] && p[0]==MEDIA_ALBUM_CLEAR)screenMedia.albumId=0;
+      if(!p[1] && p[0]==MEDIA_CANCEL)screenMediaAlbumForget(screenMedia.lastId);
       if (p[0] == MEDIA_STREAM_CONFIG)
         screenMedia.configuredSession = screenMedia.session;
       screenMedia.requestState = p[1] ? "rejected" : "complete";
@@ -244,6 +261,8 @@ static bool screenMediaAnnounce(const String &arg) {
   if (screenMedia.session != session) {
     screenRelayStop();
     screenMedia.session = session;
+    screenMedia.albumId=0;memset(screenMedia.albumOwned,0,sizeof(screenMedia.albumOwned));
+    screenMedia.albumEpoch=esp_random()|1;
     screenMedia.ready = false;
     screenMedia.attempted = false;
     screenMedia.configuredSession = 0;
@@ -299,9 +318,11 @@ static bool screenMediaAvailable() {
          uint32_t(millis() - screenMedia.seen) < 10000;
 }
 static const char *screenMediaSubmit(const uint8_t *p, size_t n,
-                                     JsonObject out) {
+                                     JsonObject out, bool jpegOwner = false) {
   if (!screenMediaAvailable())
     return "not_ready";
+  if ((screenJpegBusy.load() || screenMediaOtaBlocked()) && !jpegOwner)
+    return "busy";
   if (screenOtaActive() || screenImage.active || screenUploadBusy ||
       screenFontBusy() || screenWallpaper.active || screenWallpaper.pending)
     return "busy";
@@ -359,6 +380,7 @@ static void screenLinkGet(JsonObject out) {
     rates.add(rate);
 }
 static const char *screenLinkSet(JsonObjectConst params, JsonObject out) {
+  if (screenJpegBusy.load() || screenMediaOtaBlocked()) return "busy";
   if (!screenFields(params, "|mode||rate||max_rate||apply_now|") ||
       !params["mode"].is<const char *>())
     return "invalid_params";
@@ -416,6 +438,7 @@ static void screenMediaGet(JsonObject out, bool all = true) {
   out["pixel_crc32"] = media_u32(screenMedia.snapshot + 16);
   out["url_supported"] = (screenBridge.capabilities & SCREEN_CAP_URL_PUSH) != 0;
   out["update_supported"] = (screenBridge.capabilities & SCREEN_CAP_PUSH_UPDATE) != 0;
+  out["native_album_supported"] = screenMediaAvailable() && screenMedia.snapshot[31] >= 5;
   out["policy_supported"] = (screenBridge.capabilities & SCREEN_CAP_PUSH_POLICY) != 0;
   out["last_push_id"] = media_u32(screenMedia.snapshot + 32);
   out["source_error"] = media_u32(screenMedia.snapshot + 36);
@@ -440,6 +463,11 @@ static void screenMediaGet(JsonObject out, bool all = true) {
   out["max_width"] = MEDIA_WIDTH_MAX;
   out["max_height"] = MEDIA_HEIGHT_MAX;
   out["chunk_bytes"] = MEDIA_CHUNK;
+  out["binary_upload_supported"] = true;
+  out["binary_album_batch_bytes"] = 4096;
+  out["album_epoch"] = screenMedia.albumEpoch;
+  out["ota_preparing"] = screenMediaOtaBlocked();
+  out["album_id"] = screenMedia.albumId;
   out["queue_capacity"] = screenMedia.snapshot[28];
   out["image_capacity"] = MEDIA_IMAGE_SLOTS;
   out["stack_capacity"] = screenMedia.snapshot[30];
@@ -676,9 +704,15 @@ static const char *screenMediaCommand(const String &action,
     screenStreamGet(out);
     return "ok";
   }
+  if (screenJpegBusy.load() || screenMediaOtaBlocked()) return "busy";
   uint8_t p[MEDIA_PACKET_MAX] = {};
   size_t n = 0;
-  if (action == "screen.media.begin") {
+  if (action == "screen.album.set" || action == "screen.album.clear") {
+    if (!screenMediaAvailable() || screenMedia.snapshot[31] < 5) return "unsupported";
+    if (params.size() != 1 || !params["id"].is<uint32_t>() || !params["id"].as<uint32_t>()) return "invalid_params";
+    p[0] = action.endsWith("set") ? MEDIA_ALBUM_SET : MEDIA_ALBUM_CLEAR;
+    media_put32(p + 1, params["id"]);n = 5;
+  } else if (action == "screen.media.begin") {
     if (params.size() != 5 ||
         !screenFields(params, "|id||total||crc32||width||height|"))
       return "invalid_params";

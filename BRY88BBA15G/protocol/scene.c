@@ -87,7 +87,8 @@ bool scene_validate(const screen_scene *s) {
           c->chart > SC_CH_RING || c->series_count > SCENE_SERIES ||
           (c->hours && c->hours != 1 && c->hours != 6 && c->hours != 24) ||
           c->binding2 > SC_BIND_EXTERNAL || c->binding3 > SC_BIND_EXTERNAL ||
-          c->additive > 1 || c->image_source || c->image_fit>1 ||
+          c->additive > 1 || c->image_source || c->image_fit>2 ||
+          (c->image_fit==2 && (c->x || c->y || c->w!=4 || c->h!=6)) ||
           (c->type!=SC_IMAGE&&c->image_fit) || !utf8(c->text, sizeof(c->text), true) ||
           (c->points&&c->points!=32&&c->points!=64&&c->points!=128&&c->points!=256) || c->hide_title > 1 || c->value_mode > SC_VALUE_GRADE ||
           (c->value_mode && c->type != SC_VALUE) ||
@@ -188,12 +189,10 @@ bool scene_encode(const screen_scene *s, uint8_t out[SCENE_BYTES]) {
   }
   return true;
 }
-bool scene_decode(screen_scene *s, const uint8_t *in, size_t n) {
-  if (n != SCENE_BYTES || memcmp(in, "SCN3", 4)) return false;
-  /* ESP's UART owner has an 8-KiB stack. Decode atomically on the bounded
-   * heap rather than reserving a complete scene in every command frame. */
-  screen_scene *next = calloc(1, sizeof(*next));
-  if (!next) return false;
+bool scene_decode_candidate(screen_scene *next, const uint8_t *in, size_t n) {
+  if (!next || !in || n != SCENE_BYTES || memcmp(in, "SCN3", 4)) return false;
+  /* Caller owns disposable candidate; no redundant heap or stack copy. */
+  memset(next, 0, sizeof(*next));
   next->schema = 3; next->revision = scene_u32(in + 4);
   next->pages = in[8]; next->count = in[9];
   bool ok = next->pages <= SCENE_PAGES && next->count <= SCENE_ITEMS;
@@ -217,9 +216,17 @@ bool scene_decode(screen_scene *s, const uint8_t *in, size_t n) {
       c->image_source=p[86];c->image_fit=p[87];
     }
   }
-  ok = ok && scene_validate(next);
+  return ok && scene_validate(next);
+}
+/* Live callers retain atomic replacement on failure. */
+bool scene_decode(screen_scene *s, const uint8_t *in, size_t n) {
+  if (!s || !in || n != SCENE_BYTES || memcmp(in, "SCN3", 4)) return false;
+  screen_scene *next = malloc(sizeof(*next));
+  if (!next) return false;
+  bool ok = scene_decode_candidate(next, in, n);
   if (ok) *s = *next;
-  free(next); return ok;
+  free(next);
+  return ok;
 }
 bool scene_receive(scene_transaction *t, screen_scene *s, const uint8_t *p,
                    size_t n) {
