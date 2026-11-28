@@ -1,6 +1,7 @@
 /* Exercise the production ESP UART owner against the production MCU receiver.
  */
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
@@ -94,6 +95,7 @@ struct ScreenImage {
   const char *state = "empty";
 };
 static ScreenImage screenImage;
+static std::atomic<bool> screenJpegBusy{false};
 static struct { bool extended = false; } screenBridge;
 static bool screenRecovering;
 static std::vector<uint8_t> image(BRY_IMAGE_LIMIT), nor(0x68000);
@@ -237,6 +239,10 @@ static void testUpdateStart() {
   screenTail = 2;
   screenQueue[0].wire = "old-weather";
   screenQueue[1].wire = "old-clock";
+  screenJpegBusy.store(true);
+  assert(!strcmp(screenUpdateStart(params), "busy"));
+  assert(!screenImage.active && deliveries == 0);
+  screenJpegBusy.store(false);
   assert(!strcmp(screenUpdateStart(params), "accepted"));
   assert(deliveries == 1 && screenImage.active && screenImage.bootstrap);
   assert(screenHead == screenTail && !screenQueue[0].wire.length());
@@ -457,6 +463,10 @@ int main(int argc, char **argv) {
   assert(screenOtaCommand("screen_recovery", "3 12345678 0 1 30000 00000403 00001400 00003001 00000000"));
   assert(screenGuardAvailable() && screenRecovering);
   DynamicJsonDocument status(2048);
+  screenJpegBusy.store(true);
+  assert(!strcmp(screenGuardRequest(GUARD_HOLD, 0, 0, status.to<JsonObject>()), "busy"));
+  assert(toMcu.empty());
+  screenJpegBusy.store(false);
   assert(!strcmp(screenGuardRequest(GUARD_HOLD, 0, 0, status.to<JsonObject>()), "accepted"));
   pump(m);
   assert(guard.held && !strcmp(screenGuard.state, "complete"));

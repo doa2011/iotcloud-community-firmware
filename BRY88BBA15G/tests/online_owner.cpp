@@ -2,6 +2,7 @@
  * verifier outcomes. Signature cryptography is covered by test_ota_identity.py. */
 #include <ArduinoJson.h>
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <cstring>
 #include <new>
@@ -20,6 +21,7 @@ static size_t testStrlcpy(char *out,const char *in,size_t n){size_t len=strlen(i
 static uint32_t now=100;static uint32_t millis(){return now;}static void delay(unsigned n){now+=n;}
 static char version[32]="1.0.0-rc.5";
 static bool g3OnlineBusy,otaActive,screenUploadBusy,screenWeatherBusy;
+static std::atomic<bool> screenJpegBusy{false};
 static struct {bool active;}screenImage;
 static struct {bool active,pending;}screenWallpaper;
 static bool screenFontBusy(){return false;}
@@ -105,6 +107,13 @@ int main(){
  }
  // Reject each finalization gate independently; never activate an unprotected image.
  for(int gate=1;gate<=3;gate++){reset();image();failGateAt=gate;install();assert(!activate&&endPower==1&&!strcmp(g3Online.state,"error"));}
+ reset();image();g3Online.available=true;
+ { DynamicJsonDocument empty(64);screenJpegBusy.store(true);
+   command("ota.install",empty.to<JsonObject>(),"busy");
+   command("ota.check",params.as<JsonObjectConst>(),"busy");
+   assert(!g3OnlineBusy&&!otaActive&&!beginPower&&!activate);
+   screenJpegBusy.store(false);
+ }
  reset();largest=1000;command("ota.check",params.as<JsonObjectConst>(),"busy");assert(!g3OnlineBusy);
  reset();taskAccepted=false;image();g3Online.available=true;DynamicJsonDocument empty(64);command("ota.install",empty.to<JsonObject>(),"busy");assert(!otaActive&&!g3OnlineBusy&&!beginPower&&!endPower);
  puts("online OTA: worker-only power wait, prepare failure, metadata, wrong board, HTTP failure, truncation, verifier failure, power loss and heap/task rejection passed");
