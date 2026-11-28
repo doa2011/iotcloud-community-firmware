@@ -94,9 +94,12 @@ static __attribute__((noinline)) const char *screenLegacyServicesCommand(
     return screenGuardRequest(GUARD_READ_BOOT, at, n, data);
   }
   if (action == "screen.boot.result.get") {
-    if (params.size() != 1 || !params["request"].is<uint32_t>())
+    /* With no request argument, return the latest Guard result. This keeps
+     * the diagnostic endpoint useful after an automatic install/reboot. */
+    if (params.size() > 1 ||
+        (params.containsKey("request") && !params["request"].is<uint32_t>()))
       return "invalid_params";
-    if (!params["request"].as<uint32_t>() ||
+    if (params.containsKey("request") &&
         params["request"].as<uint32_t>() != screenGuard.request)
       return "not_found";
     screenGuardStatus(data, true, true);
