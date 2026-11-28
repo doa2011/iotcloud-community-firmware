@@ -25,7 +25,7 @@ static void screenOtaReplyError(const String &cmd, unsigned error) {
  * replay between download_bin metadata and the raw packet corrupts the MCU's
  * length-driven receiver. Business writers must retry after OTA. */
 static bool screenBusinessSend(const char *bytes, size_t size) {
-  return size <= 3072 && !screenImage.active &&
+  return size <= 3072 && !screenOtaPowerLeaseActive() &&
          screenUartWrite((const uint8_t *)bytes, size) == size;
 }
 static String screenHex(const uint8_t *p, size_t n) {
@@ -92,7 +92,8 @@ static void screenImportArtifact() {
 }
 static bool screenOtaCommand(const String &cmd, const String &arg) {
   if (cmd == "screen_ota_error") {
-    if (screenImage.active && !screenOtaError.length() && arg.length() <= 128) screenOtaError = arg;
+    if (screenOtaPowerLeaseActive() && !screenOtaError.length() && arg.length() <= 128)
+      screenOtaError = arg;
     return true;
   }
   if (cmd == "screen_image")
