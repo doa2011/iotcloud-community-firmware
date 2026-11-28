@@ -127,6 +127,11 @@ static size_t screenUartWrite(const uint8_t *bytes, size_t size) {
 }
 static bool screenGuardAnnounce(const String &);
 static bool screenGuardImageAnnounce(const String &);
+static bool screenOtaActive();
+static String screenHex(const uint8_t *, size_t);
+static String screenBase64(const uint8_t *, size_t);
+static const char *screenOtaErrorText();
+#include "../screen_guard.inc"
 #include "../screen_ota.inc"
 static unsigned blockedBusiness;
 static String screenBase64(const uint8_t *p, size_t n) {
@@ -135,7 +140,6 @@ static String screenBase64(const uint8_t *p, size_t n) {
   assert(used);
   return std::string(wire + 40, used - 42);
 }
-#include "../screen_guard.inc"
 static void testLinkReset() {
   const char *normal = "3 12345678 0 0 30000 00000403 00001400 00003001 00000000";
   unsigned invalidated = invalidations, refreshed = refreshes;
@@ -168,9 +172,13 @@ static void testLinkReset() {
   assert(invalidations == ++invalidated);
   assert(screenGuardImageAnnounce(image));
   assert(invalidations == invalidated);
+  screenImage.state = "staged_verified";
+  screenImage.active = false;
+  assert(!screenOtaPowerLeaseActive());
   screenImage.state = "installing";
   screenImage.installSession = screenGuard.session;
   screenImage.deadline = testMillis + 240000;
+  assert(screenOtaPowerLeaseActive());
   assert(screenGuardImageAnnounce(image));
   assert(invalidations == invalidated && screenInstallPending());
   // An ACK or same-session digest is not evidence of a successful reboot.
@@ -189,7 +197,20 @@ static void testLinkReset() {
   assert(screenGuardAnnounce("3 87654321 0 0 30000 00000403 00001400 00003001 00000000"));
   assert(invalidations == ++invalidated);
   assert(!screenInstallPoll(testMillis) && !strcmp(screenImage.state, "installed"));
-  assert(invalidations == ++invalidated);
+  assert(invalidations == ++invalidated && !screenOtaPowerLeaseActive());
+  /* Errors emitted after end_ota must be retained and release the install
+   * lease only after the MCU explicitly reports a failed handoff. */
+  screenImage.active = false;
+  screenImage.state = "installing";
+  screenImage.installSession = screenGuard.session;
+  screenImage.deadline = testMillis + 240000;
+  screenOtaError = "";
+  assert(screenOtaPowerLeaseActive());
+  assert(screenOtaCommand("screen_ota_error", "reset_handoff_busy"));
+  assert(!strcmp(screenOtaErrorText(), "reset_handoff_busy"));
+  assert(!screenInstallPoll(testMillis));
+  assert(!strcmp(screenImage.state, "install_failed"));
+  assert(!screenOtaPowerLeaseActive());
   toMcu.clear();
   assert(screenGuardImageAnnounce("1 10000000000000000000000000000000"));
   assert(invalidations == ++invalidated);
@@ -366,6 +387,12 @@ int main(int argc, char **argv) {
                            "cancel_ota", "screen_ota_error", "screen_image", "screen_recovery"})
     assert(screenOtaCommandAllowed(cmd));
   screenImage.active = false;
+  screenImage.state = "installing";
+  for (const char *cmd : {"pub", "version?", "wifi_state?", "unknown", "screen_media"})
+    assert(!screenOtaCommandAllowed(cmd));
+  assert(screenOtaPowerLeaseActive());
+  screenImage.state = "installed";
+  assert(!screenOtaPowerLeaseActive());
   assert(screenOtaCommandAllowed("pub") && screenOtaCommandAllowed("version?"));
   screenOtaReplyError("pub", 0x43);
   assert(!strcmp(screenOtaErrorText(), "reply_pub_0043"));
@@ -498,6 +525,8 @@ int main(int argc, char **argv) {
   scene_put32(memory+58,0x16001);
   scene_put32(memory+62,0x01000000);
   memory[1] = 3;
+  /* STAGE_OTA_HANDOFF=19 must not be discarded by the v4 parser. */
+  scene_put32(memory + 6, 19);
   scene_put32(memory + 66, 0x80191b60);
   scene_put32(memory + 70, 0x80191b68);
   scene_put32(memory + 74, 0x801a44ac);
@@ -510,6 +539,7 @@ int main(int argc, char **argv) {
   assert(!strcmp(screenGuard.state, "pending"));
   screenGuardStatus(status.to<JsonObject>(), false);
   assert(status["diagnostic"]["version"] == 3 &&
+         status["diagnostic"]["stage"] == 19 &&
          status["diagnostic"]["fault_pc"] == 0x194bc &&
          status["diagnostic"]["control_actual"] == 0x80191b60 &&
          status["diagnostic"]["control_expected"] == 0x80191b68 &&
