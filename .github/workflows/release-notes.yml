@@ -40,11 +40,16 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Prepare exact frontend archive
         env:
-          # Match firmware CI: main, tags and fork PRs require the release asset.
+          # Keep static-notes and firmware on the same exact-source policy.
+          # Trusted feature/hotfix pushes may build only the locked commit;
+          # main, dev, tags and fork PRs still require its published release.
           ALLOW_CANDIDATE_SOURCE: >-
             ${{ github.ref_type != 'tag' &&
                 ((github.event_name == 'pull_request' &&
                   github.event.pull_request.head.repo.full_name == github.repository) ||
+                 (github.event_name == 'push' &&
+                  (startsWith(github.ref, 'refs/heads/feature/') ||
+                   startsWith(github.ref, 'refs/heads/hotfix/'))) ||
                  (github.event_name == 'workflow_dispatch' && github.ref_name != 'main')) }}
         run: |
           args=()
