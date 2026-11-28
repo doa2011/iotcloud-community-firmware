@@ -93,10 +93,16 @@ jobs:
       - name: Prepare exact frontend archive
         env:
           # Main/tag builds and fork PRs always require the published release.
+          # Trusted feature/hotfix pushes may rebuild the exact locked commit
+          # when its immutable release has not yet been published. Main, dev,
+          # tags and fork PRs still require the published release.
           ALLOW_CANDIDATE_SOURCE: >-
             ${{ github.ref_type != 'tag' &&
                 ((github.event_name == 'pull_request' &&
                   github.event.pull_request.head.repo.full_name == github.repository) ||
+                 (github.event_name == 'push' &&
+                  (startsWith(github.ref, 'refs/heads/feature/') ||
+                   startsWith(github.ref, 'refs/heads/hotfix/'))) ||
                  (github.event_name == 'workflow_dispatch' && github.ref_name != 'main')) }}
         run: |
           args=()
