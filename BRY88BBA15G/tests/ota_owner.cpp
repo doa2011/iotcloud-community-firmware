@@ -454,6 +454,11 @@ int main(int argc, char **argv) {
            std::vector<uint8_t>(nor.begin(), nor.begin() + image.size()));
   }
   screenImage.bootstrap = false;
+  /* The third pass models factory bootstrap, whose committed install must
+   * keep the UART lease. Reset the fixture to a staged-but-not-installing
+   * application before checking ordinary business traffic resumes. */
+  screenImage.state = "staged_verified";
+  assert(!screenOtaPowerLeaseActive());
   assert(blockedBusiness >= 3 * BRY_IMAGE_LIMIT / 1024);
   assert(screenBusinessSend("business-resumed\r\n", 18));
   assert(toMcu == "business-resumed\r\n");
